@@ -1,5 +1,7 @@
 find_package(Vulkan REQUIRED)
-
+if(Vulkan_FOUND)
+    MESSAGE("Vulkan Found!")
+endif()
 
 include(FetchContent)
 
