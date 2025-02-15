@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <map>
+#include <optional>
 
 constexpr uint32_t g_WIDTH = 800;
 constexpr uint32_t g_HEIGHT = 600;
@@ -40,6 +41,16 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 	if (func != nullptr)
 		func(instance, debugMessenger, pAllocator);
 }
+
+struct QueueFamilyIndices
+{
+	std::optional<uint32_t> graphicsFamily;
+
+	bool IsComplete()
+	{
+		return graphicsFamily.has_value();
+	}
+};
 
 class HelloTriangleApplication
 {
@@ -220,7 +231,36 @@ private:
 		// Maximum possible size of textures affect quality
 		score += deviceProperties.limits.maxImageDimension2D;
 
+		QueueFamilyIndices indices = FindQueueFamilies(device);
+		if (!indices.IsComplete())
+			return 0;
+
 		return score;
+	}
+
+	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device)
+	{
+		QueueFamilyIndices indices;
+
+		uint32_t queueFamilyCount = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+		int index = 0;
+		for (const auto& queueFamily : queueFamilies)
+		{
+			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+				indices.graphicsFamily = index;
+
+			if (indices.IsComplete())
+				break;
+
+			++index;
+		}
+
+		return indices;
 	}
 
 	std::vector<const char*> GetRequiredExtensions()
