@@ -12,6 +12,16 @@
 constexpr uint32_t g_WIDTH = 800;
 constexpr uint32_t g_HEIGHT = 600;
 
+const std::vector<const char*> g_VALIDATION_LAYERS = {
+	"VK_LAYER_KHRONOS_validation"
+};
+
+#ifdef NDEBUG
+	constexpr bool g_ENABLE_VALIDATION_LAYERS = false;
+#else
+	constexpr bool g_ENABLE_VALIDATION_LAYERS = true;
+#endif
+
 class HelloTriangleApplication
 {
 public:
@@ -58,6 +68,9 @@ private:
 
 	void CreateInstance()
 	{
+		if (g_ENABLE_VALIDATION_LAYERS && !CheckValidationLayerSupport())
+			throw std::runtime_error("Validation Layers requested, but not available!");
+
 		VkApplicationInfo appInfo{};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 		appInfo.pApplicationName = "Hello Triangle";
@@ -76,12 +89,17 @@ private:
 
 		createInfo.enabledExtensionCount = glfwExtensionCount;
 		createInfo.ppEnabledExtensionNames = glfwExtensions;
-		createInfo.enabledLayerCount = 0;
+		if (g_ENABLE_VALIDATION_LAYERS)
+		{
+			createInfo.enabledLayerCount = static_cast<uint32_t>(g_VALIDATION_LAYERS.size());
+			createInfo.ppEnabledLayerNames = g_VALIDATION_LAYERS.data();
+		}
+		else createInfo.enabledLayerCount = 0;
 		
 		if (vkCreateInstance(&createInfo, nullptr, &m_Instance) != VK_SUCCESS)
 			throw std::runtime_error("Failed to create instance!");
 
-		// 
+		// List all available extensions
 		uint32_t extensionCount = 0;
 		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
 		std::vector<VkExtensionProperties> extensions(extensionCount);
@@ -93,6 +111,33 @@ private:
 			std::cout << '\t' << extension.extensionName << '\n';
 		}
 
+	}
+
+	bool CheckValidationLayerSupport()
+	{
+		uint32_t layerCount;
+		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+		std::vector<VkLayerProperties> availableLayers(layerCount);
+		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+		for (const char* layerName : g_VALIDATION_LAYERS)
+		{
+			bool layerFound = false;
+			for (const auto& layerProperties : availableLayers)
+			{
+				if (strcmp(layerName, layerProperties.layerName) == 0)
+				{
+					layerFound = true;
+					break;
+				}
+			}
+
+			if (!layerFound)
+				return false;
+		}
+
+		return true;
 	}
 
 	GLFWwindow* m_pWindow{ nullptr };
