@@ -7,6 +7,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <vector>
+
 constexpr uint32_t g_WIDTH = 800;
 constexpr uint32_t g_HEIGHT = 600;
 
@@ -34,7 +36,7 @@ private:
 
 	void InitVulkan()
 	{
-		
+		CreateInstance();
 	}
 
 	void MainLoop()
@@ -47,12 +49,55 @@ private:
 
 	void Cleanup()
 	{
+		vkDestroyInstance(m_Instance, nullptr);
+
 		glfwDestroyWindow(m_pWindow);
 
 		glfwTerminate();
 	}
 
+	void CreateInstance()
+	{
+		VkApplicationInfo appInfo{};
+		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+		appInfo.pApplicationName = "Hello Triangle";
+		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+		appInfo.pEngineName = "No Engine";
+		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+		appInfo.apiVersion = VK_API_VERSION_1_0;
+
+
+		VkInstanceCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+		createInfo.pApplicationInfo = &appInfo;
+
+		uint32_t glfwExtensionCount = 0;
+		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+		createInfo.enabledExtensionCount = glfwExtensionCount;
+		createInfo.ppEnabledExtensionNames = glfwExtensions;
+		createInfo.enabledLayerCount = 0;
+		
+		if (vkCreateInstance(&createInfo, nullptr, &m_Instance) != VK_SUCCESS)
+			throw std::runtime_error("Failed to create instance!");
+
+		// 
+		uint32_t extensionCount = 0;
+		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+		std::vector<VkExtensionProperties> extensions(extensionCount);
+		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+
+		std::cout << "Available extensions:\n";
+		for (const auto& extension : extensions)
+		{
+			std::cout << '\t' << extension.extensionName << '\n';
+		}
+
+	}
+
 	GLFWwindow* m_pWindow{ nullptr };
+
+	VkInstance m_Instance{ VK_NULL_HANDLE };
 };
 
 int main()
