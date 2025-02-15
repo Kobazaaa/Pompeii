@@ -79,6 +79,7 @@ private:
 		CreateInstance();
 		SetupDebugMessenger();
 		PickPhysicalDevice();
+		CreateLogicalDevice();
 	}
 
 	void MainLoop()
@@ -91,6 +92,8 @@ private:
 
 	void Cleanup()
 	{
+		vkDestroyDevice(m_Device, nullptr);
+
 		if (g_ENABLE_VALIDATION_LAYERS)
 			DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
 
@@ -214,6 +217,42 @@ private:
 			<< "\tVendorID: " << deviceProperties.vendorID << "\n";
 	}
 
+	void CreateLogicalDevice()
+	{
+		QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
+
+		VkDeviceQueueCreateInfo queueCreateInfo{};
+		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
+		queueCreateInfo.queueCount = 1;
+		float queuePriority = 1.0f;
+		queueCreateInfo.pQueuePriorities = &queuePriority;
+
+		VkPhysicalDeviceFeatures deviceFeatures{};
+
+		VkDeviceCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		createInfo.pQueueCreateInfos = &queueCreateInfo;
+		createInfo.queueCreateInfoCount = 1;
+		createInfo.pEnabledFeatures = &deviceFeatures;
+		createInfo.enabledExtensionCount = 0;
+
+		if (g_ENABLE_VALIDATION_LAYERS)
+		{
+			createInfo.enabledLayerCount = static_cast<uint32_t>(g_VALIDATION_LAYERS.size());
+			createInfo.ppEnabledLayerNames = g_VALIDATION_LAYERS.data();
+		}
+		else
+		{
+			createInfo.enabledLayerCount = 0;
+		}
+
+		if (vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_Device) != VK_SUCCESS)
+			throw std::runtime_error("Failed to create Logical Device!");
+
+		vkGetDeviceQueue(m_Device, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
+	}
+
 	int RateDeviceSuitability(VkPhysicalDevice device)
 	{
 		VkPhysicalDeviceProperties deviceProperties;
@@ -318,6 +357,10 @@ private:
 
 	VkInstance					m_Instance			{ VK_NULL_HANDLE };
 	VkPhysicalDevice			m_PhysicalDevice	{ VK_NULL_HANDLE };
+	VkDevice					m_Device			{ VK_NULL_HANDLE };
+
+	VkQueue						m_GraphicsQueue		{ VK_NULL_HANDLE };
+
 	VkDebugUtilsMessengerEXT	m_DebugMessenger	{ VK_NULL_HANDLE };
 };
 
