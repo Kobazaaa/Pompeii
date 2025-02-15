@@ -8,6 +8,7 @@
 #include <GLFW/glfw3.h>
 
 #include <vector>
+#include <map>
 
 constexpr uint32_t g_WIDTH = 800;
 constexpr uint32_t g_HEIGHT = 600;
@@ -66,6 +67,7 @@ private:
 	{
 		CreateInstance();
 		SetupDebugMessenger();
+		PickPhysicalDevice();
 	}
 
 	void MainLoop()
@@ -106,7 +108,7 @@ private:
 		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 		createInfo.pApplicationInfo = &appInfo;
 
-		auto extensions = getRequiredExtensions();
+		auto extensions = GetRequiredExtensions();
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 		createInfo.ppEnabledExtensionNames = extensions.data();
 		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
@@ -168,7 +170,60 @@ private:
 			throw std::runtime_error("Failed to set up Debug Messenger!");
 	}
 
-	std::vector<const char*> getRequiredExtensions()
+	void PickPhysicalDevice()
+	{
+		uint32_t deviceCount = 0;
+		vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
+
+		if (deviceCount == 0)
+			throw std::runtime_error("Failed to find GPUs with Vulkan Support!");
+
+		std::vector<VkPhysicalDevice> devices(deviceCount);
+		vkEnumeratePhysicalDevices(m_Instance, &deviceCount, devices.data());
+
+		std::multimap<int, VkPhysicalDevice> candidates;
+		for (const auto& device : devices)
+		{
+			int score = RateDeviceSuitability(device);
+			candidates.insert(std::make_pair(score, device));
+		}
+
+		// Check if the best candidate is even suitable
+		if (candidates.rbegin()->first > 0)
+			m_PhysicalDevice = candidates.rbegin()->second;
+		else
+			throw std::runtime_error("Failed to find a suitable GPU!");
+
+		// Print selected GPU
+		VkPhysicalDeviceProperties deviceProperties;
+		vkGetPhysicalDeviceProperties(m_PhysicalDevice, &deviceProperties);
+		std::cout << "\nChosen GPU Data:\n"
+			<< "\tName: " << deviceProperties.deviceName << "\n"
+			<< "\tDriver Version: " << deviceProperties.driverVersion << "\n"
+			<< "\tVendorID: " << deviceProperties.vendorID << "\n";
+	}
+
+	int RateDeviceSuitability(VkPhysicalDevice device)
+	{
+		VkPhysicalDeviceProperties deviceProperties;
+		vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+		VkPhysicalDeviceFeatures deviceFeatures;
+		vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+		int score = 0;
+
+		// Dedicated/Discrete GPU have a significant performance advantage
+		if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+			score += 1000;
+
+		// Maximum possible size of textures affect quality
+		score += deviceProperties.limits.maxImageDimension2D;
+
+		return score;
+	}
+
+	std::vector<const char*> GetRequiredExtensions()
 	{
 		uint32_t glfwExtensionCount = 0;
 		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -221,8 +276,9 @@ private:
 
 	GLFWwindow* m_pWindow{ nullptr };
 
-	VkInstance m_Instance						{ VK_NULL_HANDLE };
-	VkDebugUtilsMessengerEXT m_DebugMessenger	{ VK_NULL_HANDLE };
+	VkInstance					m_Instance			{ VK_NULL_HANDLE };
+	VkPhysicalDevice			m_PhysicalDevice	{ VK_NULL_HANDLE };
+	VkDebugUtilsMessengerEXT	m_DebugMessenger	{ VK_NULL_HANDLE };
 };
 
 int main()
