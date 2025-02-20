@@ -335,6 +335,13 @@ private:
 
 		if (vkCreateSwapchainKHR(m_Device, &createInfo, nullptr, &m_SwapChain) != VK_SUCCESS)
 			throw std::runtime_error("Failed to create Swap Chain!");
+
+		vkGetSwapchainImagesKHR(m_Device, m_SwapChain, &imageCount, nullptr);
+		m_vSwapChainImages.resize(imageCount);
+		vkGetSwapchainImagesKHR(m_Device, m_SwapChain, &imageCount, m_vSwapChainImages.data());
+
+		m_SwapChainImageFormat = surfaceFormat.format;
+		m_SwapChainExtent = extent;
 	}
 
 	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
@@ -546,17 +553,20 @@ private:
 
 	GLFWwindow* m_pWindow{ nullptr };
 
-	VkInstance					m_Instance			{ VK_NULL_HANDLE };
-	VkPhysicalDevice			m_PhysicalDevice	{ VK_NULL_HANDLE };
-	VkDevice					m_Device			{ VK_NULL_HANDLE };
+	VkInstance					m_Instance				{ VK_NULL_HANDLE };
+	VkPhysicalDevice			m_PhysicalDevice		{ VK_NULL_HANDLE };
+	VkDevice					m_Device				{ VK_NULL_HANDLE };
 
-	VkSwapchainKHR				m_SwapChain			{ VK_NULL_HANDLE };
+	VkSwapchainKHR				m_SwapChain				{ VK_NULL_HANDLE };
+	std::vector<VkImage>		m_vSwapChainImages;
+	VkFormat					m_SwapChainImageFormat;
+	VkExtent2D					m_SwapChainExtent;
 
-	VkQueue						m_GraphicsQueue		{ VK_NULL_HANDLE };
-	VkQueue						m_PresentQueue		{ VK_NULL_HANDLE };
+	VkQueue						m_GraphicsQueue			{ VK_NULL_HANDLE };
+	VkQueue						m_PresentQueue			{ VK_NULL_HANDLE };
 
-	VkDebugUtilsMessengerEXT	m_DebugMessenger	{ VK_NULL_HANDLE };
-	VkSurfaceKHR				m_Surface			{ VK_NULL_HANDLE };
+	VkDebugUtilsMessengerEXT	m_DebugMessenger		{ VK_NULL_HANDLE };
+	VkSurfaceKHR				m_Surface				{ VK_NULL_HANDLE };
 };
 
 int main()
