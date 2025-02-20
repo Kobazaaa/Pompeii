@@ -96,6 +96,7 @@ private:
 		PickPhysicalDevice();
 		CreateLogicalDevice();
 		CreateSwapChain();
+		CreateImageViews();
 	}
 
 	void MainLoop()
@@ -108,6 +109,9 @@ private:
 
 	void Cleanup()
 	{
+		for (auto imageView : m_vSwapChainImageViews)
+			vkDestroyImageView(m_Device, imageView, nullptr);
+
 		vkDestroySwapchainKHR(m_Device, m_SwapChain, nullptr);
 
 		vkDestroyDevice(m_Device, nullptr);
@@ -344,6 +348,35 @@ private:
 		m_SwapChainExtent = extent;
 	}
 
+	void CreateImageViews()
+	{
+		m_vSwapChainImageViews.resize(m_vSwapChainImages.size());
+
+		for (size_t index = 0; index < m_vSwapChainImages.size(); ++index)
+		{
+			VkImageViewCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			createInfo.image = m_vSwapChainImages[index];
+
+			createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			createInfo.format = m_SwapChainImageFormat;
+
+			createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+			createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			createInfo.subresourceRange.baseMipLevel = 0;
+			createInfo.subresourceRange.levelCount = 1;
+			createInfo.subresourceRange.baseArrayLayer = 0;
+			createInfo.subresourceRange.layerCount = 1;
+
+			if (vkCreateImageView(m_Device, &createInfo, nullptr, &m_vSwapChainImageViews[index]) != VK_SUCCESS)
+				throw std::runtime_error("Failed to create Image Views!");
+		}
+	}
+
 	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 	{
 		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
@@ -559,8 +592,10 @@ private:
 
 	VkSwapchainKHR				m_SwapChain				{ VK_NULL_HANDLE };
 	std::vector<VkImage>		m_vSwapChainImages;
-	VkFormat					m_SwapChainImageFormat;
-	VkExtent2D					m_SwapChainExtent;
+	VkFormat					m_SwapChainImageFormat	{};
+	VkExtent2D					m_SwapChainExtent		{};
+
+	std::vector<VkImageView>	m_vSwapChainImageViews;
 
 	VkQueue						m_GraphicsQueue			{ VK_NULL_HANDLE };
 	VkQueue						m_PresentQueue			{ VK_NULL_HANDLE };
