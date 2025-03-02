@@ -12,3 +12,8 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 #    LIBRARIES
 #--------------------------------------------------
 include("../cmake/FetchAndIncludeLibraries.cmake")
+
+#--------------------------------------------------
+#    SHADERS
+#--------------------------------------------------
+include("../cmake/CompileShaders.cmake")
