@@ -300,7 +300,8 @@ private:
 		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
 		VkExtent2D extent = ChooseSwapExtent(swapChainSupport.capabilities);
 
-		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+		constexpr uint32_t desiredImageCount = 2;
+		uint32_t imageCount = std::max(desiredImageCount, swapChainSupport.capabilities.minImageCount);
 		if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
 			imageCount = swapChainSupport.capabilities.maxImageCount;
 
