@@ -101,6 +101,7 @@ private:
 		CreateRenderPass();
 		CreateGraphicsPipeline();
 		CreateFrameBuffers();
+		CreateCommandPool();
 	}
 
 	void MainLoop()
@@ -113,6 +114,8 @@ private:
 
 	void Cleanup()
 	{
+		vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
+
 		for (auto& framebuffer : m_vSwapChainFrameBuffers)
 			vkDestroyFramebuffer(m_Device, framebuffer, nullptr);
 
@@ -561,6 +564,19 @@ private:
 		}
 	}
 
+	void CreateCommandPool()
+	{
+		QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_PhysicalDevice);
+
+		VkCommandPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+		if (vkCreateCommandPool(m_Device, &poolInfo, nullptr, &m_CommandPool) != VK_SUCCESS)
+			throw std::runtime_error("Failed to create Command Pool!");
+	}
+
 	VkShaderModule CreateShaderModule(const std::vector<char>& code)
 	{
 		VkShaderModuleCreateInfo createInfo{};
@@ -814,6 +830,8 @@ private:
 	VkRenderPass				m_RenderPass			{ VK_NULL_HANDLE };
 	VkPipelineLayout			m_PipelineLayout		{ VK_NULL_HANDLE };
 	VkPipeline					m_GraphicsPipeline		{ VK_NULL_HANDLE };
+
+	VkCommandPool				m_CommandPool			{ VK_NULL_HANDLE };
 
 	VkQueue						m_GraphicsQueue			{ VK_NULL_HANDLE };
 	VkQueue						m_PresentQueue			{ VK_NULL_HANDLE };
