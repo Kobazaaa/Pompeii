@@ -100,6 +100,7 @@ private:
 		CreateImageViews();
 		CreateRenderPass();
 		CreateGraphicsPipeline();
+		CreateFrameBuffers();
 	}
 
 	void MainLoop()
@@ -112,11 +113,14 @@ private:
 
 	void Cleanup()
 	{
+		for (auto& framebuffer : m_vSwapChainFrameBuffers)
+			vkDestroyFramebuffer(m_Device, framebuffer, nullptr);
+
 		vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
 		vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
 
-		for (auto imageView : m_vSwapChainImageViews)
+		for (auto& imageView : m_vSwapChainImageViews)
 			vkDestroyImageView(m_Device, imageView, nullptr);
 
 		vkDestroySwapchainKHR(m_Device, m_SwapChain, nullptr);
@@ -533,6 +537,30 @@ private:
 		vkDestroyShaderModule(m_Device, vertShaderModule, nullptr);
 	}
 
+	void CreateFrameBuffers()
+	{
+		m_vSwapChainFrameBuffers.resize(m_vSwapChainImageViews.size());
+
+		for (size_t idx = 0; idx < m_vSwapChainImageViews.size(); ++idx)
+		{
+			VkImageView attachments[] = {
+				m_vSwapChainImageViews[idx]
+			};
+
+			VkFramebufferCreateInfo framebufferInfo{};
+			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebufferInfo.renderPass = m_RenderPass;
+			framebufferInfo.attachmentCount = 1;
+			framebufferInfo.pAttachments = attachments;
+			framebufferInfo.width = m_SwapChainExtent.width;
+			framebufferInfo.height = m_SwapChainExtent.height;
+			framebufferInfo.layers = 1;
+
+			if (vkCreateFramebuffer(m_Device, &framebufferInfo, nullptr, &m_vSwapChainFrameBuffers[idx]) != VK_SUCCESS)
+				throw std::runtime_error("Failed to create Framebuffer!");
+		}
+	}
+
 	VkShaderModule CreateShaderModule(const std::vector<char>& code)
 	{
 		VkShaderModuleCreateInfo createInfo{};
@@ -781,6 +809,7 @@ private:
 	VkExtent2D					m_SwapChainExtent		{};
 
 	std::vector<VkImageView>	m_vSwapChainImageViews;
+	std::vector<VkFramebuffer>	m_vSwapChainFrameBuffers;
 
 	VkRenderPass				m_RenderPass			{ VK_NULL_HANDLE };
 	VkPipelineLayout			m_PipelineLayout		{ VK_NULL_HANDLE };
