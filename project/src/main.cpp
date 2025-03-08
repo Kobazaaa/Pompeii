@@ -103,6 +103,7 @@ private:
 		CreateFrameBuffers();
 		CreateCommandPool();
 		CreateCommandBuffer();
+		CreateSyncObjects();
 	}
 
 	void MainLoop()
@@ -110,11 +111,16 @@ private:
 		while (!glfwWindowShouldClose(m_pWindow))
 		{
 			glfwPollEvents();
+			DrawFrame();
 		}
 	}
 
 	void Cleanup()
 	{
+		vkDestroySemaphore(m_Device, m_ImageAvailableSemaphore, nullptr);
+		vkDestroySemaphore(m_Device, m_RenderFinishedSemaphore, nullptr);
+		vkDestroyFence(m_Device, m_InFlightFence, nullptr);
+
 		vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
 
 		for (auto& framebuffer : m_vSwapChainFrameBuffers)
@@ -637,6 +643,25 @@ private:
 			throw std::runtime_error("Failed to record Command Buffer!");
 	}
 
+	void CreateSyncObjects()
+	{
+		VkSemaphoreCreateInfo semaphoreInfo{};
+		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+		VkFenceCreateInfo fenceInfo{};
+		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+		if (vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_ImageAvailableSemaphore) != VK_SUCCESS ||
+			vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_RenderFinishedSemaphore) != VK_SUCCESS ||
+			vkCreateFence(m_Device, &fenceInfo, nullptr, &m_InFlightFence) != VK_SUCCESS)
+			throw std::runtime_error("Failed to create Sync Objects!");
+	}
+
+	void DrawFrame()
+	{
+		
+	}
+
 	VkShaderModule CreateShaderModule(const std::vector<char>& code)
 	{
 		VkShaderModuleCreateInfo createInfo{};
@@ -875,30 +900,34 @@ private:
 
 	GLFWwindow* m_pWindow{ nullptr };
 
-	VkInstance					m_Instance				{ VK_NULL_HANDLE };
-	VkPhysicalDevice			m_PhysicalDevice		{ VK_NULL_HANDLE };
-	VkDevice					m_Device				{ VK_NULL_HANDLE };
+	VkInstance					m_Instance					{ VK_NULL_HANDLE };
+	VkPhysicalDevice			m_PhysicalDevice			{ VK_NULL_HANDLE };
+	VkDevice					m_Device					{ VK_NULL_HANDLE };
 
-	VkSwapchainKHR				m_SwapChain				{ VK_NULL_HANDLE };
+	VkSwapchainKHR				m_SwapChain					{ VK_NULL_HANDLE };
 	std::vector<VkImage>		m_vSwapChainImages;
-	VkFormat					m_SwapChainImageFormat	{};
-	VkExtent2D					m_SwapChainExtent		{};
+	VkFormat					m_SwapChainImageFormat		{};
+	VkExtent2D					m_SwapChainExtent			{};
 
 	std::vector<VkImageView>	m_vSwapChainImageViews;
 	std::vector<VkFramebuffer>	m_vSwapChainFrameBuffers;
 
-	VkRenderPass				m_RenderPass			{ VK_NULL_HANDLE };
-	VkPipelineLayout			m_PipelineLayout		{ VK_NULL_HANDLE };
-	VkPipeline					m_GraphicsPipeline		{ VK_NULL_HANDLE };
+	VkRenderPass				m_RenderPass				{ VK_NULL_HANDLE };
+	VkPipelineLayout			m_PipelineLayout			{ VK_NULL_HANDLE };
+	VkPipeline					m_GraphicsPipeline			{ VK_NULL_HANDLE };
 
-	VkCommandPool				m_CommandPool			{ VK_NULL_HANDLE };
-	VkCommandBuffer				m_CommandBuffer			{ VK_NULL_HANDLE };
+	VkCommandPool				m_CommandPool				{ VK_NULL_HANDLE };
+	VkCommandBuffer				m_CommandBuffer				{ VK_NULL_HANDLE };
 
-	VkQueue						m_GraphicsQueue			{ VK_NULL_HANDLE };
-	VkQueue						m_PresentQueue			{ VK_NULL_HANDLE };
+	VkSemaphore					m_ImageAvailableSemaphore	{ VK_NULL_HANDLE };
+	VkSemaphore					m_RenderFinishedSemaphore	{ VK_NULL_HANDLE };
+	VkFence						m_InFlightFence				{ VK_NULL_HANDLE };
 
-	VkDebugUtilsMessengerEXT	m_DebugMessenger		{ VK_NULL_HANDLE };
-	VkSurfaceKHR				m_Surface				{ VK_NULL_HANDLE };
+	VkQueue						m_GraphicsQueue				{ VK_NULL_HANDLE };
+	VkQueue						m_PresentQueue				{ VK_NULL_HANDLE };
+
+	VkDebugUtilsMessengerEXT	m_DebugMessenger			{ VK_NULL_HANDLE };
+	VkSurfaceKHR				m_Surface					{ VK_NULL_HANDLE };
 };
 
 int main()
