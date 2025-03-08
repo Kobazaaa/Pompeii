@@ -102,6 +102,7 @@ private:
 		CreateGraphicsPipeline();
 		CreateFrameBuffers();
 		CreateCommandPool();
+		CreateCommandBuffer();
 	}
 
 	void MainLoop()
@@ -577,6 +578,18 @@ private:
 			throw std::runtime_error("Failed to create Command Pool!");
 	}
 
+	void CreateCommandBuffer()
+	{
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = m_CommandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = 1;
+
+		if (vkAllocateCommandBuffers(m_Device, &allocInfo, &m_CommandBuffer) != VK_SUCCESS)
+			throw std::runtime_error("Failed to allocate Command Buffer!");
+	}
+
 	VkShaderModule CreateShaderModule(const std::vector<char>& code)
 	{
 		VkShaderModuleCreateInfo createInfo{};
@@ -832,6 +845,7 @@ private:
 	VkPipeline					m_GraphicsPipeline		{ VK_NULL_HANDLE };
 
 	VkCommandPool				m_CommandPool			{ VK_NULL_HANDLE };
+	VkCommandBuffer				m_CommandBuffer			{ VK_NULL_HANDLE };
 
 	VkQueue						m_GraphicsQueue			{ VK_NULL_HANDLE };
 	VkQueue						m_PresentQueue			{ VK_NULL_HANDLE };
