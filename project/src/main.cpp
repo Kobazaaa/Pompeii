@@ -86,9 +86,16 @@ private:
 		glfwInit();
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
 		m_pWindow = glfwCreateWindow(g_WIDTH, g_HEIGHT, "Vulkan", nullptr, nullptr);
+		glfwSetWindowUserPointer(m_pWindow, this);
+		glfwSetFramebufferSizeCallback(m_pWindow, FrameBufferResizeCallback);
+	}
+
+	static void FrameBufferResizeCallback(GLFWwindow* window, int width, int height)
+	{
+		auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
+		app->m_FrameBufferResized = true;
 	}
 
 	void InitVulkan()
@@ -121,6 +128,12 @@ private:
 
 	void Cleanup()
 	{
+		CleanupSwapChain();
+
+		vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
+		vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
+		vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
+
 		for (size_t idx = 0; idx < g_MAX_FRAMES_IN_FLIGHT; ++idx)
 		{
 			vkDestroySemaphore(m_Device, m_vImageAvailableSemaphores[idx], nullptr);
@@ -129,18 +142,6 @@ private:
 		}
 
 		vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
-
-		for (auto& framebuffer : m_vSwapChainFrameBuffers)
-			vkDestroyFramebuffer(m_Device, framebuffer, nullptr);
-
-		vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
-		vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
-		vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
-
-		for (auto& imageView : m_vSwapChainImageViews)
-			vkDestroyImageView(m_Device, imageView, nullptr);
-
-		vkDestroySwapchainKHR(m_Device, m_SwapChain, nullptr);
 
 		vkDestroyDevice(m_Device, nullptr);
 
@@ -153,6 +154,37 @@ private:
 		glfwDestroyWindow(m_pWindow);
 
 		glfwTerminate();
+	}
+
+	void CleanupSwapChain()
+	{
+		for (auto& framebuffer : m_vSwapChainFrameBuffers)
+			vkDestroyFramebuffer(m_Device, framebuffer, nullptr);
+
+		for (auto& imageView : m_vSwapChainImageViews)
+			vkDestroyImageView(m_Device, imageView, nullptr);
+
+		vkDestroySwapchainKHR(m_Device, m_SwapChain, nullptr);
+	}
+
+	void RecreateSwapChain()
+	{
+		int width = 0;
+		int height = 0;
+		glfwGetFramebufferSize(m_pWindow, &width, &height);
+		while (width == 0 || height == 0)
+		{
+			glfwGetFramebufferSize(m_pWindow, &width, &height);
+			glfwWaitEvents();
+		}
+
+		vkDeviceWaitIdle(m_Device);
+
+		CleanupSwapChain();
+
+		CreateSwapChain();
+		CreateImageViews();
+		CreateFrameBuffers();
 	}
 
 	void CreateInstance()
@@ -687,10 +719,18 @@ private:
 	void DrawFrame()
 	{
 		vkWaitForFences(m_Device, 1, &m_vInFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
-		vkResetFences(m_Device, 1, &m_vInFlightFences[m_CurrentFrame]);
 
 		uint32_t imageIndex;
-		vkAcquireNextImageKHR(m_Device, m_SwapChain, UINT64_MAX, m_vImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+		VkResult result = vkAcquireNextImageKHR(m_Device, m_SwapChain, UINT64_MAX, m_vImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+		{
+			RecreateSwapChain();
+			return;
+		}
+		if (result != VK_SUCCESS)
+			throw std::runtime_error("Failed to acquire Swap Chain Image");
+
+		vkResetFences(m_Device, 1, &m_vInFlightFences[m_CurrentFrame]);
 
 		vkResetCommandBuffer(m_vCommandBuffers[m_CurrentFrame], 0);
 		RecordCommandBuffer(m_vCommandBuffers[m_CurrentFrame], imageIndex);
@@ -725,7 +765,14 @@ private:
 		presentInfo.pImageIndices = &imageIndex;
 		presentInfo.pResults = nullptr;
 
-		vkQueuePresentKHR(m_PresentQueue, &presentInfo);
+		result = vkQueuePresentKHR(m_PresentQueue, &presentInfo);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_FrameBufferResized)
+		{
+			m_FrameBufferResized = false;
+			RecreateSwapChain();
+		}
+		else if (result != VK_SUCCESS)
+			throw std::runtime_error("Failed to present Swap Chain Image!");
 
 		m_CurrentFrame = (m_CurrentFrame + 1) % g_MAX_FRAMES_IN_FLIGHT;
 	}
@@ -991,6 +1038,7 @@ private:
 	std::vector<VkSemaphore>		m_vRenderFinishedSemaphores	{ VK_NULL_HANDLE };
 	std::vector<VkFence>			m_vInFlightFences			{ VK_NULL_HANDLE };
 	uint32_t						m_CurrentFrame				{ 0 };
+	bool							m_FrameBufferResized		{ false };
 
 	VkQueue							m_GraphicsQueue				{ VK_NULL_HANDLE };
 	VkQueue							m_PresentQueue				{ VK_NULL_HANDLE };
