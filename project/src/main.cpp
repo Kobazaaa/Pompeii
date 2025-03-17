@@ -104,9 +104,9 @@ struct Vertex
 };
 
 const std::vector<Vertex> g_VERTICES{
-	{{ 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-	{{ 0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}},
-	{{-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}}
+	{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+	{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+	{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
 };
 
 class HelloTriangleApplication
@@ -151,6 +151,7 @@ private:
 		CreateGraphicsPipeline();
 		CreateFrameBuffers();
 		CreateCommandPool();
+		CreateVertexBuffer();
 		CreateCommandBuffers();
 		CreateSyncObjects();
 	}
@@ -173,6 +174,9 @@ private:
 		vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
 		vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
+
+		vkDestroyBuffer(m_Device, m_VertexBuffer, nullptr);
+		vkFreeMemory(m_Device, m_VertexBufferMemory, nullptr);
 
 		for (size_t idx = 0; idx < g_MAX_FRAMES_IN_FLIGHT; ++idx)
 		{
@@ -680,6 +684,50 @@ private:
 			throw std::runtime_error("Failed to create Command Pool!");
 	}
 
+	void CreateVertexBuffer()
+	{
+		VkBufferCreateInfo bufferInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = sizeof(g_VERTICES[0]) * g_VERTICES.size();
+		bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateBuffer(m_Device, &bufferInfo, nullptr, &m_VertexBuffer) != VK_SUCCESS)
+			throw std::runtime_error("Failed to create Vertex Buffer!");
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(m_Device, m_VertexBuffer, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+																				 | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+		if (vkAllocateMemory(m_Device, &allocInfo, nullptr, &m_VertexBufferMemory) != VK_SUCCESS)
+			throw std::runtime_error("Failed to allocate Vertex Buffer Memory!");
+
+		vkBindBufferMemory(m_Device, m_VertexBuffer, m_VertexBufferMemory, 0);
+
+		void* data;
+		vkMapMemory(m_Device, m_VertexBufferMemory, 0, bufferInfo.size, 0, &data);
+		memcpy(data, g_VERTICES.data(), static_cast<size_t>(bufferInfo.size));
+		vkUnmapMemory(m_Device, m_VertexBufferMemory);
+
+	}
+
+	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+	{
+		VkPhysicalDeviceMemoryProperties memProperties;
+		vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &memProperties);
+
+		for (uint32_t idx{0}; idx < memProperties.memoryTypeCount; ++idx)
+			if ((typeFilter & (1 << idx)) && (memProperties.memoryTypes[idx].propertyFlags & properties) == properties)
+					return idx;
+
+		throw std::runtime_error("failed to find suitable memory type!");
+	}
+
 	void CreateCommandBuffers()
 	{
 		m_vCommandBuffers.resize(g_MAX_FRAMES_IN_FLIGHT);
@@ -733,7 +781,11 @@ private:
 			scissor.extent = m_SwapChainExtent;
 			vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+			VkBuffer vertexBuffers[] = { m_VertexBuffer };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+			vkCmdDraw(commandBuffer, static_cast<uint32_t>(g_VERTICES.size()), 1, 0, 0);
 		}
 		vkCmdEndRenderPass(commandBuffer);
 
@@ -1080,6 +1132,9 @@ private:
 
 	VkCommandPool					m_CommandPool				{ VK_NULL_HANDLE };
 	std::vector<VkCommandBuffer>	m_vCommandBuffers			{ VK_NULL_HANDLE };
+
+	VkBuffer						m_VertexBuffer				{ VK_NULL_HANDLE };
+	VkDeviceMemory					m_VertexBufferMemory		{ VK_NULL_HANDLE };
 
 	std::vector<VkSemaphore>		m_vImageAvailableSemaphores	{ VK_NULL_HANDLE };
 	std::vector<VkSemaphore>		m_vRenderFinishedSemaphores	{ VK_NULL_HANDLE };
