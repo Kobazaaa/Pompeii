@@ -170,7 +170,9 @@ private:
 		CreateCommandPool();
 		CreateVertexBuffer();
 		CreateIndexBuffer();
-		CreateUniformBuffer();
+		CreateUniformBuffers();
+		CreateDescriptorPool();
+		CreateDescriptorSets();
 		CreateCommandBuffers();
 		CreateSyncObjects();
 	}
@@ -200,6 +202,7 @@ private:
 			vkFreeMemory(m_Device, m_vUniformBuffersMemory[i], nullptr);
 		}
 
+		vkDestroyDescriptorPool(m_Device, m_DescriptorPool, nullptr);
 		vkDestroyDescriptorSetLayout(m_Device, m_DescriptorSetLayout, nullptr);
 
 		vkDestroyBuffer(m_Device, m_IndexBuffer, nullptr);
@@ -627,7 +630,7 @@ private:
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
 		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 
 		VkPipelineMultisampleStateCreateInfo multisampling{};
@@ -797,7 +800,7 @@ private:
 		vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
 	}
 
-	void CreateUniformBuffer()
+	void CreateUniformBuffers()
 	{
 		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
@@ -812,6 +815,58 @@ private:
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 				m_vUniformBuffers[i], m_vUniformBuffersMemory[i]);
 			vkMapMemory(m_Device, m_vUniformBuffersMemory[i], 0, bufferSize, 0, &m_vUniformBuffersMapped[i]);
+		}
+	}
+
+	void CreateDescriptorPool()
+	{
+		VkDescriptorPoolSize poolSize{};
+		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize.descriptorCount = static_cast<uint32_t>(g_MAX_FRAMES_IN_FLIGHT);
+
+		VkDescriptorPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolInfo.poolSizeCount = 1;
+		poolInfo.pPoolSizes = &poolSize;
+		poolInfo.maxSets = static_cast<uint32_t>(g_MAX_FRAMES_IN_FLIGHT);
+		poolInfo.flags = 0;
+
+		if (vkCreateDescriptorPool(m_Device, &poolInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS)
+			throw std::runtime_error("Failed to create Descriptor Pool!");
+	}
+
+	void CreateDescriptorSets()
+	{
+		std::vector<VkDescriptorSetLayout> layouts(g_MAX_FRAMES_IN_FLIGHT, m_DescriptorSetLayout);
+		VkDescriptorSetAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = m_DescriptorPool;
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(g_MAX_FRAMES_IN_FLIGHT);
+		allocInfo.pSetLayouts = layouts.data();
+
+		m_vDescriptorSets.resize(g_MAX_FRAMES_IN_FLIGHT);
+		if (vkAllocateDescriptorSets(m_Device, &allocInfo, m_vDescriptorSets.data()) != VK_SUCCESS)
+			throw std::runtime_error("Failed to allocate Descriptor Sets!");
+
+		for (size_t i{}; i < g_MAX_FRAMES_IN_FLIGHT; ++i)
+		{
+			VkDescriptorBufferInfo bufferInfo{};
+			bufferInfo.buffer = m_vUniformBuffers[i];
+			bufferInfo.offset = 0;
+			bufferInfo.range = sizeof(UniformBufferObject);
+
+			VkWriteDescriptorSet descriptorWrite{};
+			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrite.dstSet = m_vDescriptorSets[i];
+			descriptorWrite.dstBinding = 0;
+			descriptorWrite.dstArrayElement = 0;
+			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrite.descriptorCount = 1;
+			descriptorWrite.pBufferInfo = &bufferInfo;
+			descriptorWrite.pImageInfo = nullptr;
+			descriptorWrite.pTexelBufferView = nullptr;
+
+			vkUpdateDescriptorSets(m_Device, 1, &descriptorWrite, 0, nullptr);
 		}
 	}
 
@@ -920,6 +975,8 @@ private:
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 			vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_vDescriptorSets[m_CurrentFrame], 0, nullptr);
 
 			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(g_INDICES.size()), 1, 0, 0, 0);
 		}
@@ -1284,6 +1341,9 @@ private:
 	VkDescriptorSetLayout			m_DescriptorSetLayout		{ VK_NULL_HANDLE };
 	VkPipelineLayout				m_PipelineLayout			{ VK_NULL_HANDLE };
 	VkPipeline						m_GraphicsPipeline			{ VK_NULL_HANDLE };
+
+	VkDescriptorPool				m_DescriptorPool			{ VK_NULL_HANDLE };
+	std::vector<VkDescriptorSet>	m_vDescriptorSets			{ VK_NULL_HANDLE };
 
 	VkCommandPool					m_CommandPool				{ VK_NULL_HANDLE };
 	std::vector<VkCommandBuffer>	m_vCommandBuffers			{ VK_NULL_HANDLE };
