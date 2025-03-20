@@ -26,8 +26,14 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
 constexpr uint32_t g_WIDTH = 800;
 constexpr uint32_t g_HEIGHT = 600;
+
+const std::string g_MODEL_PATH = "../models/viking_room.obj";
+const std::string g_TEXTURE_PATH = "../textures/viking_room.png";
 
 constexpr int g_MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -125,21 +131,21 @@ struct UniformBufferObject
 	alignas(16) glm::mat4 proj;
 };
 
-const std::vector<Vertex> g_VERTICES{
-	Vertex{{-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-	Vertex{{ 0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-	Vertex{{ 0.5f, 0.0f,  0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-	Vertex{{-0.5f, 0.0f,  0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-	Vertex{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-	Vertex{{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-	Vertex{{ 0.5f, -0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-	Vertex{{-0.5f, -0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-};
-const std::vector<uint16_t> g_INDICES{
-	0, 2, 1, 2, 0, 3,
-	4, 6, 5, 6, 4, 7
-};
+//const std::vector<Vertex> g_VERTICES{
+//	Vertex{{-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+//	Vertex{{ 0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+//	Vertex{{ 0.5f, 0.0f,  0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+//	Vertex{{-0.5f, 0.0f,  0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+//
+//	Vertex{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+//	Vertex{{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+//	Vertex{{ 0.5f, -0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+//	Vertex{{-0.5f, -0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+//};
+//const std::vector<uint16_t> g_INDICES{
+//	0, 2, 1, 2, 0, 3,
+//	4, 6, 5, 6, 4, 7
+//};
 
 class HelloTriangleApplication
 {
@@ -188,6 +194,7 @@ private:
 		CreateTextureImage();
 		CreateTextureImageView();
 		CreateTextureImageSampler();
+		LoadModel();
 		CreateVertexBuffer();
 		CreateIndexBuffer();
 		CreateUniformBuffers();
@@ -1035,7 +1042,7 @@ private:
 		int texWidth;
 		int texHeight;
 		int texChannels;
-		stbi_uc* pixels = stbi_load("../textures/Noopy.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		stbi_uc* pixels = stbi_load(g_TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		VkDeviceSize imageSize = texWidth * texHeight * 4;
 
 		if (!pixels)
@@ -1099,9 +1106,47 @@ private:
 			throw std::runtime_error("Failed to create Texture Sampler!");
 	}
 
+	void LoadModel()
+	{
+		tinyobj::attrib_t attrib;
+		std::vector<tinyobj::shape_t> shapes;
+		std::vector<tinyobj::material_t> materials;
+		std::string error;
+
+		// By default, automatically triangulates
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &error, g_MODEL_PATH.c_str()))
+			throw std::runtime_error(error);
+
+		for (const auto& shape : shapes)
+		{
+			for (const auto& index : shape.mesh.indices)
+			{
+				Vertex vertex{};
+
+				vertex.position = {
+						attrib.vertices[3 * index.vertex_index + 0],
+						attrib.vertices[3 * index.vertex_index + 2],
+						attrib.vertices[3 * index.vertex_index + 1]
+				};
+				vertex.texCoord = {
+						attrib.texcoords[2 * index.texcoord_index + 0],
+						1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+				};
+				vertex.color = { 1.0f, 1.0f, 1.0f };
+
+				m_vVertices.push_back(vertex);
+				uint32_t indexBufferIdx = static_cast<uint32_t>(m_vIndices.size());
+				m_vIndices.push_back(indexBufferIdx);
+				// Swap 2 indices to make each triangle LH with clockwise front
+				if (indexBufferIdx % 3 == 2)
+					std::swap(m_vIndices[indexBufferIdx - 1], m_vIndices[indexBufferIdx]);
+			}
+		}
+	}
+
 	void CreateVertexBuffer()
 	{
-		VkDeviceSize bufferSize = sizeof(g_VERTICES[0]) * g_VERTICES.size();
+		VkDeviceSize bufferSize = sizeof(m_vVertices[0]) * m_vVertices.size();
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
@@ -1109,7 +1154,7 @@ private:
 
 		void* data;
 		vkMapMemory(m_Device, stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, g_VERTICES.data(), static_cast<size_t>(bufferSize));
+		memcpy(data, m_vVertices.data(), static_cast<size_t>(bufferSize));
 		vkUnmapMemory(m_Device, stagingBufferMemory);
 
 		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_VertexBuffer, m_VertexBufferMemory);
@@ -1121,7 +1166,7 @@ private:
 
 	void CreateIndexBuffer()
 	{
-		VkDeviceSize bufferSize = sizeof(g_INDICES[0]) * g_INDICES.size();
+		VkDeviceSize bufferSize = sizeof(m_vIndices[0]) * m_vIndices.size();
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
@@ -1129,7 +1174,7 @@ private:
 
 		void* data;
 		vkMapMemory(m_Device, stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, g_INDICES.data(), (size_t)bufferSize);
+		memcpy(data, m_vIndices.data(), (size_t)bufferSize);
 		vkUnmapMemory(m_Device, stagingBufferMemory);
 
 		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_IndexBuffer, m_IndexBufferMemory);
@@ -1310,11 +1355,11 @@ private:
 			VkBuffer vertexBuffers[] = { m_VertexBuffer };
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-			vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+			vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_vDescriptorSets[m_CurrentFrame], 0, nullptr);
 
-			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(g_INDICES.size()), 1, 0, 0, 0);
+			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_vIndices.size()), 1, 0, 0, 0);
 		}
 		vkCmdEndRenderPass(commandBuffer);
 
@@ -1698,6 +1743,8 @@ private:
 	VkDeviceMemory					m_DepthImageMemory			{ VK_NULL_HANDLE };
 	VkImageView						m_DepthImageView			{ VK_NULL_HANDLE };
 
+	std::vector<Vertex>				m_vVertices;
+	std::vector<uint32_t>			m_vIndices;
 	VkBuffer						m_VertexBuffer				{ VK_NULL_HANDLE };
 	VkDeviceMemory					m_VertexBufferMemory		{ VK_NULL_HANDLE };
 	VkBuffer						m_IndexBuffer				{ VK_NULL_HANDLE };
