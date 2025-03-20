@@ -22,3 +22,8 @@ include("../cmake/CompileShaders.cmake")
 #    TEXTURES
 #--------------------------------------------------
 include("../cmake/CopyTextures.cmake")
+
+#--------------------------------------------------
+#    MODELS
+#--------------------------------------------------
+include("../cmake/CopyModels.cmake")

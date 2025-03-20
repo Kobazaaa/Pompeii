@@ -9,10 +9,10 @@ file(MAKE_DIRECTORY ${TEXTURES_BINARY_DIR})
 
 # Texture Files
 file(GLOB TEXTURES_SOURCES
-  $TEXTURES_SOURCE_DIR}/*.png
-  $TEXTURES_SOURCE_DIR}/*.jpeg
-  $TEXTURES_SOURCE_DIR}/*.jpg
-  $TEXTURES_SOURCE_DIR}/*.bmp
+  ${TEXTURES_SOURCE_DIR}/*.png
+  ${TEXTURES_SOURCE_DIR}/*.jpeg
+  ${TEXTURES_SOURCE_DIR}/*.jpg
+  ${TEXTURES_SOURCE_DIR}/*.bmp
 )
 
 # Copy the textures
