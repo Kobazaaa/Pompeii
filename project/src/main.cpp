@@ -764,6 +764,43 @@ private:
 		vkBindBufferMemory(m_Device, buffer, bufferMemory, 0);
 	}
 
+	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
+		VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
+		VkImage& image, VkDeviceMemory& imageMemory)
+	{
+		VkImageCreateInfo imageInfo{};
+		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.extent.width = width;
+		imageInfo.extent.height = height;
+		imageInfo.extent.depth = 1;
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.format = format;
+		imageInfo.tiling = tiling;
+		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageInfo.usage = usage;
+		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.flags = 0;
+
+		if (vkCreateImage(m_Device, &imageInfo, nullptr, &image) != VK_SUCCESS)
+			throw std::runtime_error("Failed to create Image!");
+
+		VkMemoryRequirements memRequirements;
+		vkGetImageMemoryRequirements(m_Device, image, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
+
+		if (vkAllocateMemory(m_Device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
+			throw std::runtime_error("Failed to allocate Image Memory!");
+
+		vkBindImageMemory(m_Device, image, imageMemory, 0);
+	}
+
 	void CreateTextureImage()
 	{
 		int texWidth;
@@ -774,6 +811,22 @@ private:
 
 		if (!pixels)
 			throw std::runtime_error("Failed to load Texture Image!");
+
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		CreateBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+			stagingBuffer, stagingBufferMemory);
+		void* data;
+		vkMapMemory(m_Device, stagingBufferMemory, 0, imageSize, 0, &data);
+		memcpy(data, pixels, static_cast<size_t>(imageSize));
+		vkUnmapMemory(m_Device, stagingBufferMemory);
+
+		stbi_image_free(pixels);
+
+		CreateImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+			m_TextureImage, m_TextureImageMemory);
 	}
 
 	void CreateVertexBuffer()
@@ -1353,6 +1406,9 @@ private:
 
 	std::vector<VkImageView>		m_vSwapChainImageViews;
 	std::vector<VkFramebuffer>		m_vSwapChainFrameBuffers;
+
+	VkImage							m_TextureImage				{ VK_NULL_HANDLE };
+	VkDeviceMemory					m_TextureImageMemory		{ VK_NULL_HANDLE };
 
 	VkRenderPass					m_RenderPass				{ VK_NULL_HANDLE };
 	VkDescriptorSetLayout			m_DescriptorSetLayout		{ VK_NULL_HANDLE };
