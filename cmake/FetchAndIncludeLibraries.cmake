@@ -32,7 +32,16 @@ FetchContent_Declare(
    GIT_PROGRESS TRUE
 )
 
-FetchContent_MakeAvailable(GLFW GLM stb)
+# Fetch tinyobjloader
+FetchContent_Declare(
+   tinyobj
+   GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
+   GIT_TAG v1.0.6
+   GIT_SHALLOW TRUE
+   GIT_PROGRESS TRUE
+)
+
+FetchContent_MakeAvailable(GLFW GLM stb tinyobj)
 
 # Link libraries to the project
 target_link_libraries(${PROJECT_NAME}
@@ -41,4 +50,4 @@ target_link_libraries(${PROJECT_NAME}
     glfw
     glm::glm
 )
-target_include_directories(${PROJECT_NAME} PRIVATE ${stb_SOURCE_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE ${stb_SOURCE_DIR} ${tinyobj_SOURCE_DIR})
