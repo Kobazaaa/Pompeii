@@ -17,3 +17,8 @@ include("../cmake/FetchAndIncludeLibraries.cmake")
 #    SHADERS
 #--------------------------------------------------
 include("../cmake/CompileShaders.cmake")
+
+#--------------------------------------------------
+#    TEXTURES
+#--------------------------------------------------
+include("../cmake/CopyTextures.cmake")

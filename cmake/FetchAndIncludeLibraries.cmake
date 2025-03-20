@@ -23,7 +23,16 @@ FetchContent_Declare(
    GIT_PROGRESS TRUE
 )
 
-FetchContent_MakeAvailable(GLFW GLM)
+# Fetch stb
+FetchContent_Declare(
+   stb
+   GIT_REPOSITORY https://github.com/nothings/stb.git
+   GIT_TAG master
+   GIT_SHALLOW TRUE
+   GIT_PROGRESS TRUE
+)
+
+FetchContent_MakeAvailable(GLFW GLM stb)
 
 # Link libraries to the project
 target_link_libraries(${PROJECT_NAME}
@@ -32,3 +41,4 @@ target_link_libraries(${PROJECT_NAME}
     glfw
     glm::glm
 )
+target_include_directories(${PROJECT_NAME} PRIVATE ${stb_SOURCE_DIR})

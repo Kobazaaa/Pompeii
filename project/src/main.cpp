@@ -22,6 +22,9 @@
 
 #include "glm/gtc/quaternion.hpp"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 constexpr uint32_t g_WIDTH = 800;
 constexpr uint32_t g_HEIGHT = 600;
 
@@ -168,6 +171,7 @@ private:
 		CreateGraphicsPipeline();
 		CreateFrameBuffers();
 		CreateCommandPool();
+		CreateTextureImage();
 		CreateVertexBuffer();
 		CreateIndexBuffer();
 		CreateUniformBuffers();
@@ -758,6 +762,18 @@ private:
 			throw std::runtime_error("Failed to allocate Vertex Buffer Memory!");
 
 		vkBindBufferMemory(m_Device, buffer, bufferMemory, 0);
+	}
+
+	void CreateTextureImage()
+	{
+		int texWidth;
+		int texHeight;
+		int texChannels;
+		stbi_uc* pixels = stbi_load("../textures/Noopy.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		VkDeviceSize imageSize = texWidth * texHeight * 4;
+
+		if (!pixels)
+			throw std::runtime_error("Failed to load Texture Image!");
 	}
 
 	void CreateVertexBuffer()
