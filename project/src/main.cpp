@@ -8,6 +8,7 @@
 #include <GLFW/glfw3.h>
 
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -125,13 +126,19 @@ struct UniformBufferObject
 };
 
 const std::vector<Vertex> g_VERTICES{
-	{{-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-	{{ 0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-	{{ 0.5f, 0.0f,  0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-	{{-0.5f, 0.0f,  0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+	Vertex{{-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+	Vertex{{ 0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+	Vertex{{ 0.5f, 0.0f,  0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+	Vertex{{-0.5f, 0.0f,  0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+
+	Vertex{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+	Vertex{{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+	Vertex{{ 0.5f, -0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+	Vertex{{-0.5f, -0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
 };
 const std::vector<uint16_t> g_INDICES{
-	0, 2, 1, 2, 0, 3
+	0, 2, 1, 2, 0, 3,
+	4, 6, 5, 6, 4, 7
 };
 
 class HelloTriangleApplication
@@ -177,6 +184,7 @@ private:
 		CreateGraphicsPipeline();
 		CreateFrameBuffers();
 		CreateCommandPool();
+		CreateDepthResources();
 		CreateTextureImage();
 		CreateTextureImageView();
 		CreateTextureImageSampler();
@@ -511,7 +519,7 @@ private:
 		m_vSwapChainImageViews.resize(m_vSwapChainImages.size());
 
 		for (size_t index = 0; index < m_vSwapChainImages.size(); ++index)
-			m_vSwapChainImageViews[index] = CreateImageView(m_vSwapChainImages[index], m_SwapChainImageFormat);
+			m_vSwapChainImageViews[index] = CreateImageView(m_vSwapChainImages[index], m_SwapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 
 	void CreateRenderPass()
@@ -875,14 +883,14 @@ private:
 		EndSingleTimeCommands(commandBuffer);
 	}
 
-	VkImageView CreateImageView(VkImage image, VkFormat format)
+	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
 	{
 		VkImageViewCreateInfo viewInfo{};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		viewInfo.image = image;
 		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		viewInfo.format = format;
-		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewInfo.subresourceRange.aspectMask = aspectFlags;
 		viewInfo.subresourceRange.baseMipLevel = 0;
 		viewInfo.subresourceRange.levelCount = 1;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
@@ -932,6 +940,45 @@ private:
 		vkBindImageMemory(m_Device, image, imageMemory, 0);
 	}
 
+	void CreateDepthResources()
+	{
+		VkFormat depthFormat = FindDepthFormat();
+		CreateImage(m_SwapChainExtent.width, m_SwapChainExtent.height, depthFormat,
+			VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+			m_DepthImage, m_DepthImageMemory);
+		m_DepthImageView = CreateImageView(m_DepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+	}
+
+	VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
+	{
+		for (VkFormat format : candidates)
+		{
+			VkFormatProperties props;
+			vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &props);
+
+			if (tiling == VK_IMAGE_TILING_LINEAR &&
+				(props.linearTilingFeatures & features) == features)
+				return format;
+			else if (tiling == VK_IMAGE_TILING_OPTIMAL &&
+				(props.optimalTilingFeatures & features) == features)
+				return format;
+		}
+
+		throw std::runtime_error("Failed to find Supported Format!");
+	}
+
+	VkFormat FindDepthFormat()
+	{
+		return FindSupportedFormat({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+			VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	}
+
+	bool HasStencilComponent(VkFormat format)
+	{
+		return format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
+			   format == VK_FORMAT_D24_UNORM_S8_UINT;
+	}
+
 	void CreateTextureImage()
 	{
 		int texWidth;
@@ -969,7 +1016,7 @@ private:
 
 	void CreateTextureImageView()
 	{
-		m_TextureImageView = CreateImageView(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB);
+		m_TextureImageView = CreateImageView(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 
 	void CreateTextureImageSampler()
@@ -1590,6 +1637,10 @@ private:
 
 	VkCommandPool					m_CommandPool				{ VK_NULL_HANDLE };
 	std::vector<VkCommandBuffer>	m_vCommandBuffers			{ VK_NULL_HANDLE };
+
+	VkImage							m_DepthImage				{ VK_NULL_HANDLE };
+	VkDeviceMemory					m_DepthImageMemory			{ VK_NULL_HANDLE };
+	VkImageView						m_DepthImageView			{ VK_NULL_HANDLE };
 
 	VkBuffer						m_VertexBuffer				{ VK_NULL_HANDLE };
 	VkDeviceMemory					m_VertexBufferMemory		{ VK_NULL_HANDLE };
