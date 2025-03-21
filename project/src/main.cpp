@@ -11,6 +11,8 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
 
 #include <vector>
 #include <array>
@@ -20,6 +22,7 @@
 #include <algorithm>
 #include <fstream>
 #include <chrono>
+#include <unordered_map>
 
 #include "glm/gtc/quaternion.hpp"
 
@@ -122,7 +125,24 @@ struct Vertex
 
 		return attributeDescriptions;
 	}
+
+	bool operator==(const Vertex& other) const
+	{
+		return position == other.position &&
+			   color == other.color &&
+			   texCoord == other.texCoord;
+	}
 };
+
+namespace std {
+	template<> struct hash<Vertex> {
+		size_t operator()(Vertex const& vertex) const {
+			return ((hash<glm::vec3>()(vertex.position) ^
+					(hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
+					(hash<glm::vec2>()(vertex.texCoord) << 1);
+		}
+	};
+}
 
 struct UniformBufferObject
 {
@@ -1117,8 +1137,11 @@ private:
 		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &error, g_MODEL_PATH.c_str()))
 			throw std::runtime_error(error);
 
+		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
 		for (const auto& shape : shapes)
 		{
+			int counterIdx = 0;
 			for (const auto& index : shape.mesh.indices)
 			{
 				Vertex vertex{};
@@ -1134,12 +1157,16 @@ private:
 				};
 				vertex.color = { 1.0f, 1.0f, 1.0f };
 
-				m_vVertices.push_back(vertex);
-				uint32_t indexBufferIdx = static_cast<uint32_t>(m_vIndices.size());
-				m_vIndices.push_back(indexBufferIdx);
+				if (!uniqueVertices.contains(vertex))
+				{
+					uniqueVertices[vertex] = static_cast<uint32_t>(m_vVertices.size());
+					m_vVertices.push_back(vertex);
+				}
+				m_vIndices.push_back(uniqueVertices[vertex]);
 				// Swap 2 indices to make each triangle LH with clockwise front
-				if (indexBufferIdx % 3 == 2)
-					std::swap(m_vIndices[indexBufferIdx - 1], m_vIndices[indexBufferIdx]);
+				if (counterIdx % 3 == 2)
+					std::swap(m_vIndices[counterIdx - 1], m_vIndices[counterIdx]);
+				++counterIdx;
 			}
 		}
 	}
