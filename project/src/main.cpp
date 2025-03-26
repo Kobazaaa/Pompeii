@@ -35,8 +35,8 @@
 constexpr uint32_t g_WIDTH = 800;
 constexpr uint32_t g_HEIGHT = 600;
 
-const std::string g_MODEL_PATH = "../models/viking_room.obj";
-const std::string g_TEXTURE_PATH = "../textures/viking_room.png";
+const std::string g_MODEL_PATH = "models/viking_room.obj";
+const std::string g_TEXTURE_PATH = "textures/viking_room.png";
 
 constexpr int g_MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -640,8 +640,8 @@ private:
 
 	void CreateGraphicsPipeline()
 	{
-		auto vertShaderCode = ReadFile("../shaders/shader_vert.spv");
-		auto fragShaderCode = ReadFile("../shaders/shader_frag.spv");
+		auto vertShaderCode = ReadFile("shaders/shader.vert.spv");
+		auto fragShaderCode = ReadFile("shaders/shader.frag.spv");
 
 		VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode);
 		VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode);

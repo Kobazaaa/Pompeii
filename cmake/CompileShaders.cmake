@@ -16,8 +16,8 @@ else()
 endif()
 
 # Set shader directories
-set(SHADER_SOURCE_DIR ${CMAKE_SOURCE_DIR}/shaders)
-set(SHADER_BINARY_DIR ${CMAKE_BINARY_DIR}/shaders)
+set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
+set(SHADER_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/shaders)
 file(MAKE_DIRECTORY ${SHADER_BINARY_DIR})
 
 # Shader Files
@@ -29,11 +29,11 @@ file(GLOB SHADER_SOURCES
 # Compile the shaders
 add_custom_target(CompileShaders ALL COMMENT "Compiling shaders to output directory.")
 foreach(SHADER ${SHADER_SOURCES})
-    get_filename_component(SHADER_INPUT_NAME ${SHADER} NAME)
-    string(REPLACE "." "_" SHADER_OUTPUT_NAME ${SHADER_INPUT_NAME})
-    set(SHADER_OUTPUT_DIR "${CMAKE_BINARY_DIR}/shaders/${SHADER_OUTPUT_NAME}.spv")
+    get_filename_component(SHADER_NAME ${SHADER} NAME)
+    set(SHADER_OUTPUT_NAME "${SHADER_NAME}.spv")
+    set(SHADER_OUTPUT_DIR "${SHADER_BINARY_DIR}/${SHADER_OUTPUT_NAME}")
 
-    message("Compiling ${SHADER_INPUT_NAME} to ${SHADER_OUTPUT_NAME}.spv")
+    message("Compiling ${SHADER_NAME} to ${SHADER_OUTPUT_NAME}")
 
     add_custom_command(
         TARGET CompileShaders POST_BUILD

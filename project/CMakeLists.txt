@@ -1,29 +1,37 @@
 #--------------------------------------------------
+#    SET VARIABLES
+#--------------------------------------------------
+set(SOURCE_DIR	"${CMAKE_SOURCE_DIR}/project/src")
+set(TEXTURE_DIR "${CMAKE_SOURCE_DIR}/project/textures")
+set(MODEL_DIR	"${CMAKE_SOURCE_DIR}/project/models")
+set(SHADER_DIR	"${CMAKE_SOURCE_DIR}/project/shaders")
+
+
+
+#--------------------------------------------------
 #    CREATE EXECUTABLE
 #--------------------------------------------------
 # Source files
 set(SOURCES
-	"./src/main.cpp")
+	"${SOURCE_DIR}/main.cpp")
 
 # Create the executable
 add_executable(${PROJECT_NAME} ${SOURCES})
+
+
 
 #--------------------------------------------------
 #    LIBRARIES
 #--------------------------------------------------
 include("../cmake/FetchAndIncludeLibraries.cmake")
 
-#--------------------------------------------------
-#    SHADERS
-#--------------------------------------------------
-include("../cmake/CompileShaders.cmake")
+
 
 #--------------------------------------------------
-#    TEXTURES
+#    RESOURCES
 #--------------------------------------------------
-include("../cmake/CopyTextures.cmake")
+include("../cmake/CompileShaders.cmake")				# Shaders
 
-#--------------------------------------------------
-#    MODELS
-#--------------------------------------------------
-include("../cmake/CopyModels.cmake")
+include("../cmake/CopyFolder.cmake")
+copy_folder_to_exe("${TEXTURE_DIR}" copy_directory)		# Textures
+copy_folder_to_exe("${MODEL_DIR}" copy_directory)		# Models
