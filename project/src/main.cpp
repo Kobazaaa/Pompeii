@@ -32,8 +32,7 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
-constexpr uint32_t g_WIDTH = 800;
-constexpr uint32_t g_HEIGHT = 600;
+#include "Window.h"
 
 const std::string g_MODEL_PATH = "models/viking_room.obj";
 const std::string g_TEXTURE_PATH = "textures/viking_room.png";
@@ -172,30 +171,12 @@ class HelloTriangleApplication
 public:
 	void Run()
 	{
-		InitWindow();
 		InitVulkan();
 		MainLoop();
 		Cleanup();
 	}
 
 private:
-	void InitWindow()
-	{
-		glfwInit();
-
-		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-		m_pWindow = glfwCreateWindow(g_WIDTH, g_HEIGHT, "Vulkan", nullptr, nullptr);
-		glfwSetWindowUserPointer(m_pWindow, this);
-		glfwSetFramebufferSizeCallback(m_pWindow, FrameBufferResizeCallback);
-	}
-
-	static void FrameBufferResizeCallback(GLFWwindow* window, int width, int height)
-	{
-		auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
-		app->m_FrameBufferResized = true;
-	}
-
 	void InitVulkan()
 	{
 		CreateInstance();
@@ -226,7 +207,7 @@ private:
 
 	void MainLoop()
 	{
-		while (!glfwWindowShouldClose(m_pWindow))
+		while (!glfwWindowShouldClose(m_pWindow.GetWindow()))
 		{
 			glfwPollEvents();
 			DrawFrame();
@@ -281,10 +262,6 @@ private:
 
 		vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
 		vkDestroyInstance(m_Instance, nullptr);
-
-		glfwDestroyWindow(m_pWindow);
-
-		glfwTerminate();
 	}
 
 	void CleanupSwapChain()
@@ -304,12 +281,10 @@ private:
 
 	void RecreateSwapChain()
 	{
-		int width = 0;
-		int height = 0;
-		glfwGetFramebufferSize(m_pWindow, &width, &height);
-		while (width == 0 || height == 0)
+		auto size = m_pWindow.GetSize();
+		while (size.x == 0 || size.y == 0)
 		{
-			glfwGetFramebufferSize(m_pWindow, &width, &height);
+			size = m_pWindow.GetSize();
 			glfwWaitEvents();
 		}
 
@@ -405,7 +380,7 @@ private:
 
 	void CreateSurface()
 	{
-		if (glfwCreateWindowSurface(m_Instance, m_pWindow, nullptr, &m_Surface) != VK_SUCCESS)
+		if (glfwCreateWindowSurface(m_Instance, m_pWindow.GetWindow(), nullptr, &m_Surface) != VK_SUCCESS)
 			throw std::runtime_error("Failed to create Window Surface!");
 	}
 
@@ -1485,9 +1460,9 @@ private:
 		presentInfo.pResults = nullptr;
 
 		result = vkQueuePresentKHR(m_PresentQueue, &presentInfo);
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_FrameBufferResized)
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_pWindow.IsOutdated())
 		{
-			m_FrameBufferResized = false;
+			m_pWindow.ResetOutdated();
 			RecreateSwapChain();
 		}
 		else if (result != VK_SUCCESS)
@@ -1516,12 +1491,11 @@ private:
 			return capabilities.currentExtent;
 		else
 		{
-			int width, height;
-			glfwGetFramebufferSize(m_pWindow, &width, &height);
+			auto size = m_pWindow.GetSize();
 
 			VkExtent2D actualExtent = {
-				static_cast<uint32_t>(width),
-				static_cast<uint32_t>(height)
+				static_cast<uint32_t>(size.x),
+				static_cast<uint32_t>(size.y)
 			};
 
 			actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
@@ -1735,7 +1709,7 @@ private:
 		return VK_FALSE;
 	}
 
-	GLFWwindow* m_pWindow{ nullptr };
+	pom::Window						m_pWindow					{ 800, 400, "Vulkan Refactored"};
 
 	VkInstance						m_Instance					{ VK_NULL_HANDLE };
 	VkPhysicalDevice				m_PhysicalDevice			{ VK_NULL_HANDLE };
@@ -1785,7 +1759,6 @@ private:
 	std::vector<VkSemaphore>		m_vRenderFinishedSemaphores	{ VK_NULL_HANDLE };
 	std::vector<VkFence>			m_vInFlightFences			{ VK_NULL_HANDLE };
 	uint32_t						m_CurrentFrame				{ 0 };
-	bool							m_FrameBufferResized		{ false };
 
 	VkQueue							m_GraphicsQueue				{ VK_NULL_HANDLE };
 	VkQueue							m_PresentQueue				{ VK_NULL_HANDLE };

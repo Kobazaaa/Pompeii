@@ -13,7 +13,11 @@ set(SHADER_DIR	"${CMAKE_SOURCE_DIR}/project/shaders")
 #--------------------------------------------------
 # Source files
 set(SOURCES
-	"${SOURCE_DIR}/main.cpp")
+	"${SOURCE_DIR}/main.cpp"
+
+	"${SOURCE_DIR}/Window.cpp"
+	"${SOURCE_DIR}/Window.h"
+)
 
 # Create the executable
 add_executable(${PROJECT_NAME} ${SOURCES})
