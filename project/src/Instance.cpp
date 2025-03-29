@@ -23,14 +23,6 @@ pom::Instance::Instance(VkInstance instance)
 	Debugger::AddValidationLayer("VK_LAYER_KHRONOS_validation");
 #endif
 }
-pom::Instance::~Instance()
-{
-	if (Debugger::IsEnabled())
-		Debugger::DestroyMessenger(*this);
-	vkDestroyInstance(m_Instance, nullptr);
-
-}
-
 
 //--------------------------------------------------
 //    Accessors & Mutators

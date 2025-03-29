@@ -18,12 +18,6 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		explicit Instance(VkInstance instance);
-		~Instance();
-
-		Instance(const Instance& other) = delete;
-		Instance(Instance&& other) noexcept = delete;
-		Instance& operator=(const Instance& other) = delete;
-		Instance& operator=(Instance&& other) noexcept = delete;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators

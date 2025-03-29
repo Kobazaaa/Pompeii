@@ -92,7 +92,6 @@ namespace pom
 	private:
 		uint32_t RateDeviceSuitability(PhysicalDevice& device, VkSurfaceKHR surface);
 
-		PhysicalDevice m_BestDevice						{ VK_NULL_HANDLE };
 		std::vector<const char*> m_vDesiredExtensions	{};
 	};
 }

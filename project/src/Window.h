@@ -16,12 +16,6 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		Window(int width, int height, const char* title);
-		~Window();
-
-		Window(const Window& other) = delete;
-		Window(Window&& other) noexcept = delete;
-		Window& operator=(const Window& other) = delete;
-		Window& operator=(Window&& other) noexcept = delete;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
@@ -42,8 +36,6 @@ namespace pom
 		glm::ivec2		m_Size				{ };
 		bool			m_IsOutOfDate		{ false };
 		VkSurfaceKHR	m_VulkanSurface		{ VK_NULL_HANDLE };
-
-		VkInstance		m_InstanceRef		{ VK_NULL_HANDLE };
 	};
 }
 #endif // WINDOW_H

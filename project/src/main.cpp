@@ -32,6 +32,7 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
+#include "DeletionQueue.h"
 #include "Window.h"
 #include "Instance.h"
 #include "PhysicalDevice.h"
@@ -124,6 +125,12 @@ class HelloTriangleApplication
 public:
 	void Run()
 	{
+		m_DeletionQueue.Push([&]
+			{
+				glfwDestroyWindow(m_pWindow.GetWindow());
+				glfwTerminate();
+			});
+
 		InitVulkan();
 		MainLoop();
 		Cleanup();
@@ -136,9 +143,23 @@ private:
 		builder.SetApplicationName("Vulkan Refactored")
 				.SetEngineName("No Engine")
 				.Build(m_Instance);
+		m_DeletionQueue.Push([&]
+			{
+				vkDestroyInstance(m_Instance.GetInstance(), nullptr);
+			});
+
 		pom::Debugger::SetupMessenger(m_Instance);
+		m_DeletionQueue.Push([&]
+			{
+				if (pom::Debugger::IsEnabled())
+					pom::Debugger::DestroyMessenger(m_Instance);
+			});
 
 		m_pWindow.CreateVulkanSurface(m_Instance);
+		m_DeletionQueue.Push([&]
+			{
+				vkDestroySurfaceKHR(m_Instance.GetInstance(), m_pWindow.GetVulkanSurface(), nullptr);
+			});
 
 		pom::PhysicalDeviceSelector selector;
 		selector.AddExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
@@ -218,6 +239,7 @@ private:
 
 		vkDestroyDevice(m_Device, nullptr);
 
+		m_DeletionQueue.Flush();
 	}
 
 	void CleanupSwapChain()
@@ -1436,6 +1458,8 @@ private:
 
 	VkQueue							m_GraphicsQueue				{ VK_NULL_HANDLE };
 	VkQueue							m_PresentQueue				{ VK_NULL_HANDLE };
+
+	pom::DeletionQueue				m_DeletionQueue				{};
 };
 
 int main()

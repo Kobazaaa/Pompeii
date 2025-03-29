@@ -136,18 +136,18 @@ pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::PickPhysicalDevice(Ins
 	std::vector<VkPhysicalDevice> devices(deviceCount);
 	vkEnumeratePhysicalDevices(instance.GetInstance(), &deviceCount, devices.data());
 
-	std::multimap<uint32_t, VkPhysicalDevice> candidates;
+	std::multimap<uint32_t, PhysicalDevice> candidates;
 	for (const auto& device : devices)
 	{
-		PhysicalDevice physicalDev = PhysicalDevice{ device };
+		PhysicalDevice physicalDev = PhysicalDevice{ device, m_vDesiredExtensions };
 		uint32_t score = RateDeviceSuitability(physicalDev, surface);
-		candidates.insert(std::make_pair(score, device));
+		candidates.insert(std::make_pair(score, physicalDev));
 	}
 
 	// Check if the best candidate is even suitable
 	if (candidates.rbegin()->first > 0)
 	{
-		physicalDevice = PhysicalDevice{ candidates.rbegin()->second, m_vDesiredExtensions };
+		physicalDevice = candidates.rbegin()->second;
 	}
 	else
 		throw std::runtime_error("Failed to find a suitable GPU!");
@@ -155,8 +155,8 @@ pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::PickPhysicalDevice(Ins
 	if (Debugger::IsEnabled())
 	{
 		// Print selected GPU
-		VkPhysicalDeviceProperties deviceProperties;
-		vkGetPhysicalDeviceProperties(m_BestDevice.GetPhysicalDevice(), &deviceProperties);
+		VkPhysicalDeviceProperties deviceProperties = physicalDevice.GetProperties();
+		vkGetPhysicalDeviceProperties(physicalDevice.GetPhysicalDevice(), &deviceProperties);
 		std::cout << "\nChosen GPU Data:\n"
 			<< "\tName: " << deviceProperties.deviceName << "\n"
 			<< "\tDriver Version: " << deviceProperties.driverVersion << "\n"
@@ -173,7 +173,7 @@ uint32_t pom::PhysicalDeviceSelector::RateDeviceSuitability(PhysicalDevice& devi
 	const VkPhysicalDeviceFeatures deviceFeatures = device.GetFeatures();
 
 	// Check specified extensions support
-	if (device.AreExtensionsSupported(m_vDesiredExtensions))
+	if (!device.AreExtensionsSupported(m_vDesiredExtensions))
 		return 0;
 
 	// Check if the SwapChain is adequate
