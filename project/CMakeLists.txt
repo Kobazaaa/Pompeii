@@ -20,6 +20,7 @@ set(SOURCES
 	"${SOURCE_DIR}/Debugger.cpp"			"${SOURCE_DIR}/Debugger.h"
 	"${SOURCE_DIR}/PhysicalDevice.cpp"		"${SOURCE_DIR}/PhysicalDevice.h"
 	"${SOURCE_DIR}/DeletionQueue.cpp"		"${SOURCE_DIR}/DeletionQueue.h"
+	"${SOURCE_DIR}/Device.cpp"				"${SOURCE_DIR}/Device.h"
 )
 
 # Create the executable
