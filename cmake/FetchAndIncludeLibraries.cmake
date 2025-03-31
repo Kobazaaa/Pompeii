@@ -41,7 +41,16 @@ FetchContent_Declare(
    GIT_PROGRESS TRUE
 )
 
-FetchContent_MakeAvailable(GLFW GLM stb tinyobj)
+# Fetch VMA
+FetchContent_Declare(
+   vma
+   GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+   GIT_TAG v3.2.1
+   GIT_SHALLOW TRUE
+   GIT_PROGRESS TRUE
+)
+
+FetchContent_MakeAvailable(GLFW GLM stb tinyobj vma)
 
 # Link libraries to the project
 target_link_libraries(${PROJECT_NAME}
@@ -50,4 +59,5 @@ target_link_libraries(${PROJECT_NAME}
     glfw
     glm::glm
 )
-target_include_directories(${PROJECT_NAME} PRIVATE ${stb_SOURCE_DIR} ${tinyobj_SOURCE_DIR})
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${stb_SOURCE_DIR} ${tinyobj_SOURCE_DIR} ${vma_SOURCE_DIR}/include)

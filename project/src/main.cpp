@@ -1,4 +1,6 @@
 #include <vulkan/vulkan.h>
+#define VMA_IMPLEMENTATION
+#include "vma/vk_mem_alloc.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -178,6 +180,17 @@ private:
 				vkDestroyDevice(m_Device.GetDevice(), nullptr);
 			});
 
+		VmaAllocatorCreateInfo allocatorInfo = {};
+		allocatorInfo.physicalDevice = m_PhysicalDevice.GetPhysicalDevice();
+		allocatorInfo.device = m_Device.GetDevice();
+		allocatorInfo.instance = m_Instance.GetInstance();
+
+		vmaCreateAllocator(&allocatorInfo, &m_Allocator);
+		m_DeletionQueue.Push([&]
+			{
+				vmaDestroyAllocator(m_Allocator);
+			});
+
 		CreateSwapChain();
 		CreateImageViews();
 		CreateRenderPass();
@@ -221,7 +234,7 @@ private:
 		for (size_t i{}; i < g_MAX_FRAMES_IN_FLIGHT; i++)
 		{
 			vkDestroyBuffer(m_Device.GetDevice(), m_vUniformBuffers[i], nullptr);
-			vkFreeMemory(m_Device.GetDevice(), m_vUniformBuffersMemory[i], nullptr);
+			vmaFreeMemory(m_Allocator, m_vUniformBuffersMemory[i]);
 		}
 
 		vkDestroyDescriptorPool(m_Device.GetDevice(), m_DescriptorPool, nullptr);
@@ -230,15 +243,15 @@ private:
 		vkDestroyImageView(m_Device.GetDevice(), m_TextureImageView, nullptr);
 
 		vkDestroyImage(m_Device.GetDevice(), m_TextureImage, nullptr);
-		vkFreeMemory(m_Device.GetDevice(), m_TextureImageMemory, nullptr);
+		vmaFreeMemory(m_Allocator, m_TextureImageMemory);
 
 		vkDestroyDescriptorSetLayout(m_Device.GetDevice(), m_DescriptorSetLayout, nullptr);
 
 		vkDestroyBuffer(m_Device.GetDevice(), m_IndexBuffer, nullptr);
-		vkFreeMemory(m_Device.GetDevice(), m_IndexBufferMemory, nullptr);
+		vmaFreeMemory(m_Allocator, m_IndexBufferMemory);
 
 		vkDestroyBuffer(m_Device.GetDevice(), m_VertexBuffer, nullptr);
-		vkFreeMemory(m_Device.GetDevice(), m_VertexBufferMemory, nullptr);
+		vmaFreeMemory(m_Allocator, m_VertexBufferMemory);
 
 		for (size_t idx = 0; idx < g_MAX_FRAMES_IN_FLIGHT; ++idx)
 		{
@@ -257,7 +270,7 @@ private:
 	{
 		vkDestroyImageView(m_Device.GetDevice(), m_DepthImageView, nullptr);
 		vkDestroyImage(m_Device.GetDevice(), m_DepthImage, nullptr);
-		vkFreeMemory(m_Device.GetDevice(), m_DepthImageMemory, nullptr);
+		vmaFreeMemory(m_Allocator, m_DepthImageMemory);
 
 		for (auto& framebuffer : m_vSwapChainFrameBuffers)
 			vkDestroyFramebuffer(m_Device.GetDevice(), framebuffer, nullptr);
@@ -609,7 +622,7 @@ private:
 			throw std::runtime_error("Failed to create Command Pool!");
 	}
 
-	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, bool mappable, VmaMemoryUsage memusage, VkBuffer& buffer, VmaAllocation& bufferMemory)
 	{
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -617,21 +630,21 @@ private:
 		bufferInfo.usage = usage;
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		if (vkCreateBuffer(m_Device.GetDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
-			throw std::runtime_error("Failed to create Buffer!");
+		//if (vkCreateBuffer(m_Device.GetDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
+		//	throw std::runtime_error("Failed to create Buffer!");
 
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(m_Device.GetDevice(), buffer, &memRequirements);
-
-		VkMemoryAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
-
-		if (vkAllocateMemory(m_Device.GetDevice(), &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
-			throw std::runtime_error("Failed to allocate Vertex Buffer Memory!");
-
-		vkBindBufferMemory(m_Device.GetDevice(), buffer, bufferMemory, 0);
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		if (mappable)
+		{
+			allocCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+			allocCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+		}
+		else
+		{
+			allocCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		}
+		allocCreateInfo.usage = memusage;
+		vmaCreateBuffer(m_Allocator, &bufferInfo, &allocCreateInfo, &buffer, &bufferMemory, nullptr);
 	}
 
 	VkCommandBuffer  BeginSingleTimeCommands()
@@ -779,7 +792,7 @@ private:
 
 	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
 		VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
-		VkImage& image, VkDeviceMemory& imageMemory)
+		VkImage& image, VmaAllocation& imageMemory)
 	{
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -797,21 +810,12 @@ private:
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageInfo.flags = 0;
 
-		if (vkCreateImage(m_Device.GetDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS)
+		VmaAllocationCreateInfo allocInfo{};
+		allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+		allocInfo.requiredFlags = properties;
+
+		if (vmaCreateImage(m_Allocator, &imageInfo, &allocInfo, &image, &imageMemory, nullptr) != VK_SUCCESS)
 			throw std::runtime_error("Failed to create Image!");
-
-		VkMemoryRequirements memRequirements;
-		vkGetImageMemoryRequirements(m_Device.GetDevice(), image, &memRequirements);
-
-		VkMemoryAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
-
-		if (vkAllocateMemory(m_Device.GetDevice(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
-			throw std::runtime_error("Failed to allocate Image Memory!");
-
-		vkBindImageMemory(m_Device.GetDevice(), image, imageMemory, 0);
 	}
 
 	void CreateDepthResources()
@@ -867,14 +871,11 @@ private:
 			throw std::runtime_error("Failed to load Texture Image!");
 
 		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
-		CreateBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+		VmaAllocation stagingBufferMemory;
+		CreateBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true, VMA_MEMORY_USAGE_AUTO,
 			stagingBuffer, stagingBufferMemory);
-		void* data;
-		vkMapMemory(m_Device.GetDevice(), stagingBufferMemory, 0, imageSize, 0, &data);
-		memcpy(data, pixels, static_cast<size_t>(imageSize));
-		vkUnmapMemory(m_Device.GetDevice(), stagingBufferMemory);
+
+		vmaCopyMemoryToAllocation(m_Allocator, pixels, stagingBufferMemory, 0, imageSize);
 
 		stbi_image_free(pixels);
 
@@ -889,7 +890,7 @@ private:
 		m_CurrentTextureImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		vkDestroyBuffer(m_Device.GetDevice(), stagingBuffer, nullptr);
-		vkFreeMemory(m_Device.GetDevice(), stagingBufferMemory, nullptr);
+		vmaFreeMemory(m_Allocator, stagingBufferMemory);
 	}
 
 	void CreateTextureImageView()
@@ -974,19 +975,18 @@ private:
 		VkDeviceSize bufferSize = sizeof(m_vVertices[0]) * m_vVertices.size();
 
 		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+		VmaAllocation stagingBufferMemory;
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			true, VMA_MEMORY_USAGE_AUTO, stagingBuffer, stagingBufferMemory);
 
-		void* data;
-		vkMapMemory(m_Device.GetDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, m_vVertices.data(), static_cast<size_t>(bufferSize));
-		vkUnmapMemory(m_Device.GetDevice(), stagingBufferMemory);
+		vmaCopyMemoryToAllocation(m_Allocator, m_vVertices.data(), stagingBufferMemory, 0, bufferSize);
 
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_VertexBuffer, m_VertexBufferMemory);
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+			false , VMA_MEMORY_USAGE_AUTO, m_VertexBuffer, m_VertexBufferMemory);
 		CopyBuffer(stagingBuffer, m_VertexBuffer, bufferSize);
 
 		vkDestroyBuffer(m_Device.GetDevice(), stagingBuffer, nullptr);
-		vkFreeMemory(m_Device.GetDevice(), stagingBufferMemory, nullptr);
+		vmaFreeMemory(m_Allocator, stagingBufferMemory);
 	}
 
 	void CreateIndexBuffer()
@@ -994,19 +994,16 @@ private:
 		VkDeviceSize bufferSize = sizeof(m_vIndices[0]) * m_vIndices.size();
 
 		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+		VmaAllocation stagingBufferMemory;
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true, VMA_MEMORY_USAGE_AUTO, stagingBuffer, stagingBufferMemory);
 
-		void* data;
-		vkMapMemory(m_Device.GetDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, m_vIndices.data(), (size_t)bufferSize);
-		vkUnmapMemory(m_Device.GetDevice(), stagingBufferMemory);
+		vmaCopyMemoryToAllocation(m_Allocator, m_vIndices.data(), stagingBufferMemory, 0, bufferSize);
 
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_IndexBuffer, m_IndexBufferMemory);
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, false, VMA_MEMORY_USAGE_AUTO, m_IndexBuffer, m_IndexBufferMemory);
 		CopyBuffer(stagingBuffer, m_IndexBuffer, bufferSize);
 
+		vmaFreeMemory(m_Allocator, stagingBufferMemory);
 		vkDestroyBuffer(m_Device.GetDevice(), stagingBuffer, nullptr);
-		vkFreeMemory(m_Device.GetDevice(), stagingBufferMemory, nullptr);
 	}
 
 	void CreateUniformBuffers()
@@ -1015,15 +1012,13 @@ private:
 
 		m_vUniformBuffers.resize(g_MAX_FRAMES_IN_FLIGHT);
 		m_vUniformBuffersMemory.resize(g_MAX_FRAMES_IN_FLIGHT);
-		m_vUniformBuffersMapped.resize(g_MAX_FRAMES_IN_FLIGHT);
 
 		for (size_t i{}; i < g_MAX_FRAMES_IN_FLIGHT; ++i)
 		{
 			CreateBuffer(bufferSize,
-				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, true,
+				VMA_MEMORY_USAGE_AUTO,
 				m_vUniformBuffers[i], m_vUniformBuffersMemory[i]);
-			vkMapMemory(m_Device.GetDevice(), m_vUniformBuffersMemory[i], 0, bufferSize, 0, &m_vUniformBuffersMapped[i]);
 		}
 	}
 
@@ -1228,7 +1223,7 @@ private:
 		ubo.proj = glm::perspectiveLH(glm::radians(45.0f), aspectRatio, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
 
-		memcpy(m_vUniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+		vmaCopyMemoryToAllocation(m_Allocator, &ubo, m_vUniformBuffersMemory[currentImage], 0, sizeof(ubo));
 	}
 
 	void DrawFrame()
@@ -1384,7 +1379,7 @@ private:
 	std::vector<VkFramebuffer>		m_vSwapChainFrameBuffers;
 
 	VkImage							m_TextureImage				{ VK_NULL_HANDLE };
-	VkDeviceMemory					m_TextureImageMemory		{ VK_NULL_HANDLE };
+	VmaAllocation					m_TextureImageMemory		{ VK_NULL_HANDLE };
 	VkImageView						m_TextureImageView			{ VK_NULL_HANDLE };
 	VkSampler						m_TextureSampler			{ VK_NULL_HANDLE };
 	VkImageLayout					m_CurrentTextureImageLayout	{ VK_IMAGE_LAYOUT_UNDEFINED };
@@ -1401,25 +1396,25 @@ private:
 	std::vector<VkCommandBuffer>	m_vCommandBuffers			{ VK_NULL_HANDLE };
 
 	VkImage							m_DepthImage				{ VK_NULL_HANDLE };
-	VkDeviceMemory					m_DepthImageMemory			{ VK_NULL_HANDLE };
+	VmaAllocation					m_DepthImageMemory			{ VK_NULL_HANDLE };
 	VkImageView						m_DepthImageView			{ VK_NULL_HANDLE };
 
 	std::vector<Vertex>				m_vVertices;
 	std::vector<uint32_t>			m_vIndices;
 	VkBuffer						m_VertexBuffer				{ VK_NULL_HANDLE };
-	VkDeviceMemory					m_VertexBufferMemory		{ VK_NULL_HANDLE };
+	VmaAllocation					m_VertexBufferMemory		{ VK_NULL_HANDLE };
 	VkBuffer						m_IndexBuffer				{ VK_NULL_HANDLE };
-	VkDeviceMemory					m_IndexBufferMemory			{ VK_NULL_HANDLE };
+	VmaAllocation					m_IndexBufferMemory			{ VK_NULL_HANDLE };
 
 	std::vector<VkBuffer>			m_vUniformBuffers			{ VK_NULL_HANDLE };
-	std::vector<VkDeviceMemory>		m_vUniformBuffersMemory		{ VK_NULL_HANDLE };
-	std::vector<void*>				m_vUniformBuffersMapped		{ VK_NULL_HANDLE };
+	std::vector<VmaAllocation>		m_vUniformBuffersMemory		{ VK_NULL_HANDLE };
 
 	std::vector<VkSemaphore>		m_vImageAvailableSemaphores	{ VK_NULL_HANDLE };
 	std::vector<VkSemaphore>		m_vRenderFinishedSemaphores	{ VK_NULL_HANDLE };
 	std::vector<VkFence>			m_vInFlightFences			{ VK_NULL_HANDLE };
 	uint32_t						m_CurrentFrame				{ 0 };
 
+	VmaAllocator m_Allocator;
 	pom::DeletionQueue				m_DeletionQueue				{};
 };
 
