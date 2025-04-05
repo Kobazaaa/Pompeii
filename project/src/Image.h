@@ -18,13 +18,12 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		Image() = default;
-		Image(VkImage image);
+		explicit Image(VkImage image);
 		void Destroy(Device& device, const VmaAllocator& allocator) const;
 
 		//--------------------------------------------------
 		//    Helpers
 		//--------------------------------------------------
-		void TransitionImageLayout(VkFormat format, VkImageLayout newLayout);
 		VkImageView& GenerateImageView(Device& device, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType);
 		static VkFormat FindSupportedFormat(const PhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
@@ -35,6 +34,8 @@ namespace pom
 		VkImageView& GetImageView();
 		VkFormat GetFormat() const;
 		VkImageLayout GetCurrentLayout() const;
+		bool HasStencilComponent() const;
+		void SetImageLayout(VkImageLayout newLayout);
 
 	private:
 		VkImage m_Image					{ VK_NULL_HANDLE };

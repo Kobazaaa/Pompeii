@@ -14,7 +14,7 @@
 pom::SwapChainBuilder& pom::SwapChainBuilder::SetDesiredImageCount(uint32_t count) { m_DesiredImageCount = count; return *this; }
 pom::SwapChainBuilder& pom::SwapChainBuilder::SetImageUsage(VkImageUsageFlags usage) { m_CreateInfo.imageUsage = usage; return *this; }
 pom::SwapChainBuilder& pom::SwapChainBuilder::SetImageArrayLayers(uint32_t layerCount) { m_CreateInfo.imageArrayLayers = layerCount; return *this; }
-void pom::SwapChainBuilder::Build(Device& device, const VmaAllocator& allocator, const PhysicalDevice& physicalDevice, const Window& window, SwapChain& swapChain)
+void pom::SwapChainBuilder::Build(Device& device, const VmaAllocator& allocator, const PhysicalDevice& physicalDevice, const Window& window, SwapChain& swapChain, CommandPool& cmdPool)
 {
 	// Get Support details
 	const SwapChainSupportDetails swapChainSupport = physicalDevice.GetSwapChainSupportDetails();
@@ -72,7 +72,7 @@ void pom::SwapChainBuilder::Build(Device& device, const VmaAllocator& allocator,
 	swapChain.m_vSwapChainImages.resize(imageCount);
 	for (int index{}; index < imageCount; ++index)
 	{
-		swapChain.m_vSwapChainImages[index] = vImages[index];
+		swapChain.m_vSwapChainImages[index] = Image(vImages[index]);
 	}
 
 	swapChain.m_SwapChainImageFormat = surfaceFormat.format;
@@ -93,7 +93,7 @@ void pom::SwapChainBuilder::Build(Device& device, const VmaAllocator& allocator,
 		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 		.Build(allocator, swapChain.m_DepthImage);
 	swapChain.m_DepthImage.GenerateImageView(device, format, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
-	swapChain.m_DepthImage.TransitionImageLayout(format, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	cmdPool.TransitionImageLayout(swapChain.m_DepthImage, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
 //--------------------------------------------------
@@ -162,7 +162,7 @@ void pom::SwapChain::Destroy(Device& device, VmaAllocator& allocator)
 
 	vkDestroySwapchainKHR(device.GetDevice(), m_SwapChain, nullptr);
 }
-void pom::SwapChain::Recreate(Device& device, VmaAllocator& allocator, PhysicalDevice& physicalDevice, Window& window)
+void pom::SwapChain::Recreate(Device& device, VmaAllocator& allocator, PhysicalDevice& physicalDevice, Window& window, CommandPool& cmdPool)
 {
 	auto size = window.GetSize();
 	while (size.x == 0 || size.y == 0)
@@ -174,7 +174,7 @@ void pom::SwapChain::Recreate(Device& device, VmaAllocator& allocator, PhysicalD
 	device.WaitIdle();
 
 	Destroy(device, allocator);
-	m_OriginalBuilder.Build(device, allocator, physicalDevice, window, *this);
+	m_OriginalBuilder.Build(device, allocator, physicalDevice, window, *this, cmdPool);
 }
 
 

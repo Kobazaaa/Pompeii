@@ -2,6 +2,7 @@
 #define SWAPCHAIN_H
 #include <vector>
 
+#include "CommandPool.h"
 #include "Device.h"
 #include "PhysicalDevice.h"
 #include "Window.h"
@@ -29,7 +30,7 @@ namespace pom
 		SwapChainBuilder& SetDesiredImageCount(uint32_t count);
 		SwapChainBuilder& SetImageUsage(VkImageUsageFlags usage);
 		SwapChainBuilder& SetImageArrayLayers(uint32_t layerCount);
-		void Build(Device& device, const VmaAllocator& allocator, const PhysicalDevice& physicalDevice, const Window& window, SwapChain& swapChain);
+		void Build(Device& device, const VmaAllocator& allocator, const PhysicalDevice& physicalDevice, const Window& window, SwapChain& swapChain, CommandPool& cmdPool);
 
 	private:
 		//--------------------------------------------------
@@ -55,7 +56,7 @@ namespace pom
 		//--------------------------------------------------
 		SwapChain() = default;
 		void Destroy(Device& device, VmaAllocator& allocator);
-		void Recreate(Device& device, VmaAllocator& allocator, PhysicalDevice& physicalDevice, Window& window);
+		void Recreate(Device& device, VmaAllocator& allocator, PhysicalDevice& physicalDevice, Window& window, CommandPool& cmdPool);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators

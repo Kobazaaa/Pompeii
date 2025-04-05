@@ -23,6 +23,9 @@ set(SOURCES
 	"${SOURCE_DIR}/Device.cpp"				"${SOURCE_DIR}/Device.h"
 	"${SOURCE_DIR}/SwapChain.cpp"			"${SOURCE_DIR}/SwapChain.h"
 	"${SOURCE_DIR}/Image.cpp"				"${SOURCE_DIR}/Image.h"
+	"${SOURCE_DIR}/CommandBuffer.cpp"		"${SOURCE_DIR}/CommandBuffer.h"
+	"${SOURCE_DIR}/CommandPool.cpp"			"${SOURCE_DIR}/CommandPool.h"
+	"${SOURCE_DIR}/SyncManager.cpp"			"${SOURCE_DIR}/SyncManager.h"
 )
 
 # Create the executable

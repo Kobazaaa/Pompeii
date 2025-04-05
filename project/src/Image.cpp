@@ -15,11 +15,6 @@ void pom::Image::Destroy(Device& device, const VmaAllocator& allocator) const
 	vkDestroyImage(device.GetDevice(), m_Image, nullptr);
 	vmaFreeMemory(allocator, m_ImageMemory);
 }
-void pom::Image::TransitionImageLayout(VkFormat format, VkImageLayout newLayout)
-{
-	// TODO Implement when there are command buffers
-	throw std::runtime_error("NO IMPLEMENTATION");
-}
 VkImageView& pom::Image::GenerateImageView(Device& device, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType)
 {
 	VkImageViewCreateInfo viewInfo{};
@@ -55,10 +50,12 @@ VkFormat pom::Image::FindSupportedFormat(const PhysicalDevice& physicalDevice, c
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-VkImage& pom::Image::GetImage()						{ return m_Image; }
-VkImageView& pom::Image::GetImageView()				{ return m_ImageView; }
-VkFormat pom::Image::GetFormat()			 const	{ return m_ImageInfo.format; }
-VkImageLayout pom::Image::GetCurrentLayout() const	{ return m_CurrentLayout; }
+VkImage& pom::Image::GetImage()								{ return m_Image; }
+VkImageView& pom::Image::GetImageView()						{ return m_ImageView; }
+VkFormat pom::Image::GetFormat()			 const			{ return m_ImageInfo.format; }
+VkImageLayout pom::Image::GetCurrentLayout() const			{ return m_CurrentLayout; }
+bool pom::Image::HasStencilComponent()		 const			{ return m_ImageInfo.format == VK_FORMAT_D32_SFLOAT_S8_UINT || m_ImageInfo.format == VK_FORMAT_D24_UNORM_S8_UINT; }
+void pom::Image::SetImageLayout(VkImageLayout newLayout)	{ m_CurrentLayout = newLayout; }
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
