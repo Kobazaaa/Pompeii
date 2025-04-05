@@ -21,6 +21,8 @@ set(SOURCES
 	"${SOURCE_DIR}/PhysicalDevice.cpp"		"${SOURCE_DIR}/PhysicalDevice.h"
 	"${SOURCE_DIR}/DeletionQueue.cpp"		"${SOURCE_DIR}/DeletionQueue.h"
 	"${SOURCE_DIR}/Device.cpp"				"${SOURCE_DIR}/Device.h"
+	"${SOURCE_DIR}/SwapChain.cpp"			"${SOURCE_DIR}/SwapChain.h"
+	"${SOURCE_DIR}/Image.cpp"				"${SOURCE_DIR}/Image.h"
 )
 
 # Create the executable

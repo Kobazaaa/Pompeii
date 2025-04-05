@@ -29,6 +29,7 @@ pom::PhysicalDevice::PhysicalDevice(VkPhysicalDevice physicalDevice, const std::
 //--------------------------------------------------
 VkPhysicalDevice& pom::PhysicalDevice::GetPhysicalDevice()									{ return m_PhysicalDevice; }
 VkPhysicalDeviceProperties pom::PhysicalDevice::GetProperties()					const		{ return m_Properties; }
+VkFormatProperties pom::PhysicalDevice::GetFormatProperties(VkFormat format)	const		{ VkFormatProperties props{}; vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &props); return props; }
 VkPhysicalDeviceFeatures pom::PhysicalDevice::GetFeatures()						const		{ return m_Features; }
 
 pom::QueueFamilyIndices pom::PhysicalDevice::GetQueueFamilies()					const		{ return m_QueueFamilyIndices; }
