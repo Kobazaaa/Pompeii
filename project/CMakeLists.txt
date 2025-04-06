@@ -26,6 +26,7 @@ set(SOURCES
 	"${SOURCE_DIR}/CommandBuffer.cpp"		"${SOURCE_DIR}/CommandBuffer.h"
 	"${SOURCE_DIR}/CommandPool.cpp"			"${SOURCE_DIR}/CommandPool.h"
 	"${SOURCE_DIR}/SyncManager.cpp"			"${SOURCE_DIR}/SyncManager.h"
+	"${SOURCE_DIR}/Shader.cpp"				"${SOURCE_DIR}/Shader.h"
 )
 
 # Create the executable

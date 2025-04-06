@@ -41,6 +41,7 @@
 #include "Window.h"
 #include "Instance.h"
 #include "PhysicalDevice.h"
+#include "Shader.h"
 #include "SwapChain.h"
 
 const std::string g_MODEL_PATH = "models/viking_room.obj";
@@ -378,23 +379,21 @@ private:
 
 	void CreateGraphicsPipeline()
 	{
-		auto vertShaderCode = ReadFile("shaders/shader.vert.spv");
-		auto fragShaderCode = ReadFile("shaders/shader.frag.spv");
-
-		VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode);
-		VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode);
+		pom::ShaderLoader shaderLoader{};
+		pom::ShaderModule vertShader = shaderLoader.Load(m_Device, "shaders/shader.vert.spv");
+		pom::ShaderModule fragShader = shaderLoader.Load(m_Device, "shaders/shader.frag.spv");
 
 		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
 		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertShaderStageInfo.module = vertShaderModule;
+		vertShaderStageInfo.module = vertShader.GetShader();
 		vertShaderStageInfo.pName = "main";
 		vertShaderStageInfo.pSpecializationInfo = nullptr;
 
 		VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
 		fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragShaderStageInfo.module = fragShaderModule;
+		fragShaderStageInfo.module = fragShader.GetShader();
 		fragShaderStageInfo.pName = "main";
 		fragShaderStageInfo.pSpecializationInfo = nullptr;
 
@@ -507,8 +506,8 @@ private:
 		if (vkCreateGraphicsPipelines(m_Device.GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline) != VK_SUCCESS)
 			throw std::runtime_error("Failed to create Graphics Pipeline!");
 
-		vkDestroyShaderModule(m_Device.GetDevice(), fragShaderModule, nullptr);
-		vkDestroyShaderModule(m_Device.GetDevice(), vertShaderModule, nullptr);
+		vertShader.Destroy(m_Device);
+		fragShader.Destroy(m_Device);
 	}
 
 	void CreateFrameBuffers()
@@ -968,36 +967,6 @@ private:
 			throw std::runtime_error("Failed to present Swap Chain Image!");
 
 		m_CurrentFrame = (m_CurrentFrame + 1) % g_MAX_FRAMES_IN_FLIGHT;
-	}
-
-	VkShaderModule CreateShaderModule(const std::vector<char>& code)
-	{
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = code.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-		VkShaderModule shaderModule;
-		if (vkCreateShaderModule(m_Device.GetDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-			throw std::runtime_error("Failed to create Shader Module!");
-
-		return shaderModule;
-	}
-
-
-	static std::vector<char> ReadFile(const std::string& filename)
-	{
-		std::ifstream file(filename, std::ios::ate | std::ios::binary);
-		if (!file.is_open())
-			throw std::runtime_error("Failed to open file!");
-
-		size_t fileSize = (size_t)file.tellg();
-		std::vector<char> buffer(fileSize);
-		file.seekg(0);
-		file.read(buffer.data(), fileSize);
-
-		file.close();
-		return buffer;
 	}
 
 
