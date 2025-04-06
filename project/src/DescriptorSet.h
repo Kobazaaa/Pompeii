@@ -9,7 +9,7 @@ namespace pom
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  DescriptorSetLayout	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	class DescriptorSetLayout
+	class DescriptorSetLayout final
 	{
 	public:
 		//--------------------------------------------------
@@ -31,7 +31,7 @@ namespace pom
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  DescriptorSetLayoutBuilder	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	class DescriptorSetLayoutBuilder
+	class DescriptorSetLayoutBuilder final
 	{
 	public:
 		//--------------------------------------------------
@@ -45,7 +45,7 @@ namespace pom
 		DescriptorSetLayoutBuilder& NewLayoutBinding();
 		//! REQUIRED
 		DescriptorSetLayoutBuilder& SetType(VkDescriptorType type);
-		// Ig not called, assumes 1 b default
+		// If not called, assumes 1 b default
 		DescriptorSetLayoutBuilder& SetCount(uint32_t count);
 		//! REQUIRED
 		DescriptorSetLayoutBuilder& SetShaderStages(VkShaderStageFlags flags);

@@ -29,6 +29,7 @@ set(SOURCES
 	"${SOURCE_DIR}/Shader.cpp"				"${SOURCE_DIR}/Shader.h"
 	"${SOURCE_DIR}/RenderPass.cpp"			"${SOURCE_DIR}/RenderPass.h"
 	"${SOURCE_DIR}/DescriptorSet.cpp"		"${SOURCE_DIR}/DescriptorSet.h"
+	"${SOURCE_DIR}/GraphicsPipeline.cpp"	"${SOURCE_DIR}/GraphicsPipeline.h"
 )
 
 # Create the executable

@@ -38,6 +38,7 @@
 #include "DeletionQueue.h"
 #include "DescriptorSet.h"
 #include "Device.h"
+#include "GraphicsPipeline.h"
 #include "Image.h"
 #include "Window.h"
 #include "Instance.h"
@@ -342,7 +343,6 @@ private:
 	void Cleanup()
 	{
 		vkDestroyPipeline(m_Device.GetDevice(), m_GraphicsPipeline, nullptr);
-		vkDestroyPipelineLayout(m_Device.GetDevice(), m_PipelineLayout, nullptr);
 
 		for (size_t i{}; i < g_MAX_FRAMES_IN_FLIGHT; i++)
 		{
@@ -467,15 +467,13 @@ private:
 		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 		dynamicState.pDynamicStates = dynamicStates.data();
 
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &m_DescriptorSetLayout.GetLayout();
-		pipelineLayoutInfo.pushConstantRangeCount = 0;
-		pipelineLayoutInfo.pPushConstantRanges = nullptr;
-
-		if (vkCreatePipelineLayout(m_Device.GetDevice(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS)
-			throw std::runtime_error("failed to create pipeline layout!");
+		{
+			pom::GraphicsPipelineLayoutBuilder builder{};
+			builder
+				.AddLayout(m_DescriptorSetLayout)
+				.Build(m_Device, m_PipelineLayout);
+			m_DeletionQueue.Push([&] {m_PipelineLayout.Destroy(m_Device); });
+		}
 
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -489,7 +487,7 @@ private:
 		pipelineInfo.pDepthStencilState = &depthStencil;
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = &dynamicState;
-		pipelineInfo.layout = m_PipelineLayout;
+		pipelineInfo.layout = m_PipelineLayout.GetLayout();
 		pipelineInfo.renderPass = m_RenderPass.GetRenderPass();
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -881,7 +879,7 @@ private:
 				vkCmdBindVertexBuffers(vCmdBuffer, 0, 1, vertexBuffers, offsets);
 				vkCmdBindIndexBuffer(vCmdBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-				vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_vDescriptorSets[m_CurrentFrame], 0, nullptr);
+				vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetLayout(), 0, 1, &m_vDescriptorSets[m_CurrentFrame], 0, nullptr);
 
 				vkCmdDrawIndexed(vCmdBuffer, static_cast<uint32_t>(m_vIndices.size()), 1, 0, 0, 0);
 			}
@@ -977,7 +975,7 @@ private:
 
 	pom::RenderPass					m_RenderPass				{ };
 	pom::DescriptorSetLayout		m_DescriptorSetLayout		{ };
-	VkPipelineLayout				m_PipelineLayout			{ VK_NULL_HANDLE };
+	pom::GraphicsPipelineLayout		m_PipelineLayout			{ };
 	VkPipeline						m_GraphicsPipeline			{ VK_NULL_HANDLE };
 
 	VkDescriptorPool				m_DescriptorPool			{ VK_NULL_HANDLE };
