@@ -41,6 +41,7 @@
 #include "Window.h"
 #include "Instance.h"
 #include "PhysicalDevice.h"
+#include "RenderPass.h"
 #include "Shader.h"
 #include "SwapChain.h"
 
@@ -110,22 +111,6 @@ struct UniformBufferObject
 	alignas(16) glm::mat4 view;
 	alignas(16) glm::mat4 proj;
 };
-
-//const std::vector<Vertex> g_VERTICES{
-//	Vertex{{-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-//	Vertex{{ 0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-//	Vertex{{ 0.5f, 0.0f,  0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-//	Vertex{{-0.5f, 0.0f,  0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-//
-//	Vertex{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-//	Vertex{{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-//	Vertex{{ 0.5f, -0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-//	Vertex{{-0.5f, -0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-//};
-//const std::vector<uint16_t> g_INDICES{
-//	0, 2, 1, 2, 0, 3,
-//	4, 6, 5, 6, 4, 7
-//};
 
 class HelloTriangleApplication
 {
@@ -233,7 +218,39 @@ private:
 				});
 		}
 
-		CreateRenderPass();
+		// --	Create Render Pass   --//
+		{
+			pom::RenderPassBuilder builder{};
+
+			builder
+				.NewAttachment()
+					.SetFormat(m_SwapChain.GetFormat())
+					.SetSamples(VK_SAMPLE_COUNT_1_BIT)
+					.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE)
+					.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
+					.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+					.SetFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+					.AddColorAttachment(0)
+				.NewAttachment()
+					.SetFormat(m_SwapChain.GetDepthImage().GetFormat())
+					.SetSamples(VK_SAMPLE_COUNT_1_BIT)
+					.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE)
+					.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
+					.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+					.SetFinalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+					.AddDepthAttachment(1)
+				.NewSubpass()
+					.SetBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
+				.NewDependency()
+					.SetSrcSubPass(VK_SUBPASS_EXTERNAL)
+					.SetDstSubPass(0)
+					.SetSrcMasks(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0)
+					.SetDstMasks(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+								 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+				.Build(m_Device, m_RenderPass);
+			m_DeletionQueue.Push([&] { m_RenderPass.Destroy(m_Device); });
+		}
+
 		CreateDescriptorSetLayout();
 		CreateGraphicsPipeline();
 		CreateFrameBuffers();
@@ -268,7 +285,6 @@ private:
 	{
 		vkDestroyPipeline(m_Device.GetDevice(), m_GraphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(m_Device.GetDevice(), m_PipelineLayout, nullptr);
-		vkDestroyRenderPass(m_Device.GetDevice(), m_RenderPass, nullptr);
 
 		for (size_t i{}; i < g_MAX_FRAMES_IN_FLIGHT; i++)
 		{
@@ -291,64 +307,6 @@ private:
 		vmaFreeMemory(m_Allocator, m_VertexBufferMemory);
 
 		m_DeletionQueue.Flush();
-	}
-
-	void CreateRenderPass()
-	{
-		VkAttachmentDescription colorAttachment{};
-		colorAttachment.format = m_SwapChain.GetFormat();
-		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-		VkAttachmentReference colorAttachmentRef{};
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentDescription depthAttachment{};
-		depthAttachment.format = m_SwapChain.GetDepthImage().GetFormat();
-		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference depthAttachmentRef{};
-		depthAttachmentRef.attachment = 1;
-		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDescription subpass{};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorAttachmentRef;
-		subpass.pDepthStencilAttachment = &depthAttachmentRef;
-
-		VkSubpassDependency dependency{};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-		std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
-		VkRenderPassCreateInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		renderPassInfo.pAttachments = attachments.data();
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpass;
-		renderPassInfo.dependencyCount = 1;
-		renderPassInfo.pDependencies = &dependency;
-
-		if (vkCreateRenderPass(m_Device.GetDevice(), &renderPassInfo, nullptr, &m_RenderPass) != VK_SUCCESS)
-			throw std::runtime_error("Failed to created Render Pass!");
 	}
 
 	void CreateDescriptorSetLayout()
@@ -498,7 +456,7 @@ private:
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = &dynamicState;
 		pipelineInfo.layout = m_PipelineLayout;
-		pipelineInfo.renderPass = m_RenderPass;
+		pipelineInfo.renderPass = m_RenderPass.GetRenderPass();
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
@@ -523,7 +481,7 @@ private:
 
 			VkFramebufferCreateInfo framebufferInfo{};
 			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = m_RenderPass;
+			framebufferInfo.renderPass = m_RenderPass.GetRenderPass();
 			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 			framebufferInfo.pAttachments = attachments.data();
 			framebufferInfo.width = m_SwapChain.GetExtent().width;
@@ -854,7 +812,7 @@ private:
 		{
 			VkRenderPassBeginInfo renderPassInfo{};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderPassInfo.renderPass = m_RenderPass;
+			renderPassInfo.renderPass = m_RenderPass.GetRenderPass();
 			renderPassInfo.framebuffer = m_vSwapChainFrameBuffers[imageIndex];
 			renderPassInfo.renderArea.offset = { 0, 0 };
 			renderPassInfo.renderArea.extent = m_SwapChain.GetExtent();
@@ -983,7 +941,7 @@ private:
 	pom::Image						m_TextureImage				{ };
 	VkSampler						m_TextureSampler			{ VK_NULL_HANDLE };
 
-	VkRenderPass					m_RenderPass				{ VK_NULL_HANDLE };
+	pom::RenderPass					m_RenderPass				{ };
 	VkDescriptorSetLayout			m_DescriptorSetLayout		{ VK_NULL_HANDLE };
 	VkPipelineLayout				m_PipelineLayout			{ VK_NULL_HANDLE };
 	VkPipeline						m_GraphicsPipeline			{ VK_NULL_HANDLE };
