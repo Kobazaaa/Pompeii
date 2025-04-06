@@ -14,10 +14,10 @@
 pom::SwapChainBuilder& pom::SwapChainBuilder::SetDesiredImageCount(uint32_t count) { m_DesiredImageCount = count; return *this; }
 pom::SwapChainBuilder& pom::SwapChainBuilder::SetImageUsage(VkImageUsageFlags usage) { m_CreateInfo.imageUsage = usage; return *this; }
 pom::SwapChainBuilder& pom::SwapChainBuilder::SetImageArrayLayers(uint32_t layerCount) { m_CreateInfo.imageArrayLayers = layerCount; return *this; }
-void pom::SwapChainBuilder::Build(Device& device, const VmaAllocator& allocator, const PhysicalDevice& physicalDevice, const Window& window, SwapChain& swapChain, CommandPool& cmdPool)
+void pom::SwapChainBuilder::Build(Device& device, const VmaAllocator& allocator, PhysicalDevice& physicalDevice, const Window& window, SwapChain& swapChain, CommandPool& cmdPool)
 {
 	// Get Support details
-	const SwapChainSupportDetails swapChainSupport = physicalDevice.GetSwapChainSupportDetails();
+	const SwapChainSupportDetails swapChainSupport = physicalDevice.GetSwapChainSupportDetails(window.GetVulkanSurface());
 
 	// Choose
 	const VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -150,7 +150,7 @@ VkPresentModeKHR pom::SwapChainBuilder::ChooseSwapPresentMode(const std::vector<
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::SwapChain::Destroy(Device& device, VmaAllocator& allocator)
+void pom::SwapChain::Destroy(Device& device, const VmaAllocator& allocator) const
 {
 	m_DepthImage.Destroy(device, allocator);
 
@@ -159,7 +159,7 @@ void pom::SwapChain::Destroy(Device& device, VmaAllocator& allocator)
 
 	vkDestroySwapchainKHR(device.GetDevice(), m_SwapChain, nullptr);
 }
-void pom::SwapChain::Recreate(Device& device, const VmaAllocator& allocator, const PhysicalDevice& physicalDevice, const Window& window, CommandPool& cmdPool)
+void pom::SwapChain::Recreate(Device& device, const VmaAllocator& allocator, PhysicalDevice& physicalDevice, const Window& window, CommandPool& cmdPool)
 {
 	m_OriginalBuilder.Build(device, allocator, physicalDevice, window, *this, cmdPool);
 }

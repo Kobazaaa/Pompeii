@@ -30,7 +30,7 @@ namespace pom
 		SwapChainBuilder& SetDesiredImageCount(uint32_t count);
 		SwapChainBuilder& SetImageUsage(VkImageUsageFlags usage);
 		SwapChainBuilder& SetImageArrayLayers(uint32_t layerCount);
-		void Build(Device& device, const VmaAllocator& allocator, const PhysicalDevice& physicalDevice, const Window& window, SwapChain& swapChain, CommandPool& cmdPool);
+		void Build(Device& device, const VmaAllocator& allocator, PhysicalDevice& physicalDevice, const Window& window, SwapChain& swapChain, CommandPool& cmdPool);
 
 	private:
 		//--------------------------------------------------
@@ -55,8 +55,8 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		SwapChain() = default;
-		void Destroy(Device& device, VmaAllocator& allocator);
-		void Recreate(Device& device, const VmaAllocator& allocator, const PhysicalDevice& physicalDevice, const Window& window, CommandPool& cmdPool);
+		void Destroy(Device& device, const VmaAllocator& allocator) const;
+		void Recreate(Device& device, const VmaAllocator& allocator, PhysicalDevice& physicalDevice, const Window& window, CommandPool& cmdPool);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators

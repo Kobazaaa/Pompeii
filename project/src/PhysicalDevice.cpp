@@ -27,16 +27,16 @@ void pom::PhysicalDevice::Initialize(VkPhysicalDevice physicalDevice, const std:
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkPhysicalDevice& pom::PhysicalDevice::GetPhysicalDevice()				const		{ return m_PhysicalDevice; }
-VkPhysicalDeviceProperties pom::PhysicalDevice::GetProperties()					const		{ return m_Properties; }
-VkFormatProperties pom::PhysicalDevice::GetFormatProperties(VkFormat format)	const		{ VkFormatProperties props{}; vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &props); return props; }
-VkPhysicalDeviceFeatures pom::PhysicalDevice::GetFeatures()						const		{ return m_Features; }
+const VkPhysicalDevice& pom::PhysicalDevice::GetPhysicalDevice()										 const		{ return m_PhysicalDevice; }
+VkPhysicalDeviceProperties pom::PhysicalDevice::GetProperties()											 const		{ return m_Properties; }
+VkFormatProperties pom::PhysicalDevice::GetFormatProperties(VkFormat format)							 const		{ VkFormatProperties props{}; vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &props); return props; }
+VkPhysicalDeviceFeatures pom::PhysicalDevice::GetFeatures()												 const		{ return m_Features; }
+																										 
+pom::QueueFamilyIndices pom::PhysicalDevice::GetQueueFamilies()											 const		{ return m_QueueFamilyIndices; }
+pom::SwapChainSupportDetails pom::PhysicalDevice::GetSwapChainSupportDetails(const VkSurfaceKHR surface)			{ QuerySwapChainSupport(surface); return m_SwapChainSupportDetails; }
 
-pom::QueueFamilyIndices pom::PhysicalDevice::GetQueueFamilies()					const		{ return m_QueueFamilyIndices; }
-pom::SwapChainSupportDetails pom::PhysicalDevice::GetSwapChainSupportDetails()	const		{ return m_SwapChainSupportDetails; }
-
-const std::vector<const char*>& pom::PhysicalDevice::GetExtensions()			const		{ return m_vExtensions; }
-uint32_t pom::PhysicalDevice::GetExtensionsCount()								const		{ return static_cast<uint32_t>(m_vExtensions.size()); }
+const std::vector<const char*>& pom::PhysicalDevice::GetExtensions()									 const		{ return m_vExtensions; }
+uint32_t pom::PhysicalDevice::GetExtensionsCount()														 const		{ return static_cast<uint32_t>(m_vExtensions.size()); }
 
 bool pom::PhysicalDevice::AreExtensionsSupported(const std::vector<const char*>& extensions) const
 {

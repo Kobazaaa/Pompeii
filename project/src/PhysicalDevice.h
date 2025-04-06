@@ -45,18 +45,18 @@ namespace pom
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		const VkPhysicalDevice&			GetPhysicalDevice()						const;
+		const VkPhysicalDevice&			GetPhysicalDevice()										const;
 
-		VkPhysicalDeviceProperties		GetProperties()							const;
-		VkFormatProperties				GetFormatProperties(VkFormat format)	const;
-		VkPhysicalDeviceFeatures		GetFeatures()							const;
-		QueueFamilyIndices				GetQueueFamilies()						const;
-		SwapChainSupportDetails			GetSwapChainSupportDetails()			const;
+		VkPhysicalDeviceProperties		GetProperties()											const;
+		VkFormatProperties				GetFormatProperties(VkFormat format)					const;
+		VkPhysicalDeviceFeatures		GetFeatures()											const;
+		QueueFamilyIndices				GetQueueFamilies()										const;
+		SwapChainSupportDetails			GetSwapChainSupportDetails(const VkSurfaceKHR surface);
 
-		const std::vector<const char*>& GetExtensions()							const;
-		uint32_t						GetExtensionsCount()					const;
+		const std::vector<const char*>& GetExtensions()											const;
+		uint32_t						GetExtensionsCount()									const;
 
-		bool AreExtensionsSupported(const std::vector<const char*>& extensions) const;
+		bool AreExtensionsSupported(const std::vector<const char*>& extensions)					const;
 
 	private:
 		friend class pom::PhysicalDeviceSelector;
