@@ -2,6 +2,7 @@
 #define COMMAND_POOL_H
 
 #include "CommandBuffer.h"
+#include "Buffer.h"
 #include "Device.h"
 #include "Image.h"
 
@@ -33,8 +34,8 @@ namespace pom
 		//    Command Helpers
 		//--------------------------------------------------
 		void TransitionImageLayout(Image& image, VkImageLayout newLayout);
-		void CopyBufferToBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-		void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+		void CopyBufferToBuffer(const Buffer& srcBuffer, Buffer& dstBuffer, VkDeviceSize size);
+		void CopyBufferToImage(const Buffer& buffer, VkImage image, uint32_t width, uint32_t height);
 
 	private:
 		VkCommandPool				m_CommandPool		{ VK_NULL_HANDLE};

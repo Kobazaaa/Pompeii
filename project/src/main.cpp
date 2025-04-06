@@ -346,17 +346,41 @@ private:
 
 		// -- Create Vertex Buffer - Requirements - [Device - Allocator - Buffer - Command Pool]
 		{
-			CreateVertexBuffer();
+			pom::BufferAllocator bufferAlloc{};
+			bufferAlloc
+				.SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+				.SetSize(m_vVertices.size() * sizeof(m_vVertices[0]))
+				.HostAccess(false)
+				.InitialData(m_vVertices.data(), 0, m_vVertices.size() * sizeof(m_vVertices[0]))
+				.Allocate(m_Device, m_Allocator, m_CommandPool, m_VertexBuffer);
+			m_DeletionQueue.Push([&] {m_VertexBuffer.Destroy(m_Device, m_Allocator); });
 		}
 
 		// -- Create Index Buffer - Requirements - [Device - Allocator - Buffer - Command Pool]
 		{
-			CreateIndexBuffer();
+			pom::BufferAllocator bufferAlloc{};
+			bufferAlloc
+				.SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
+				.SetSize(m_vIndices.size() * sizeof(m_vIndices[0]))
+				.HostAccess(false)
+				.InitialData(m_vIndices.data(), 0, m_vIndices.size() * sizeof(m_vIndices[0]))
+				.Allocate(m_Device, m_Allocator, m_CommandPool, m_IndexBuffer);
+			m_DeletionQueue.Push([&] {m_IndexBuffer.Destroy(m_Device, m_Allocator); });
 		}
 
 		// -- Create UBO - Requirements - [Device - Allocator - Buffer - Command Pool]
 		{
-			CreateUniformBuffers();
+			m_vUniformBuffers.resize(g_MAX_FRAMES_IN_FLIGHT);
+			for (size_t i{}; i < g_MAX_FRAMES_IN_FLIGHT; ++i)
+			{
+				pom::BufferAllocator bufferAlloc{};
+				bufferAlloc
+					.SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+					.SetSize(sizeof(UniformBufferObject))
+					.HostAccess(true)
+					.Allocate(m_Device, m_Allocator, m_CommandPool, m_vUniformBuffers[i]);
+			}
+			m_DeletionQueue.Push([&] { for (auto& ubo : m_vUniformBuffers) ubo.Destroy(m_Device, m_Allocator); });
 		}
 
 		// -- Create Descriptor Pool - Requirements - [Device]
@@ -389,21 +413,9 @@ private:
 
 	void Cleanup()
 	{
-		for (size_t i{}; i < g_MAX_FRAMES_IN_FLIGHT; i++)
-		{
-			vkDestroyBuffer(m_Device.GetDevice(), m_vUniformBuffers[i], nullptr);
-			vmaFreeMemory(m_Allocator, m_vUniformBuffersMemory[i]);
-		}
-
 		vkDestroyDescriptorPool(m_Device.GetDevice(), m_DescriptorPool, nullptr);
 
 		vkDestroySampler(m_Device.GetDevice(), m_TextureSampler, nullptr);
-
-		vkDestroyBuffer(m_Device.GetDevice(), m_IndexBuffer, nullptr);
-		vmaFreeMemory(m_Allocator, m_IndexBufferMemory);
-
-		vkDestroyBuffer(m_Device.GetDevice(), m_VertexBuffer, nullptr);
-		vmaFreeMemory(m_Allocator, m_VertexBufferMemory);
 
 		m_DeletionQueueSC.Flush();
 		m_DeletionQueue.Flush();
@@ -437,75 +449,6 @@ private:
 		m_DeletionQueueSC.Push([&] { for (auto& framebuffer : m_vFrameBuffers) framebuffer.Destroy(m_Device); m_vFrameBuffers.clear(); });
 	}
 
-	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, bool mappable, VmaMemoryUsage memusage, VkBuffer& buffer, VmaAllocation& bufferMemory)
-	{
-		VkBufferCreateInfo bufferInfo{};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = size;
-		bufferInfo.usage = usage;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		//if (vkCreateBuffer(m_Device.GetDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
-		//	throw std::runtime_error("Failed to create Buffer!");
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		if (mappable)
-		{
-			allocCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
-			allocCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-		}
-		else
-		{
-			allocCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-		}
-		allocCreateInfo.usage = memusage;
-		vmaCreateBuffer(m_Allocator, &bufferInfo, &allocCreateInfo, &buffer, &bufferMemory, nullptr);
-	}
-
-	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
-	{
-		VkImageViewCreateInfo viewInfo{};
-		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		viewInfo.image = image;
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = format;
-		viewInfo.subresourceRange.aspectMask = aspectFlags;
-		viewInfo.subresourceRange.baseMipLevel = 0;
-		viewInfo.subresourceRange.levelCount = 1;
-		viewInfo.subresourceRange.baseArrayLayer = 0;
-		viewInfo.subresourceRange.layerCount = 1;
-
-		VkImageView imageView;
-		if (vkCreateImageView(m_Device.GetDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS)
-			throw std::runtime_error("Failed to create Image View!");
-
-		return imageView;
-	}
-
-	VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
-	{
-		for (VkFormat format : candidates)
-		{
-			VkFormatProperties props;
-			vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice.GetPhysicalDevice(), format, &props);
-
-			if (tiling == VK_IMAGE_TILING_LINEAR &&
-				(props.linearTilingFeatures & features) == features)
-				return format;
-			else if (tiling == VK_IMAGE_TILING_OPTIMAL &&
-				(props.optimalTilingFeatures & features) == features)
-				return format;
-		}
-
-		throw std::runtime_error("Failed to find Supported Format!");
-	}
-
-	bool HasStencilComponent(VkFormat format)
-	{
-		return format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
-			   format == VK_FORMAT_D24_UNORM_S8_UINT;
-	}
-
 	void CreateTextureImage()
 	{
 		int texWidth;
@@ -517,12 +460,14 @@ private:
 		if (!pixels)
 			throw std::runtime_error("Failed to load Texture Image!");
 
-		VkBuffer stagingBuffer;
-		VmaAllocation stagingBufferMemory;
-		CreateBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true, VMA_MEMORY_USAGE_AUTO,
-			stagingBuffer, stagingBufferMemory);
-
-		vmaCopyMemoryToAllocation(m_Allocator, pixels, stagingBufferMemory, 0, imageSize);
+		pom::Buffer stagingBuffer;
+		pom::BufferAllocator stagingAllocator{};
+		stagingAllocator
+			.SetUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
+			.HostAccess(true)
+			.SetSize(imageSize)
+			.Allocate(m_Device, m_Allocator, m_CommandPool, stagingBuffer);
+		vmaCopyMemoryToAllocation(m_Allocator, pixels, stagingBuffer.GetMemory(), 0, imageSize);
 
 		stbi_image_free(pixels);
 
@@ -541,8 +486,7 @@ private:
 		m_CommandPool.CopyBufferToImage(stagingBuffer, m_TextureImage.GetImage(), static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 		m_CommandPool.TransitionImageLayout(m_TextureImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-		vkDestroyBuffer(m_Device.GetDevice(), stagingBuffer, nullptr);
-		vmaFreeMemory(m_Allocator, stagingBufferMemory);
+		stagingBuffer.Destroy(m_Device, m_Allocator);
 	}
 
 	void CreateTextureImageSampler()
@@ -617,58 +561,6 @@ private:
 		}
 	}
 
-	void CreateVertexBuffer()
-	{
-		VkDeviceSize bufferSize = sizeof(m_vVertices[0]) * m_vVertices.size();
-
-		VkBuffer stagingBuffer;
-		VmaAllocation stagingBufferMemory;
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			true, VMA_MEMORY_USAGE_AUTO, stagingBuffer, stagingBufferMemory);
-
-		vmaCopyMemoryToAllocation(m_Allocator, m_vVertices.data(), stagingBufferMemory, 0, bufferSize);
-
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-			false , VMA_MEMORY_USAGE_AUTO, m_VertexBuffer, m_VertexBufferMemory);
-		m_CommandPool.CopyBufferToBuffer(stagingBuffer, m_VertexBuffer, bufferSize);
-
-		vkDestroyBuffer(m_Device.GetDevice(), stagingBuffer, nullptr);
-		vmaFreeMemory(m_Allocator, stagingBufferMemory);
-	}
-
-	void CreateIndexBuffer()
-	{
-		VkDeviceSize bufferSize = sizeof(m_vIndices[0]) * m_vIndices.size();
-
-		VkBuffer stagingBuffer;
-		VmaAllocation stagingBufferMemory;
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true, VMA_MEMORY_USAGE_AUTO, stagingBuffer, stagingBufferMemory);
-
-		vmaCopyMemoryToAllocation(m_Allocator, m_vIndices.data(), stagingBufferMemory, 0, bufferSize);
-
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, false, VMA_MEMORY_USAGE_AUTO, m_IndexBuffer, m_IndexBufferMemory);
-		m_CommandPool.CopyBufferToBuffer(stagingBuffer, m_IndexBuffer, bufferSize);
-
-		vmaFreeMemory(m_Allocator, stagingBufferMemory);
-		vkDestroyBuffer(m_Device.GetDevice(), stagingBuffer, nullptr);
-	}
-
-	void CreateUniformBuffers()
-	{
-		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-
-		m_vUniformBuffers.resize(g_MAX_FRAMES_IN_FLIGHT);
-		m_vUniformBuffersMemory.resize(g_MAX_FRAMES_IN_FLIGHT);
-
-		for (size_t i{}; i < g_MAX_FRAMES_IN_FLIGHT; ++i)
-		{
-			CreateBuffer(bufferSize,
-				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, true,
-				VMA_MEMORY_USAGE_AUTO,
-				m_vUniformBuffers[i], m_vUniformBuffersMemory[i]);
-		}
-	}
-
 	void CreateDescriptorPool()
 	{
 		std::array<VkDescriptorPoolSize, 2> poolSizes{};
@@ -704,7 +596,7 @@ private:
 		for (size_t i{}; i < g_MAX_FRAMES_IN_FLIGHT; ++i)
 		{
 			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = m_vUniformBuffers[i];
+			bufferInfo.buffer = m_vUniformBuffers[i].GetBuffer();
 			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -736,18 +628,6 @@ private:
 
 			vkUpdateDescriptorSets(m_Device.GetDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 		}
-	}
-
-	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
-	{
-		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice.GetPhysicalDevice(), &memProperties);
-
-		for (uint32_t idx{0}; idx < memProperties.memoryTypeCount; ++idx)
-			if ((typeFilter & (1 << idx)) && (memProperties.memoryTypes[idx].propertyFlags & properties) == properties)
-					return idx;
-
-		throw std::runtime_error("failed to find suitable memory type!");
 	}
 
 	void RecordCommandBuffer(pom::CommandBuffer& commandBuffer, uint32_t imageIndex)
@@ -787,10 +667,10 @@ private:
 				scissor.extent = m_SwapChain.GetExtent();
 				vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
 
-				VkBuffer vertexBuffers[] = { m_VertexBuffer };
+				VkBuffer vertexBuffers[] = { m_VertexBuffer.GetBuffer() };
 				VkDeviceSize offsets[] = { 0 };
 				vkCmdBindVertexBuffers(vCmdBuffer, 0, 1, vertexBuffers, offsets);
-				vkCmdBindIndexBuffer(vCmdBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+				vkCmdBindIndexBuffer(vCmdBuffer, m_IndexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 				vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetLayout(), 0, 1, &m_vDescriptorSets[m_CurrentFrame], 0, nullptr);
 
@@ -815,7 +695,7 @@ private:
 		ubo.proj = glm::perspectiveLH(glm::radians(45.0f), aspectRatio, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
 
-		vmaCopyMemoryToAllocation(m_Allocator, &ubo, m_vUniformBuffersMemory[currentImage], 0, sizeof(ubo));
+		vmaCopyMemoryToAllocation(m_Allocator, &ubo, m_vUniformBuffers[currentImage].GetMemory(), 0, sizeof(ubo));
 	}
 
 	void DrawFrame()
@@ -872,7 +752,6 @@ private:
 		m_CurrentFrame = (m_CurrentFrame + 1) % g_MAX_FRAMES_IN_FLIGHT;
 	}
 
-
 	pom::Window						m_pWindow					{ };
 
 	pom::Instance					m_Instance					{ };
@@ -900,13 +779,10 @@ private:
 
 	std::vector<Vertex>				m_vVertices;
 	std::vector<uint32_t>			m_vIndices;
-	VkBuffer						m_VertexBuffer				{ VK_NULL_HANDLE };
-	VmaAllocation					m_VertexBufferMemory		{ VK_NULL_HANDLE };
-	VkBuffer						m_IndexBuffer				{ VK_NULL_HANDLE };
-	VmaAllocation					m_IndexBufferMemory			{ VK_NULL_HANDLE };
+	pom::Buffer						m_VertexBuffer				{ };
+	pom::Buffer						m_IndexBuffer				{ };
 
-	std::vector<VkBuffer>			m_vUniformBuffers			{ VK_NULL_HANDLE };
-	std::vector<VmaAllocation>		m_vUniformBuffersMemory		{ VK_NULL_HANDLE };
+	std::vector<pom::Buffer>		m_vUniformBuffers			{ };
 
 	uint32_t						m_CurrentFrame				{ 0 };
 

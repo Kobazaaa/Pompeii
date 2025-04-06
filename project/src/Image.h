@@ -2,8 +2,6 @@
 #define IMAGE_H
 
 #include <vma/vk_mem_alloc.h>
-#include <vulkan/vulkan.h>
-
 #include "Device.h"
 
 namespace pom

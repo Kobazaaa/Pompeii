@@ -137,7 +137,7 @@ void pom::CommandPool::TransitionImageLayout(Image& image, VkImageLayout newLayo
 	cmd.Submit(m_Device.GetGraphicQueue(), true);
 	cmd.Free();
 }
-void pom::CommandPool::CopyBufferToBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+void pom::CommandPool::CopyBufferToBuffer(const Buffer& srcBuffer, Buffer& dstBuffer, VkDeviceSize size)
 {
 	auto& cmd = AllocateCmdBuffers(1);
 	cmd.Begin();
@@ -146,13 +146,13 @@ void pom::CommandPool::CopyBufferToBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer
 		copyRegion.srcOffset = 0;
 		copyRegion.dstOffset = 0;
 		copyRegion.size = size;
-		vkCmdCopyBuffer(cmd.GetBuffer(), srcBuffer, dstBuffer, 1, &copyRegion);
+		vkCmdCopyBuffer(cmd.GetBuffer(), srcBuffer.GetBuffer(), dstBuffer.GetBuffer(), 1, &copyRegion);
 	}
 	cmd.End();
 	cmd.Submit(m_Device.GetGraphicQueue(), true);
 	cmd.Free();
 }
-void pom::CommandPool::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
+void pom::CommandPool::CopyBufferToImage(const Buffer& buffer, VkImage image, uint32_t width, uint32_t height)
 {
 	auto& cmd = AllocateCmdBuffers(1);
 	cmd.Begin();
@@ -168,7 +168,7 @@ void pom::CommandPool::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_
 		region.imageOffset = { 0, 0, 0 };
 		region.imageExtent = { width, height, 1 };
 
-		vkCmdCopyBufferToImage(cmd.GetBuffer(), buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+		vkCmdCopyBufferToImage(cmd.GetBuffer(), buffer.GetBuffer(), image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 	}
 	cmd.End();
 	cmd.Submit(m_Device.GetGraphicQueue(), true);
