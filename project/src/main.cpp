@@ -36,6 +36,7 @@
 
 #include "CommandPool.h"
 #include "DeletionQueue.h"
+#include "DescriptorSet.h"
 #include "Device.h"
 #include "Image.h"
 #include "Window.h"
@@ -131,7 +132,7 @@ public:
 private:
 	void InitVulkan()
 	{
-		// -- Enable Debugger - Requirements - [Debug]
+		// -- Enable Debugger - Requirements - [Debug Mode]
 		{
 			#ifdef NDEBUG
 				pom::Debugger::SetEnabled(false);
@@ -256,7 +257,18 @@ private:
 
 		// -- Create Descriptor Set Layout - Requirements - [Device]
 		{
-			CreateDescriptorSetLayout();
+			pom::DescriptorSetLayoutBuilder builder{};
+
+			builder
+				.NewLayoutBinding()
+					.SetType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+					.SetShaderStages(VK_SHADER_STAGE_VERTEX_BIT)
+				.NewLayoutBinding()
+					.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+					.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
+				.Build(m_Device, m_DescriptorSetLayout);
+
+			m_DeletionQueue.Push([&] { m_DescriptorSetLayout.Destroy(m_Device); });
 		}
 
 		// -- Create Graphics Pipeline - Requirements - [Pipeline Layout - Shaders - RenderPass]
@@ -344,8 +356,6 @@ private:
 
 		m_TextureImage.Destroy(m_Device, m_Allocator);
 
-		vkDestroyDescriptorSetLayout(m_Device.GetDevice(), m_DescriptorSetLayout, nullptr);
-
 		vkDestroyBuffer(m_Device.GetDevice(), m_IndexBuffer, nullptr);
 		vmaFreeMemory(m_Allocator, m_IndexBufferMemory);
 
@@ -353,32 +363,6 @@ private:
 		vmaFreeMemory(m_Allocator, m_VertexBufferMemory);
 
 		m_DeletionQueue.Flush();
-	}
-
-	void CreateDescriptorSetLayout()
-	{
-		VkDescriptorSetLayoutBinding uboLayoutBinding{};
-		uboLayoutBinding.binding = 0;
-		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		uboLayoutBinding.descriptorCount = 1;
-		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		uboLayoutBinding.pImmutableSamplers = nullptr;
-
-		VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-		samplerLayoutBinding.binding = 1;
-		samplerLayoutBinding.descriptorCount = 1;
-		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerLayoutBinding.pImmutableSamplers = nullptr;
-		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
-		VkDescriptorSetLayoutCreateInfo layoutInfo{};
-		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-		layoutInfo.pBindings = bindings.data();
-
-		if (vkCreateDescriptorSetLayout(m_Device.GetDevice(), &layoutInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS)
-			throw std::runtime_error("Failed to create Descriptor Set Layout!");
 	}
 
 	void CreateGraphicsPipeline()
@@ -486,7 +470,7 @@ private:
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &m_DescriptorSetLayout;
+		pipelineLayoutInfo.pSetLayouts = &m_DescriptorSetLayout.GetLayout();
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
@@ -795,7 +779,7 @@ private:
 
 	void CreateDescriptorSets()
 	{
-		std::vector<VkDescriptorSetLayout> layouts(g_MAX_FRAMES_IN_FLIGHT, m_DescriptorSetLayout);
+		std::vector<VkDescriptorSetLayout> layouts(g_MAX_FRAMES_IN_FLIGHT, m_DescriptorSetLayout.GetLayout());
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = m_DescriptorPool;
@@ -992,7 +976,7 @@ private:
 	VkSampler						m_TextureSampler			{ VK_NULL_HANDLE };
 
 	pom::RenderPass					m_RenderPass				{ };
-	VkDescriptorSetLayout			m_DescriptorSetLayout		{ VK_NULL_HANDLE };
+	pom::DescriptorSetLayout		m_DescriptorSetLayout		{ };
 	VkPipelineLayout				m_PipelineLayout			{ VK_NULL_HANDLE };
 	VkPipeline						m_GraphicsPipeline			{ VK_NULL_HANDLE };
 
