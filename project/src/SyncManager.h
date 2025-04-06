@@ -5,10 +5,16 @@
 
 namespace pom
 {
+	struct FrameSync
+	{
+		VkSemaphore imageAvailable;
+		VkSemaphore renderFinished;
+		VkFence inFlight;
+	};
 	struct SemaphoreInfo
 	{
 		std::vector<VkSemaphore>			vWaitSemaphores;
-		std::vector < VkPipelineStageFlags> vWaitStages;
+		std::vector<VkPipelineStageFlags>	vWaitStages;
 		std::vector<VkSemaphore>			vSignalSemaphores;
 	};
 
@@ -23,8 +29,13 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		SyncManager() = default;
-		void Create(const Device& device);
+		void Create(const Device& device, uint32_t maxFramesInFlight);
 		void Cleanup();
+
+		//--------------------------------------------------
+		//    Accessors & Mutators
+		//--------------------------------------------------
+		const FrameSync& GetFrameSync(uint32_t frame) const;
 
 		//--------------------------------------------------
 		//    Makers
@@ -33,10 +44,13 @@ namespace pom
 		VkFence CreateFence(bool signaled);
 
 	private:
-		Device						m_Device		{ VK_NULL_HANDLE };
+		uint32_t					m_MaxFrames		{};
+		Device						m_Device		{};
+
 		std::vector<VkSemaphore>	m_vSemaphores	{};
 		std::vector<VkFence>		m_vFences		{};
 
+		std::vector<FrameSync>		m_vFrameSyncs	{};
 	};
 }
 

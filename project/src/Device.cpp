@@ -9,17 +9,15 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::Device::Device(VkDevice device)
-	: m_Device(device)
-{}
-
+void pom::Device::Initialize(VkDevice device)	{ m_Device = device; }
+void pom::Device::Destroy() const				{ vkDestroyDevice(m_Device, nullptr); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-VkDevice& pom::Device::GetDevice()		{ return m_Device; }
-VkQueue& pom::Device::GetGraphicQueue() { return m_GraphicsQueue; }
-VkQueue& pom::Device::GetPresentQueue() { return m_PresentQueue; }
+const VkDevice& pom::Device::GetDevice()		const { return m_Device; }
+const VkQueue& pom::Device::GetGraphicQueue()	const { return m_GraphicsQueue; }
+const VkQueue& pom::Device::GetPresentQueue()	const { return m_PresentQueue; }
 
 
 //--------------------------------------------------
@@ -43,7 +41,7 @@ pom::DeviceBuilder& pom::DeviceBuilder::SetFeatures(const VkPhysicalDeviceFeatur
 	m_DesiredFeatures = features;
 	return *this;
 }
-pom::Device& pom::DeviceBuilder::Build(PhysicalDevice& physicalDevice, Device& device) const
+pom::Device& pom::DeviceBuilder::Build(const PhysicalDevice& physicalDevice, Device& device) const
 {
 	pom::QueueFamilyIndices indices = physicalDevice.GetQueueFamilies();
 
@@ -80,11 +78,11 @@ pom::Device& pom::DeviceBuilder::Build(PhysicalDevice& physicalDevice, Device& d
 		createInfo.enabledLayerCount = 0;
 	}
 
-	if (vkCreateDevice(physicalDevice.GetPhysicalDevice(), &createInfo, nullptr, &device.GetDevice()) != VK_SUCCESS)
+	if (vkCreateDevice(physicalDevice.GetPhysicalDevice(), &createInfo, nullptr, &device.m_Device) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Logical Device!");
 
-	vkGetDeviceQueue(device.GetDevice(), indices.graphicsFamily.value(), 0, &device.GetGraphicQueue());
-	vkGetDeviceQueue(device.GetDevice(), indices.presentFamily.value(), 0, &device.GetPresentQueue());
+	vkGetDeviceQueue(device.GetDevice(), indices.graphicsFamily.value(), 0, &device.m_GraphicsQueue);
+	vkGetDeviceQueue(device.GetDevice(), indices.presentFamily.value(), 0, &device.m_PresentQueue);
 
 	return device;
 }

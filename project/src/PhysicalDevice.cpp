@@ -13,21 +13,21 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::PhysicalDevice::PhysicalDevice(VkPhysicalDevice physicalDevice, const std::vector<const char*>& extensions)
-	: m_PhysicalDevice(physicalDevice)
-	, m_vExtensions(extensions)
+void pom::PhysicalDevice::Initialize(VkPhysicalDevice physicalDevice, const std::vector<const char*>& extensions)
 {
+	m_PhysicalDevice = physicalDevice;
+	m_vExtensions = extensions;
+
 	if (physicalDevice == VK_NULL_HANDLE)
 		return;
 	vkGetPhysicalDeviceProperties(m_PhysicalDevice, &m_Properties);
 	vkGetPhysicalDeviceFeatures(m_PhysicalDevice, &m_Features);
 }
 
-
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-VkPhysicalDevice& pom::PhysicalDevice::GetPhysicalDevice()									{ return m_PhysicalDevice; }
+const VkPhysicalDevice& pom::PhysicalDevice::GetPhysicalDevice()				const		{ return m_PhysicalDevice; }
 VkPhysicalDeviceProperties pom::PhysicalDevice::GetProperties()					const		{ return m_Properties; }
 VkFormatProperties pom::PhysicalDevice::GetFormatProperties(VkFormat format)	const		{ VkFormatProperties props{}; vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &props); return props; }
 VkPhysicalDeviceFeatures pom::PhysicalDevice::GetFeatures()						const		{ return m_Features; }
@@ -126,7 +126,7 @@ pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::AddExtension(const cha
 	m_vDesiredExtensions.push_back(ext);
 	return *this;
 }
-pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::PickPhysicalDevice(Instance& instance, PhysicalDevice& physicalDevice, VkSurfaceKHR surface)
+pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::PickPhysicalDevice(const Instance& instance, PhysicalDevice& physicalDevice, VkSurfaceKHR surface)
 {
 	uint32_t deviceCount = 0;
 	vkEnumeratePhysicalDevices(instance.GetInstance(), &deviceCount, nullptr);
@@ -140,7 +140,8 @@ pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::PickPhysicalDevice(Ins
 	std::multimap<uint32_t, PhysicalDevice> candidates;
 	for (const auto& device : devices)
 	{
-		PhysicalDevice physicalDev = PhysicalDevice{ device, m_vDesiredExtensions };
+		PhysicalDevice physicalDev;
+		physicalDev.Initialize(device, m_vDesiredExtensions);
 		uint32_t score = RateDeviceSuitability(physicalDev, surface);
 		candidates.insert(std::make_pair(score, physicalDev));
 	}
@@ -167,7 +168,7 @@ pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::PickPhysicalDevice(Ins
 	return *this;
 }
 
-uint32_t pom::PhysicalDeviceSelector::RateDeviceSuitability(PhysicalDevice& device, VkSurfaceKHR surface)
+uint32_t pom::PhysicalDeviceSelector::RateDeviceSuitability(PhysicalDevice& device, VkSurfaceKHR surface) const
 {
 	// Query Properties and Features
 	const VkPhysicalDeviceProperties deviceProperties = device.GetProperties();

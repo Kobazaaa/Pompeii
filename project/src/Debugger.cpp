@@ -11,7 +11,7 @@
 //--------------------------------------------------
 void pom::Debugger::SetEnabled(bool enabled)				{ m_IsEnabled = enabled; }
 void pom::Debugger::AddValidationLayer(const char* layer)	{ m_vValidationLayers.push_back(layer); }
-void pom::Debugger::SetupMessenger(Instance& instance)
+void pom::Debugger::SetupMessenger(const Instance& instance)
 {
 	if (!m_IsEnabled) return;
 
@@ -21,8 +21,9 @@ void pom::Debugger::SetupMessenger(Instance& instance)
 	if (CreateDebugUtilsMessengerEXT(instance.GetInstance(), &createInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS)
 		throw std::runtime_error("Failed to set up Debug Messenger!");
 }
-void pom::Debugger::DestroyMessenger(Instance& instance)
+void pom::Debugger::DestroyMessenger(const Instance& instance)
 {
+	if (!m_IsEnabled) return;
 	DestroyDebugUtilsMessengerEXT(instance.GetInstance(), m_DebugMessenger, nullptr);
 }
 

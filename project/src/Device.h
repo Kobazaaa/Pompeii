@@ -13,15 +13,16 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit Device(VkDevice device);
-
+		Device() = default;
+		void Initialize(VkDevice device);
+		void Destroy() const;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		VkDevice& GetDevice();
-		VkQueue& GetGraphicQueue();
-		VkQueue& GetPresentQueue();
+		const VkDevice& GetDevice()		  const;
+		const VkQueue&  GetGraphicQueue() const;
+		const VkQueue&  GetPresentQueue() const;
 
 
 		//--------------------------------------------------
@@ -33,6 +34,8 @@ namespace pom
 		VkDevice	m_Device		{ VK_NULL_HANDLE };
 		VkQueue		m_GraphicsQueue	{ VK_NULL_HANDLE };
 		VkQueue		m_PresentQueue	{ VK_NULL_HANDLE };
+
+		friend class DeviceBuilder;
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -50,7 +53,7 @@ namespace pom
 		//    Builder
 		//--------------------------------------------------
 		DeviceBuilder& SetFeatures(const VkPhysicalDeviceFeatures& features);
-		Device& Build(PhysicalDevice& physicalDevice, Device& device) const;
+		Device& Build(const PhysicalDevice& physicalDevice, Device& device) const;
 
 	private:
 		VkPhysicalDeviceFeatures m_DesiredFeatures{};

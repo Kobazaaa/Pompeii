@@ -17,15 +17,18 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit Instance(VkInstance instance);
+		Instance() = default;
+		void Destroy() const;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		VkInstance& GetInstance();
-	private:
+		const VkInstance& GetInstance() const;
 
+	private:
 		VkInstance	m_Instance	{ VK_NULL_HANDLE };
+
+		friend class InstanceBuilder;
 	};
 
 
@@ -38,7 +41,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------	
-		InstanceBuilder() = default;
+		InstanceBuilder();
 
 
 		//--------------------------------------------------
@@ -46,9 +49,9 @@ namespace pom
 		//--------------------------------------------------
 		InstanceBuilder& SetApplicationName(const std::string& name);
 		InstanceBuilder& SetEngineName(const std::string& name);
-		Instance& Build(Instance& instance);
+		void Build(Instance& instance);
 	private:
-		std::vector<const char*> GetRequiredExtensions();
+		static std::vector<const char*> GetRequiredExtensions();
 
 		VkApplicationInfo		m_AppInfo{};
 		VkInstanceCreateInfo	m_CreateInfo{};

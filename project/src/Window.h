@@ -15,7 +15,9 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		Window(int width, int height, const char* title);
+		Window() = default;
+		void Initialize(int width, int height, const char* title);
+		void Destroy() const;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators

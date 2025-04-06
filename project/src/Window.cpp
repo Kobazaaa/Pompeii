@@ -4,9 +4,10 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::Window::Window(int width, int height, const char* title)
-	: m_Size(width, height)
+void pom::Window::Initialize(int width, int height, const char* title)
 {
+	m_Size = { width, height };
+
 	glfwInit();
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
@@ -14,8 +15,11 @@ pom::Window::Window(int width, int height, const char* title)
 	glfwSetWindowUserPointer(m_pWindow, this);
 	glfwSetFramebufferSizeCallback(m_pWindow, FrameBufferResizeCallback);
 }
-
-
+void pom::Window::Destroy() const
+{
+	glfwDestroyWindow(m_pWindow);
+	glfwTerminate();
+}
 
 //--------------------------------------------------
 //    Accessors & Mutators

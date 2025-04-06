@@ -39,12 +39,13 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit PhysicalDevice(VkPhysicalDevice physicalDevice, const std::vector<const char*>& extensions = {});
+		PhysicalDevice() = default;
+		void Initialize(VkPhysicalDevice physicalDevice, const std::vector<const char*>& extensions = {});
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		VkPhysicalDevice& GetPhysicalDevice();
+		const VkPhysicalDevice&			GetPhysicalDevice()						const;
 
 		VkPhysicalDeviceProperties		GetProperties()							const;
 		VkFormatProperties				GetFormatProperties(VkFormat format)	const;
@@ -70,6 +71,8 @@ namespace pom
 		std::vector<const char*>	m_vExtensions				{};
 		VkPhysicalDeviceProperties	m_Properties				{};
 		VkPhysicalDeviceFeatures	m_Features					{};
+
+		friend class PhysicalDeviceSelector;
 	};
 
 
@@ -88,10 +91,10 @@ namespace pom
 		//    Selector
 		//--------------------------------------------------
 		PhysicalDeviceSelector& AddExtension(const char* ext);
-		PhysicalDeviceSelector& PickPhysicalDevice(Instance& instance, PhysicalDevice& physicalDevice, VkSurfaceKHR surface);
+		PhysicalDeviceSelector& PickPhysicalDevice(const Instance& instance, PhysicalDevice& physicalDevice, VkSurfaceKHR surface);
 
 	private:
-		uint32_t RateDeviceSuitability(PhysicalDevice& device, VkSurfaceKHR surface);
+		uint32_t RateDeviceSuitability(PhysicalDevice& device, VkSurfaceKHR surface) const;
 
 		std::vector<const char*> m_vDesiredExtensions	{};
 	};

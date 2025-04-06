@@ -36,7 +36,7 @@ namespace pom
 		void Free();
 
 	private:
-		Device			m_Device	{ VK_NULL_HANDLE };
+		Device			m_Device	{};
 		VkCommandBuffer m_CmdBuffer { VK_NULL_HANDLE };
 		VkCommandPool	m_PoolOwner	{ VK_NULL_HANDLE };
 	};

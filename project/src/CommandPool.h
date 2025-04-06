@@ -39,7 +39,7 @@ namespace pom
 	private:
 		VkCommandPool				m_CommandPool		{ VK_NULL_HANDLE};
 		std::vector<CommandBuffer>	m_vCommandBuffers	{ };
-		Device						m_Device			{ VK_NULL_HANDLE };
+		Device						m_Device			{ };
 	};
 }
 

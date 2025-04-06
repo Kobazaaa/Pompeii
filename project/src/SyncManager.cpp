@@ -8,9 +8,18 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::SyncManager::Create(const Device& device)
+void pom::SyncManager::Create(const Device& device, uint32_t maxFramesInFlight)
 {
+	m_MaxFrames = maxFramesInFlight;
 	m_Device = device;
+
+	m_vFrameSyncs.resize(maxFramesInFlight);
+	for (uint32_t index{}; index < maxFramesInFlight; ++index)
+	{
+		m_vFrameSyncs[index].imageAvailable = CreateSemaphore();
+		m_vFrameSyncs[index].renderFinished = CreateSemaphore();
+		m_vFrameSyncs[index].inFlight = CreateFence(true);
+	}
 }
 void pom::SyncManager::Cleanup()
 {
@@ -20,13 +29,22 @@ void pom::SyncManager::Cleanup()
 	for (auto& fence : m_vFences)
 		vkDestroyFence(m_Device.GetDevice(), fence, nullptr);
 
+	m_vFrameSyncs.clear();
 	m_vSemaphores.clear();
 	m_vFences.clear();
 }
 
+//--------------------------------------------------
+//    Accessors & Mutators
+//--------------------------------------------------
+const pom::FrameSync& pom::SyncManager::GetFrameSync(uint32_t frame) const
+{
+	return m_vFrameSyncs[frame % m_MaxFrames];
+}
+
 
 //--------------------------------------------------
-//    Constructor & Destructor
+//    Makers
 //--------------------------------------------------
 VkSemaphore pom::SyncManager::CreateSemaphore()
 {

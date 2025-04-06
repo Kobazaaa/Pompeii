@@ -17,8 +17,8 @@ namespace pom
 		//--------------------------------------------------
 		static void SetEnabled(bool enabled);
 		static void AddValidationLayer(const char* layer);
-		static void SetupMessenger(Instance& instance);
-		static void DestroyMessenger(Instance& instance);
+		static void SetupMessenger(const Instance& instance);
+		static void DestroyMessenger(const Instance& instance);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators

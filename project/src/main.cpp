@@ -131,11 +131,8 @@ class HelloTriangleApplication
 public:
 	void Run()
 	{
-		m_DeletionQueue.Push([&]
-			{
-				glfwDestroyWindow(m_pWindow.GetWindow());
-				glfwTerminate();
-			});
+		m_pWindow.Initialize(800, 600, "Vulkan Refactored");
+		m_DeletionQueue.Push([&] { m_pWindow.Destroy(); });
 
 		InitVulkan();
 		MainLoop();
@@ -145,57 +142,96 @@ public:
 private:
 	void InitVulkan()
 	{
-		pom::InstanceBuilder builder;
-		builder.SetApplicationName("Vulkan Refactored")
-				.SetEngineName("No Engine")
-				.Build(m_Instance);
-		m_DeletionQueue.Push([&]
-			{
-				vkDestroyInstance(m_Instance.GetInstance(), nullptr);
-			});
+		// --	Enable Debugger	--//
+		{
+			#ifdef NDEBUG
+				pom::Debugger::SetEnabled(false);
+			#else
+				pom::Debugger::SetEnabled(true);
+				pom::Debugger::AddValidationLayer("VK_LAYER_KHRONOS_validation");
+			#endif
+		}
 
-		pom::Debugger::SetupMessenger(m_Instance);
-		m_DeletionQueue.Push([&]
-			{
-				if (pom::Debugger::IsEnabled())
-					pom::Debugger::DestroyMessenger(m_Instance);
-			});
+		// --	Create Instance	--//
+		{
+			pom::InstanceBuilder builder;
 
-		m_pWindow.CreateVulkanSurface(m_Instance);
-		m_DeletionQueue.Push([&]
-			{
-				vkDestroySurfaceKHR(m_Instance.GetInstance(), m_pWindow.GetVulkanSurface(), nullptr);
-			});
+			builder.SetApplicationName("Vulkan Refactored")
+				   .SetEngineName("No Engine")
+				   .Build(m_Instance);
 
-		pom::PhysicalDeviceSelector selector;
-		selector.AddExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
-				.PickPhysicalDevice(m_Instance, m_PhysicalDevice, m_pWindow.GetVulkanSurface());
+			m_DeletionQueue.Push([&] { m_Instance.Destroy(); });
+		}
 
+		// --	Setup Debugger	--//
+		{
+			pom::Debugger::SetupMessenger(m_Instance);
+			m_DeletionQueue.Push([&] { if (pom::Debugger::IsEnabled()) pom::Debugger::DestroyMessenger(m_Instance); });
+		}
 
-		VkPhysicalDeviceFeatures iWantTheseFeaturesPlease{};
-		iWantTheseFeaturesPlease.samplerAnisotropy = VK_TRUE;
+		// --	Create Surface	--//
+		{
+			m_pWindow.CreateVulkanSurface(m_Instance);
+			m_DeletionQueue.Push([&] { vkDestroySurfaceKHR(m_Instance.GetInstance(), m_pWindow.GetVulkanSurface(), nullptr); });
+		}
 
-		pom::DeviceBuilder deviceBuilder{};
-		deviceBuilder.SetFeatures(iWantTheseFeaturesPlease)
-					 .Build(m_PhysicalDevice, m_Device);
-		m_DeletionQueue.Push([&]
-			{
-				vkDestroyDevice(m_Device.GetDevice(), nullptr);
-			});
+		// --	Select GPU	--//
+		{
+			pom::PhysicalDeviceSelector selector;
+			selector.AddExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+					.PickPhysicalDevice(m_Instance, m_PhysicalDevice, m_pWindow.GetVulkanSurface());
+		}
 
-		VmaAllocatorCreateInfo allocatorInfo = {};
-		allocatorInfo.physicalDevice = m_PhysicalDevice.GetPhysicalDevice();
-		allocatorInfo.device = m_Device.GetDevice();
-		allocatorInfo.instance = m_Instance.GetInstance();
+		// --	Create Device		--//
+		{
+			VkPhysicalDeviceFeatures desiredFeatures{};
+			desiredFeatures.samplerAnisotropy = VK_TRUE;
 
-		vmaCreateAllocator(&allocatorInfo, &m_Allocator);
-		m_DeletionQueue.Push([&]
-			{
-				vmaDestroyAllocator(m_Allocator);
-			});
+			pom::DeviceBuilder deviceBuilder{};
 
-		CreateCommandPool();
-		CreateSwapChain();
+			deviceBuilder.SetFeatures(desiredFeatures)
+						 .Build(m_PhysicalDevice, m_Device);
+
+			m_DeletionQueue.Push([&] { m_Device.Destroy(); });
+		}
+
+		// --	Create Allocator 	  --//
+		{
+			VmaAllocatorCreateInfo allocatorInfo = {};
+			allocatorInfo.physicalDevice = m_PhysicalDevice.GetPhysicalDevice();
+			allocatorInfo.device = m_Device.GetDevice();
+			allocatorInfo.instance = m_Instance.GetInstance();
+
+			vmaCreateAllocator(&allocatorInfo, &m_Allocator);
+			m_DeletionQueue.Push([&] { vmaDestroyAllocator(m_Allocator); });
+		}
+
+		// --	Create Command Pool 	  --//
+		{
+			m_CommandPool.Create(m_Device, m_PhysicalDevice)
+						 .AllocateCmdBuffers(g_MAX_FRAMES_IN_FLIGHT);
+
+			m_DeletionQueue.Push([&] { m_CommandPool.Destroy(); });
+		}
+
+		// --	Create Swap Chain	  --//
+		{
+			pom::SwapChainBuilder builder;
+
+			builder.SetDesiredImageCount(2)
+				   .SetImageArrayLayers(1)
+				   .SetImageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+				   .Build(m_Device, m_Allocator, m_PhysicalDevice, m_pWindow, m_SwapChain, m_CommandPool);
+
+			m_DeletionQueue.Push([&]
+				{
+					for (auto& framebuffer : m_vSwapChainFrameBuffers)
+						vkDestroyFramebuffer(m_Device.GetDevice(), framebuffer, nullptr);
+
+					m_SwapChain.Destroy(m_Device, m_Allocator);
+				});
+		}
+
 		CreateRenderPass();
 		CreateDescriptorSetLayout();
 		CreateGraphicsPipeline();
@@ -208,7 +244,12 @@ private:
 		CreateUniformBuffers();
 		CreateDescriptorPool();
 		CreateDescriptorSets();
-		CreateSyncObjects();
+
+		// --	Create Sync Objects	  --//
+		{
+			m_SyncManager.Create(m_Device, g_MAX_FRAMES_IN_FLIGHT);
+			m_DeletionQueue.Push([&] {m_SyncManager.Cleanup(); });
+		}
 	}
 
 	void MainLoop()
@@ -248,30 +289,7 @@ private:
 		vkDestroyBuffer(m_Device.GetDevice(), m_VertexBuffer, nullptr);
 		vmaFreeMemory(m_Allocator, m_VertexBufferMemory);
 
-		for (size_t idx = 0; idx < g_MAX_FRAMES_IN_FLIGHT; ++idx)
-		{
-			vkDestroySemaphore(m_Device.GetDevice(), m_vImageAvailableSemaphores[idx], nullptr);
-			vkDestroySemaphore(m_Device.GetDevice(), m_vRenderFinishedSemaphores[idx], nullptr);
-			vkDestroyFence(m_Device.GetDevice(), m_vInFlightFences[idx], nullptr);
-		}
-
 		m_DeletionQueue.Flush();
-	}
-
-	void CreateSwapChain()
-	{
-		pom::SwapChainBuilder builder;
-		builder.SetDesiredImageCount(2)
-			.SetImageArrayLayers(1)
-			.SetImageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
-			.Build(m_Device, m_Allocator, m_PhysicalDevice, m_pWindow, m_SwapChain, m_CommandPool);
-		m_DeletionQueue.Push([&]
-			{
-				for (auto& framebuffer : m_vSwapChainFrameBuffers)
-					vkDestroyFramebuffer(m_Device.GetDevice(), framebuffer, nullptr);
-
-				m_SwapChain.Destroy(m_Device, m_Allocator);
-			});
 	}
 
 	void CreateRenderPass()
@@ -516,13 +534,6 @@ private:
 			if (vkCreateFramebuffer(m_Device.GetDevice(), &framebufferInfo, nullptr, &m_vSwapChainFrameBuffers[idx]) != VK_SUCCESS)
 				throw std::runtime_error("Failed to create Framebuffer!");
 		}
-	}
-
-	void CreateCommandPool()
-	{
-		m_CommandPool.Create(m_Device, m_PhysicalDevice)
-		.AllocateCmdBuffers(g_MAX_FRAMES_IN_FLIGHT);
-		m_DeletionQueue.Push([&] { m_CommandPool.Destroy(); });
 	}
 
 	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, bool mappable, VmaMemoryUsage memusage, VkBuffer& buffer, VmaAllocation& bufferMemory)
@@ -888,23 +899,6 @@ private:
 		commandBuffer.End();
 	}
 
-	void CreateSyncObjects()
-	{
-		m_SyncManager.Create(m_Device);
-		m_DeletionQueue.Push([&] {m_SyncManager.Cleanup(); });
-
-		m_vImageAvailableSemaphores.resize(g_MAX_FRAMES_IN_FLIGHT);
-		m_vRenderFinishedSemaphores.resize(g_MAX_FRAMES_IN_FLIGHT);
-		m_vInFlightFences.resize(g_MAX_FRAMES_IN_FLIGHT);
-
-		for (size_t idx = 0; idx < g_MAX_FRAMES_IN_FLIGHT; ++idx)
-		{
-			m_vImageAvailableSemaphores[idx]		= m_SyncManager.CreateSemaphore();
-			m_vRenderFinishedSemaphores[idx]		= m_SyncManager.CreateSemaphore();
-			m_vInFlightFences[idx]					= m_SyncManager.CreateFence(true);
-		}
-	}
-
 	void UpdateUniformBuffer(uint32_t currentImage)
 	{
 		static auto startTime = std::chrono::high_resolution_clock::now();
@@ -924,10 +918,11 @@ private:
 
 	void DrawFrame()
 	{
-		vkWaitForFences(m_Device.GetDevice(), 1, &m_vInFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
+		const auto& frameSync = m_SyncManager.GetFrameSync(m_CurrentFrame);
+		vkWaitForFences(m_Device.GetDevice(), 1, &frameSync.inFlight, VK_TRUE, UINT64_MAX);
 
 		uint32_t imageIndex;
-		VkResult result = vkAcquireNextImageKHR(m_Device.GetDevice(), m_SwapChain.GetSwapChain(), UINT64_MAX, m_vImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+		VkResult result = vkAcquireNextImageKHR(m_Device.GetDevice(), m_SwapChain.GetSwapChain(), UINT64_MAX, frameSync.imageAvailable, VK_NULL_HANDLE, &imageIndex);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 		{
 			m_SwapChain.Recreate(m_Device, m_Allocator, m_PhysicalDevice, m_pWindow, m_CommandPool);
@@ -938,7 +933,7 @@ private:
 
 		UpdateUniformBuffer(m_CurrentFrame);
 
-		vkResetFences(m_Device.GetDevice(), 1, &m_vInFlightFences[m_CurrentFrame]);
+		vkResetFences(m_Device.GetDevice(), 1, &frameSync.inFlight);
 
 		pom::CommandBuffer& cmdBuffer = m_CommandPool.GetBuffer(m_CurrentFrame);
 		cmdBuffer.Reset();
@@ -946,11 +941,11 @@ private:
 
 		const pom::SemaphoreInfo semaphoreInfo
 		{
-			.vWaitSemaphores	= { m_vImageAvailableSemaphores[m_CurrentFrame] },
+			.vWaitSemaphores	= { frameSync.imageAvailable },
 			.vWaitStages		= { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT },
-			.vSignalSemaphores	= { m_vRenderFinishedSemaphores[m_CurrentFrame] }
+			.vSignalSemaphores	= { frameSync.renderFinished }
 		};
-		cmdBuffer.Submit(m_Device.GetGraphicQueue(), false, semaphoreInfo, m_vInFlightFences[m_CurrentFrame]);
+		cmdBuffer.Submit(m_Device.GetGraphicQueue(), false, semaphoreInfo, frameSync.inFlight);
 
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -1006,17 +1001,17 @@ private:
 	}
 
 
-	pom::Window						m_pWindow					{ 800, 600, "Vulkan Refactored"};
+	pom::Window						m_pWindow					{ };
 
-	pom::Instance					m_Instance					{ VK_NULL_HANDLE };
-	pom::PhysicalDevice				m_PhysicalDevice			{ VK_NULL_HANDLE };
-	pom::Device						m_Device					{ VK_NULL_HANDLE };
+	pom::Instance					m_Instance					{ };
+	pom::PhysicalDevice				m_PhysicalDevice			{ };
+	pom::Device						m_Device					{ };
 
-	pom::SwapChain					m_SwapChain					{};
+	pom::SwapChain					m_SwapChain					{ };
 
-	std::vector<VkFramebuffer>		m_vSwapChainFrameBuffers{};
+	std::vector<VkFramebuffer>		m_vSwapChainFrameBuffers	{ };
 
-	pom::Image						m_TextureImage				{  };
+	pom::Image						m_TextureImage				{ };
 	VkSampler						m_TextureSampler			{ VK_NULL_HANDLE };
 
 	VkRenderPass					m_RenderPass				{ VK_NULL_HANDLE };
@@ -1028,7 +1023,7 @@ private:
 	std::vector<VkDescriptorSet>	m_vDescriptorSets			{ VK_NULL_HANDLE };
 
 	pom::CommandPool				m_CommandPool				{ };
-	pom::SyncManager				m_SyncManager				{};
+	pom::SyncManager				m_SyncManager				{ };
 
 
 	std::vector<Vertex>				m_vVertices;
@@ -1041,13 +1036,10 @@ private:
 	std::vector<VkBuffer>			m_vUniformBuffers			{ VK_NULL_HANDLE };
 	std::vector<VmaAllocation>		m_vUniformBuffersMemory		{ VK_NULL_HANDLE };
 
-	std::vector<VkSemaphore>		m_vImageAvailableSemaphores	{ VK_NULL_HANDLE };
-	std::vector<VkSemaphore>		m_vRenderFinishedSemaphores	{ VK_NULL_HANDLE };
-	std::vector<VkFence>			m_vInFlightFences			{ VK_NULL_HANDLE };
 	uint32_t						m_CurrentFrame				{ 0 };
 
 	VmaAllocator m_Allocator									{ VK_NULL_HANDLE };
-	pom::DeletionQueue				m_DeletionQueue				{};
+	pom::DeletionQueue				m_DeletionQueue				{ };
 };
 
 int main()

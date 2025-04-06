@@ -13,21 +13,12 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::Instance::Instance(VkInstance instance)
-	: m_Instance(instance)
-{
-#ifdef NDEBUG
-	Debugger::SetEnabled(false);
-#else
-	Debugger::SetEnabled(true);
-	Debugger::AddValidationLayer("VK_LAYER_KHRONOS_validation");
-#endif
-}
+void pom::Instance::Destroy() const { vkDestroyInstance(m_Instance, nullptr); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-VkInstance& pom::Instance::GetInstance() { return m_Instance; }
+const VkInstance& pom::Instance::GetInstance() const { return m_Instance; }
 
 
 
@@ -36,22 +27,27 @@ VkInstance& pom::Instance::GetInstance() { return m_Instance; }
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //--------------------------------------------------
+//    Constructor & Destructor
+//--------------------------------------------------	
+pom::InstanceBuilder::InstanceBuilder()
+{
+	m_AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;			// CAN'T CHANGE
+	m_AppInfo.pApplicationName = "";								//? CAN CHANGE
+	m_AppInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);		// CAN'T CHANGE
+	m_AppInfo.pEngineName = "";										//? CAN CHANGE
+	m_AppInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);				// CAN'T CHANGE
+	m_AppInfo.apiVersion = VK_API_VERSION_1_0;						// CAN'T CHANGE
+}
+
+//--------------------------------------------------
 //    Builder
 //--------------------------------------------------
 pom::InstanceBuilder& pom::InstanceBuilder::SetApplicationName(const std::string& name) { m_AppInfo.pApplicationName = name.c_str(); return *this; }
 pom::InstanceBuilder& pom::InstanceBuilder::SetEngineName(const std::string& name)		{ m_AppInfo.pEngineName = name.c_str(); return *this; }
-pom::Instance& pom::InstanceBuilder::Build(Instance& instance)
+void pom::InstanceBuilder::Build(Instance& instance)
 {
 	if (Debugger::IsEnabled() && !Debugger::CheckValidationLayerSupport())
 		throw std::runtime_error("Validation Layers requested, but not available!");
-
-	// Set up AppInfo
-	m_AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	// pApplicationName set in SetApplicationName
-	m_AppInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-	// pEngineName set in SetEngineName
-	m_AppInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-	m_AppInfo.apiVersion = VK_API_VERSION_1_0;
 
 	// Setup CreateInfo
 	m_CreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -75,10 +71,10 @@ pom::Instance& pom::InstanceBuilder::Build(Instance& instance)
 		m_CreateInfo.pNext = nullptr;
 	}
 
-	if (vkCreateInstance(&m_CreateInfo, nullptr, &instance.GetInstance()) != VK_SUCCESS)
+	if (vkCreateInstance(&m_CreateInfo, nullptr, &instance.m_Instance) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create instance!");
 
-	if (!Debugger::IsEnabled())
+	if (Debugger::IsEnabled())
 	{
 		// List all available extensions
 		uint32_t extensionCount = 0;
@@ -92,8 +88,6 @@ pom::Instance& pom::InstanceBuilder::Build(Instance& instance)
 			std::cout << '\t' << extension.extensionName << '\n';
 		}
 	}
-
-	return instance;
 }
 
 std::vector<const char*> pom::InstanceBuilder::GetRequiredExtensions()
