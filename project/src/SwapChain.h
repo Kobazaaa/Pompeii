@@ -56,7 +56,7 @@ namespace pom
 		//--------------------------------------------------
 		SwapChain() = default;
 		void Destroy(Device& device, VmaAllocator& allocator);
-		void Recreate(Device& device, VmaAllocator& allocator, PhysicalDevice& physicalDevice, Window& window, CommandPool& cmdPool);
+		void Recreate(Device& device, const VmaAllocator& allocator, const PhysicalDevice& physicalDevice, const Window& window, CommandPool& cmdPool);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
@@ -74,7 +74,6 @@ namespace pom
 		VkSwapchainKHR				m_SwapChain{ VK_NULL_HANDLE };
 		Image						m_DepthImage{};
 
-		std::vector<VkImage*>		GetVulkanImages();
 		std::vector<Image>			m_vSwapChainImages{};
 		VkFormat					m_SwapChainImageFormat{};
 		VkExtent2D					m_SwapChainExtent{};

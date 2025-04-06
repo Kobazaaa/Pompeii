@@ -50,11 +50,11 @@ VkFormat pom::Image::FindSupportedFormat(const PhysicalDevice& physicalDevice, c
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-VkImage& pom::Image::GetImage()								{ return m_Image; }
-VkImageView& pom::Image::GetImageView()						{ return m_ImageView; }
-VkFormat pom::Image::GetFormat()			 const			{ return m_ImageInfo.format; }
-VkImageLayout pom::Image::GetCurrentLayout() const			{ return m_CurrentLayout; }
-bool pom::Image::HasStencilComponent()		 const			{ return m_ImageInfo.format == VK_FORMAT_D32_SFLOAT_S8_UINT || m_ImageInfo.format == VK_FORMAT_D24_UNORM_S8_UINT; }
+const VkImage& pom::Image::GetImage()		  const			{ return m_Image; }
+const VkImageView& pom::Image::GetImageView() const			{ return m_ImageView; }
+VkFormat pom::Image::GetFormat()			  const			{ return m_ImageInfo.format; }
+VkImageLayout pom::Image::GetCurrentLayout()  const			{ return m_CurrentLayout; }
+bool pom::Image::HasStencilComponent()		  const			{ return m_ImageInfo.format == VK_FORMAT_D32_SFLOAT_S8_UINT || m_ImageInfo.format == VK_FORMAT_D24_UNORM_S8_UINT; }
 void pom::Image::SetImageLayout(VkImageLayout newLayout)	{ m_CurrentLayout = newLayout; }
 
 

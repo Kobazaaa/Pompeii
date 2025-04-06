@@ -30,8 +30,8 @@ namespace pom
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		VkImage& GetImage();
-		VkImageView& GetImageView();
+		const VkImage& GetImage() const;
+		const VkImageView& GetImageView() const;
 		VkFormat GetFormat() const;
 		VkImageLayout GetCurrentLayout() const;
 		bool HasStencilComponent() const;

@@ -154,26 +154,13 @@ void pom::SwapChain::Destroy(Device& device, VmaAllocator& allocator)
 {
 	m_DepthImage.Destroy(device, allocator);
 
-	//for (auto& framebuffer : m_vSwapChainFrameBuffers)
-	//	vkDestroyFramebuffer(device.GetDevice(), framebuffer, nullptr);
-
 	for (auto& image : m_vSwapChainImages)
 		vkDestroyImageView(device.GetDevice(), image.GetImageView(), nullptr);
 
 	vkDestroySwapchainKHR(device.GetDevice(), m_SwapChain, nullptr);
 }
-void pom::SwapChain::Recreate(Device& device, VmaAllocator& allocator, PhysicalDevice& physicalDevice, Window& window, CommandPool& cmdPool)
+void pom::SwapChain::Recreate(Device& device, const VmaAllocator& allocator, const PhysicalDevice& physicalDevice, const Window& window, CommandPool& cmdPool)
 {
-	auto size = window.GetSize();
-	while (size.x == 0 || size.y == 0)
-	{
-		size = window.GetSize();
-		glfwWaitEvents();
-	}
-
-	device.WaitIdle();
-
-	Destroy(device, allocator);
 	m_OriginalBuilder.Build(device, allocator, physicalDevice, window, *this, cmdPool);
 }
 
@@ -187,16 +174,3 @@ VkSwapchainKHR& pom::SwapChain::GetSwapChain()					{ return m_SwapChain; }
 uint32_t pom::SwapChain::GetImageCount()			const		{ return static_cast<uint32_t>(m_vSwapChainImages.size()); }
 VkFormat pom::SwapChain::GetFormat()				const		{ return m_SwapChainImageFormat; }
 VkExtent2D pom::SwapChain::GetExtent()				const		{ return m_SwapChainExtent; }
-std::vector<VkImage*> pom::SwapChain::GetVulkanImages()
-{
-	std::vector<VkImage*> vulkanImages{};
-	vulkanImages.reserve(m_vSwapChainImages.size());
-
-	std::ranges::for_each(m_vSwapChainImages,
-		[&](Image& image)
-		{
-			vulkanImages.emplace_back(&image.GetImage());
-		});
-
-	return vulkanImages;
-}

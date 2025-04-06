@@ -71,4 +71,4 @@ void pom::CommandBuffer::Submit(VkQueue queue, bool waitIdle, const SemaphoreInf
 		vkQueueWaitIdle(queue);
 }
 void pom::CommandBuffer::Reset() const { vkResetCommandBuffer(m_CmdBuffer, 0); }
-void pom::CommandBuffer::Free() { vkFreeCommandBuffers(m_Device.GetDevice(), m_PoolOwner, 1, &m_CmdBuffer); }
+void pom::CommandBuffer::Free() const { vkFreeCommandBuffers(m_Device.GetDevice(), m_PoolOwner, 1, &m_CmdBuffer); }

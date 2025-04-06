@@ -30,6 +30,7 @@ set(SOURCES
 	"${SOURCE_DIR}/RenderPass.cpp"			"${SOURCE_DIR}/RenderPass.h"
 	"${SOURCE_DIR}/DescriptorSet.cpp"		"${SOURCE_DIR}/DescriptorSet.h"
 	"${SOURCE_DIR}/GraphicsPipeline.cpp"	"${SOURCE_DIR}/GraphicsPipeline.h"
+	"${SOURCE_DIR}/FrameBuffer.cpp"			"${SOURCE_DIR}/FrameBuffer.h"
 )
 
 # Create the executable

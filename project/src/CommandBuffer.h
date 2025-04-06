@@ -33,7 +33,7 @@ namespace pom
 		void End() const;
 		void Submit(VkQueue queue, bool waitIdle, const SemaphoreInfo& semaphoreInfo = {}, VkFence fence = VK_NULL_HANDLE) const;
 		void Reset() const;
-		void Free();
+		void Free() const;
 
 	private:
 		Device			m_Device	{};

@@ -38,6 +38,7 @@
 #include "DeletionQueue.h"
 #include "DescriptorSet.h"
 #include "Device.h"
+#include "FrameBuffer.h"
 #include "GraphicsPipeline.h"
 #include "Image.h"
 #include "Window.h"
@@ -214,13 +215,7 @@ private:
 				   .SetImageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
 				   .Build(m_Device, m_Allocator, m_PhysicalDevice, m_pWindow, m_SwapChain, m_CommandPool);
 
-			m_DeletionQueue.Push([&]
-				{
-					for (auto& framebuffer : m_vSwapChainFrameBuffers)
-						vkDestroyFramebuffer(m_Device.GetDevice(), framebuffer, nullptr);
-
-					m_SwapChain.Destroy(m_Device, m_Allocator);
-				});
+			m_DeletionQueueSC.Push([&] { m_SwapChain.Destroy(m_Device, m_Allocator); });
 		}
 
 		// -- Create Render Pass - Requirements - [Device - SwapChain - Depth Buffer]
@@ -319,7 +314,19 @@ private:
 
 		// -- Create Frame Buffers - Requirements - [Device - SwapChain - RenderPass]
 		{
-			CreateFrameBuffers();
+			m_vFrameBuffers.clear();
+			for (const pom::Image& image : m_SwapChain.GetImages())
+			{
+				pom::FrameBufferBuilder builder{};
+				builder
+					.SetRenderPass(m_RenderPass)
+					.AddAttachment(image)
+					.AddAttachment(m_SwapChain.GetDepthImage())
+					.SetExtent(m_SwapChain.GetExtent().width, m_SwapChain.GetExtent().height)
+					.Build(m_Device, m_vFrameBuffers);
+			}
+
+			m_DeletionQueueSC.Push([&] { for (auto& framebuffer : m_vFrameBuffers) framebuffer.Destroy(m_Device); m_vFrameBuffers.clear(); });
 		}
 
 		// -- Create Texture - Requirements - [Device - Allocator - Image - CommandPool]
@@ -392,40 +399,42 @@ private:
 
 		vkDestroySampler(m_Device.GetDevice(), m_TextureSampler, nullptr);
 
-		m_TextureImage.Destroy(m_Device, m_Allocator);
-
 		vkDestroyBuffer(m_Device.GetDevice(), m_IndexBuffer, nullptr);
 		vmaFreeMemory(m_Allocator, m_IndexBufferMemory);
 
 		vkDestroyBuffer(m_Device.GetDevice(), m_VertexBuffer, nullptr);
 		vmaFreeMemory(m_Allocator, m_VertexBufferMemory);
 
+		m_DeletionQueueSC.Flush();
 		m_DeletionQueue.Flush();
 	}
 
-	void CreateFrameBuffers()
+	void RecreateSwapChain()
 	{
-		m_vSwapChainFrameBuffers.resize(m_SwapChain.GetImageCount());
-
-		for (size_t idx = 0; idx < m_SwapChain.GetImageCount(); ++idx)
+		auto size = m_pWindow.GetSize();
+		while (size.x == 0 || size.y == 0)
 		{
-			std::array<VkImageView, 2>  attachments = {
-				m_SwapChain.GetImages()[idx].GetImageView(),
-				m_SwapChain.GetDepthImage().GetImageView()
-			};
-
-			VkFramebufferCreateInfo framebufferInfo{};
-			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = m_RenderPass.GetRenderPass();
-			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-			framebufferInfo.pAttachments = attachments.data();
-			framebufferInfo.width = m_SwapChain.GetExtent().width;
-			framebufferInfo.height = m_SwapChain.GetExtent().height;
-			framebufferInfo.layers = 1;
-
-			if (vkCreateFramebuffer(m_Device.GetDevice(), &framebufferInfo, nullptr, &m_vSwapChainFrameBuffers[idx]) != VK_SUCCESS)
-				throw std::runtime_error("Failed to create Framebuffer!");
+			size = m_pWindow.GetSize();
+			glfwWaitEvents();
 		}
+
+		m_Device.WaitIdle();
+		m_DeletionQueueSC.Flush();
+
+		m_SwapChain.Recreate(m_Device, m_Allocator, m_PhysicalDevice, m_pWindow, m_CommandPool);
+		m_DeletionQueueSC.Push([&] { m_SwapChain.Destroy(m_Device, m_Allocator); });
+
+		for (const pom::Image& image : m_SwapChain.GetImages())
+		{
+			pom::FrameBufferBuilder builder{};
+			builder
+				.SetRenderPass(m_RenderPass)
+				.AddAttachment(image)
+				.AddAttachment(m_SwapChain.GetDepthImage())
+				.SetExtent(m_SwapChain.GetExtent().width, m_SwapChain.GetExtent().height)
+				.Build(m_Device, m_vFrameBuffers);
+		}
+		m_DeletionQueueSC.Push([&] { for (auto& framebuffer : m_vFrameBuffers) framebuffer.Destroy(m_Device); m_vFrameBuffers.clear(); });
 	}
 
 	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, bool mappable, VmaMemoryUsage memusage, VkBuffer& buffer, VmaAllocation& bufferMemory)
@@ -526,6 +535,7 @@ private:
 			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 			.Build(m_Allocator, m_TextureImage);
 		m_TextureImage.GenerateImageView(m_Device, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+		m_DeletionQueue.Push([&] { m_TextureImage.Destroy(m_Device, m_Allocator); });
 
 		m_CommandPool.TransitionImageLayout(m_TextureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 		m_CommandPool.CopyBufferToImage(stagingBuffer, m_TextureImage.GetImage(), static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
@@ -748,7 +758,7 @@ private:
 			VkRenderPassBeginInfo renderPassInfo{};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			renderPassInfo.renderPass = m_RenderPass.GetRenderPass();
-			renderPassInfo.framebuffer = m_vSwapChainFrameBuffers[imageIndex];
+			renderPassInfo.framebuffer = m_vFrameBuffers[imageIndex].GetBuffer();
 			renderPassInfo.renderArea.offset = { 0, 0 };
 			renderPassInfo.renderArea.extent = m_SwapChain.GetExtent();
 
@@ -817,7 +827,7 @@ private:
 		VkResult result = vkAcquireNextImageKHR(m_Device.GetDevice(), m_SwapChain.GetSwapChain(), UINT64_MAX, frameSync.imageAvailable, VK_NULL_HANDLE, &imageIndex);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 		{
-			m_SwapChain.Recreate(m_Device, m_Allocator, m_PhysicalDevice, m_pWindow, m_CommandPool);
+			RecreateSwapChain();
 			return;
 		}
 		if (result != VK_SUCCESS)
@@ -854,7 +864,7 @@ private:
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_pWindow.IsOutdated())
 		{
 			m_pWindow.ResetOutdated();
-			m_SwapChain.Recreate(m_Device, m_Allocator, m_PhysicalDevice, m_pWindow, m_CommandPool);
+			RecreateSwapChain();
 		}
 		else if (result != VK_SUCCESS)
 			throw std::runtime_error("Failed to present Swap Chain Image!");
@@ -871,7 +881,7 @@ private:
 
 	pom::SwapChain					m_SwapChain					{ };
 
-	std::vector<VkFramebuffer>		m_vSwapChainFrameBuffers	{ };
+	std::vector<pom::FrameBuffer>	m_vFrameBuffers				{ };
 
 	pom::Image						m_TextureImage				{ };
 	VkSampler						m_TextureSampler			{ VK_NULL_HANDLE };
@@ -902,6 +912,7 @@ private:
 
 	VmaAllocator m_Allocator									{ VK_NULL_HANDLE };
 	pom::DeletionQueue				m_DeletionQueue				{ };
+	pom::DeletionQueue				m_DeletionQueueSC			{ };
 };
 
 int main()
