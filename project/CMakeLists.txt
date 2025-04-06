@@ -33,6 +33,7 @@ set(SOURCES
 	"${SOURCE_DIR}/FrameBuffer.cpp"			"${SOURCE_DIR}/FrameBuffer.h"
 	"${SOURCE_DIR}/Buffer.cpp"				"${SOURCE_DIR}/Buffer.h"
 	"${SOURCE_DIR}/Sampler.cpp"				"${SOURCE_DIR}/Sampler.h"
+	"${SOURCE_DIR}/DescriptorPool.cpp"		"${SOURCE_DIR}/DescriptorPool.h"
 )
 
 # Create the executable

@@ -36,6 +36,7 @@
 
 #include "CommandPool.h"
 #include "DeletionQueue.h"
+#include "DescriptorPool.h"
 #include "DescriptorSet.h"
 #include "Device.h"
 #include "FrameBuffer.h"
@@ -396,12 +397,25 @@ private:
 
 		// -- Create Descriptor Pool - Requirements - [Device]
 		{
-			CreateDescriptorPool();
+			m_DescriptorPool
+				.SetMaxSets(g_MAX_FRAMES_IN_FLIGHT)
+				.AddPoolSizeLayout(m_DescriptorSetLayout)
+				.Create(m_Device);
+			m_DeletionQueue.Push([&] {m_DescriptorPool.Destroy(m_Device); });
 		}
 
-		// -- Create Descriptor Sets - Requirements - [Device - Descriptor Pool - Descriptor Set Layout - UBO]
+		// -- Allocate Descriptor Sets - Requirements - [Device - Descriptor Pool - Descriptor Set Layout - UBO]
 		{
-			CreateDescriptorSets();
+			m_vDescriptorSets = m_DescriptorPool.AllocateSets(m_Device, m_DescriptorSetLayout, g_MAX_FRAMES_IN_FLIGHT);
+
+			pom::DescriptorSetWriter writer{};
+			for (size_t i{}; i < g_MAX_FRAMES_IN_FLIGHT; ++i)
+			{
+				writer
+					.WriteBuffer(m_vDescriptorSets[i], 0, m_vUniformBuffers[i], 0, sizeof(UniformBufferObject))
+					.WriteImage(m_vDescriptorSets[i], 1, m_TextureImage, m_TextureSampler)
+					.Execute(m_Device);
+			}
 		}
 
 		// -- Create Sync Objects - Requirements - [Device]
@@ -424,8 +438,6 @@ private:
 
 	void Cleanup()
 	{
-		vkDestroyDescriptorPool(m_Device.GetDevice(), m_DescriptorPool, nullptr);
-
 		m_DeletionQueueSC.Flush();
 		m_DeletionQueue.Flush();
 	}
@@ -543,75 +555,6 @@ private:
 		}
 	}
 
-	void CreateDescriptorPool()
-	{
-		std::array<VkDescriptorPoolSize, 2> poolSizes{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(g_MAX_FRAMES_IN_FLIGHT);
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(g_MAX_FRAMES_IN_FLIGHT);
-
-		VkDescriptorPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = static_cast<uint32_t>(g_MAX_FRAMES_IN_FLIGHT);
-		poolInfo.flags = 0;
-
-		if (vkCreateDescriptorPool(m_Device.GetDevice(), &poolInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS)
-			throw std::runtime_error("Failed to create Descriptor Pool!");
-	}
-
-	void CreateDescriptorSets()
-	{
-		std::vector<VkDescriptorSetLayout> layouts(g_MAX_FRAMES_IN_FLIGHT, m_DescriptorSetLayout.GetLayout());
-		VkDescriptorSetAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = m_DescriptorPool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(g_MAX_FRAMES_IN_FLIGHT);
-		allocInfo.pSetLayouts = layouts.data();
-
-		m_vDescriptorSets.resize(g_MAX_FRAMES_IN_FLIGHT);
-		if (vkAllocateDescriptorSets(m_Device.GetDevice(), &allocInfo, m_vDescriptorSets.data()) != VK_SUCCESS)
-			throw std::runtime_error("Failed to allocate Descriptor Sets!");
-
-		for (size_t i{}; i < g_MAX_FRAMES_IN_FLIGHT; ++i)
-		{
-			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = m_vUniformBuffers[i].GetBuffer();
-			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(UniformBufferObject);
-
-			VkDescriptorImageInfo imageInfo{};
-			imageInfo.imageLayout = m_TextureImage.GetCurrentLayout();
-			imageInfo.imageView = m_TextureImage.GetImageView();
-			imageInfo.sampler = m_TextureSampler.GetSampler();
-
-			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = m_vDescriptorSets[i];
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &bufferInfo;
-			descriptorWrites[0].pImageInfo = nullptr;
-			descriptorWrites[0].pTexelBufferView = nullptr;
-
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = m_vDescriptorSets[i];
-			descriptorWrites[1].dstBinding = 1;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pImageInfo = &imageInfo;
-			descriptorWrites[1].pBufferInfo = nullptr;
-			descriptorWrites[1].pTexelBufferView = nullptr;
-
-			vkUpdateDescriptorSets(m_Device.GetDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-		}
-	}
-
 	void RecordCommandBuffer(pom::CommandBuffer& commandBuffer, uint32_t imageIndex)
 	{
 		VkCommandBuffer vCmdBuffer = commandBuffer.GetBuffer();
@@ -654,7 +597,7 @@ private:
 				vkCmdBindVertexBuffers(vCmdBuffer, 0, 1, vertexBuffers, offsets);
 				vkCmdBindIndexBuffer(vCmdBuffer, m_IndexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-				vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetLayout(), 0, 1, &m_vDescriptorSets[m_CurrentFrame], 0, nullptr);
+				vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetLayout(), 0, 1, &m_vDescriptorSets[m_CurrentFrame].GetHandle(), 0, nullptr);
 
 				vkCmdDrawIndexed(vCmdBuffer, static_cast<uint32_t>(m_vIndices.size()), 1, 0, 0, 0);
 			}
@@ -752,8 +695,8 @@ private:
 	pom::GraphicsPipelineLayout		m_PipelineLayout			{ };
 	pom::GraphicsPipeline			m_GraphicsPipeline			{ };
 
-	VkDescriptorPool				m_DescriptorPool			{ VK_NULL_HANDLE };
-	std::vector<VkDescriptorSet>	m_vDescriptorSets			{ VK_NULL_HANDLE };
+	pom::DescriptorPool				m_DescriptorPool			{ };
+	std::vector<pom::DescriptorSet>	m_vDescriptorSets			{ };
 
 	pom::CommandPool				m_CommandPool				{ };
 	pom::SyncManager				m_SyncManager				{ };
@@ -768,7 +711,7 @@ private:
 
 	uint32_t						m_CurrentFrame				{ 0 };
 
-	VmaAllocator m_Allocator									{ VK_NULL_HANDLE };
+	VmaAllocator					m_Allocator					{ VK_NULL_HANDLE };
 	pom::DeletionQueue				m_DeletionQueue				{ };
 	pom::DeletionQueue				m_DeletionQueueSC			{ };
 };
