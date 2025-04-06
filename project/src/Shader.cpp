@@ -33,6 +33,16 @@ pom::ShaderModule pom::ShaderLoader::Load(const Device& device, const std::strin
 	ReadCode(filename);
 	return BuildModule(device);
 }
+
+std::vector<pom::ShaderModule> pom::ShaderLoader::LoadMultiple(const Device& device, const std::initializer_list<std::string>& fileNames, const std::string& prefix)
+{
+	std::vector<ShaderModule> shaders;
+	shaders.reserve(fileNames.size());
+	for (auto& fileName : fileNames)
+		shaders.emplace_back(Load(device, prefix + fileName));
+	return shaders;
+}
+
 void pom::ShaderLoader::ReadCode(const std::string& filename)
 {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);

@@ -117,9 +117,12 @@ class HelloTriangleApplication
 public:
 	void Run()
 	{
-		m_pWindow.Initialize(800, 600, "Vulkan Refactored");
-		m_DeletionQueue.Push([&] { m_pWindow.Destroy(); });
-
+		// -- Create Window - Requirements - []
+		{
+			m_pWindow.Initialize(800, 600, "Vulkan Refactored");
+			m_DeletionQueue.Push([&] { m_pWindow.Destroy(); });
+		}
+		
 		InitVulkan();
 		MainLoop();
 		Cleanup();
@@ -128,7 +131,7 @@ public:
 private:
 	void InitVulkan()
 	{
-		// --	Enable Debugger	--//
+		// -- Enable Debugger - Requirements - [Debug]
 		{
 			#ifdef NDEBUG
 				pom::Debugger::SetEnabled(false);
@@ -138,7 +141,7 @@ private:
 			#endif
 		}
 
-		// --	Create Instance	--//
+		// -- Create Instance - Requirements - []
 		{
 			pom::InstanceBuilder builder;
 
@@ -149,26 +152,26 @@ private:
 			m_DeletionQueue.Push([&] { m_Instance.Destroy(); });
 		}
 
-		// --	Setup Debugger	--//
+		// -- Setup Debugger - Requirements - [Instance]
 		{
 			pom::Debugger::SetupMessenger(m_Instance);
-			m_DeletionQueue.Push([&] { if (pom::Debugger::IsEnabled()) pom::Debugger::DestroyMessenger(m_Instance); });
+			m_DeletionQueue.Push([&] { pom::Debugger::DestroyMessenger(m_Instance); });
 		}
 
-		// --	Create Surface	--//
+		// -- Create Surface - Requirements - [Window - Instance]
 		{
 			m_pWindow.CreateVulkanSurface(m_Instance);
 			m_DeletionQueue.Push([&] { vkDestroySurfaceKHR(m_Instance.GetInstance(), m_pWindow.GetVulkanSurface(), nullptr); });
 		}
 
-		// --	Select GPU	--//
+		// -- Select GPU - Requirements - [Window - Instance]
 		{
 			pom::PhysicalDeviceSelector selector;
 			selector.AddExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
 					.PickPhysicalDevice(m_Instance, m_PhysicalDevice, m_pWindow.GetVulkanSurface());
 		}
 
-		// --	Create Device		--//
+		// -- Create Device - Requirements - [Physical Device - Instance]
 		{
 			VkPhysicalDeviceFeatures desiredFeatures{};
 			desiredFeatures.samplerAnisotropy = VK_TRUE;
@@ -181,7 +184,7 @@ private:
 			m_DeletionQueue.Push([&] { m_Device.Destroy(); });
 		}
 
-		// --	Create Allocator 	  --//
+		// -- Create Allocator - Requirements - [Device - Physical Device - Instance]
 		{
 			VmaAllocatorCreateInfo allocatorInfo = {};
 			allocatorInfo.physicalDevice = m_PhysicalDevice.GetPhysicalDevice();
@@ -192,7 +195,7 @@ private:
 			m_DeletionQueue.Push([&] { vmaDestroyAllocator(m_Allocator); });
 		}
 
-		// --	Create Command Pool 	  --//
+		// -- Create Command Pool - Requirements - [Device - Physical Device]
 		{
 			m_CommandPool.Create(m_Device, m_PhysicalDevice)
 						 .AllocateCmdBuffers(g_MAX_FRAMES_IN_FLIGHT);
@@ -200,7 +203,7 @@ private:
 			m_DeletionQueue.Push([&] { m_CommandPool.Destroy(); });
 		}
 
-		// --	Create Swap Chain	  --//
+		// -- Create SwapChain - Requirements - [Device - Allocator - Physical Device, Window, Command Pool]
 		{
 			pom::SwapChainBuilder builder;
 
@@ -218,7 +221,7 @@ private:
 				});
 		}
 
-		// --	Create Render Pass   --//
+		// -- Create Render Pass - Requirements - [Device - SwapChain - Depth Buffer]
 		{
 			pom::RenderPassBuilder builder{};
 
@@ -251,19 +254,62 @@ private:
 			m_DeletionQueue.Push([&] { m_RenderPass.Destroy(m_Device); });
 		}
 
-		CreateDescriptorSetLayout();
-		CreateGraphicsPipeline();
-		CreateFrameBuffers();
-		CreateTextureImage();
-		CreateTextureImageSampler();
-		LoadModel();
-		CreateVertexBuffer();
-		CreateIndexBuffer();
-		CreateUniformBuffers();
-		CreateDescriptorPool();
-		CreateDescriptorSets();
+		// -- Create Descriptor Set Layout - Requirements - [Device]
+		{
+			CreateDescriptorSetLayout();
+		}
 
-		// --	Create Sync Objects	  --//
+		// -- Create Graphics Pipeline - Requirements - [Pipeline Layout - Shaders - RenderPass]
+		{
+			CreateGraphicsPipeline();
+		}
+
+		// -- Create Frame Buffers - Requirements - [Device - SwapChain - RenderPass]
+		{
+			CreateFrameBuffers();
+		}
+
+		// -- Create Texture - Requirements - [Device - Allocator - Image - CommandPool]
+		{
+			CreateTextureImage();
+		}
+
+		// -- Create Sampler - Requirements - [Device - Physical Device]
+		{
+			CreateTextureImageSampler();
+		}
+
+		// -- Load Model - Requirements - []
+		{
+			LoadModel();
+		}
+
+		// -- Create Vertex Buffer - Requirements - [Device - Allocator - Buffer - Command Pool]
+		{
+			CreateVertexBuffer();
+		}
+
+		// -- Create Index Buffer - Requirements - [Device - Allocator - Buffer - Command Pool]
+		{
+			CreateIndexBuffer();
+		}
+
+		// -- Create UBO - Requirements - [Device - Allocator - Buffer - Command Pool]
+		{
+			CreateUniformBuffers();
+		}
+
+		// -- Create Descriptor Pool - Requirements - [Device]
+		{
+			CreateDescriptorPool();
+		}
+
+		// -- Create Descriptor Sets - Requirements - [Device - Descriptor Pool - Descriptor Set Layout - UBO]
+		{
+			CreateDescriptorSets();
+		}
+
+		// -- Create Sync Objects - Requirements - [Device]
 		{
 			m_SyncManager.Create(m_Device, g_MAX_FRAMES_IN_FLIGHT);
 			m_DeletionQueue.Push([&] {m_SyncManager.Cleanup(); });
@@ -338,20 +384,24 @@ private:
 	void CreateGraphicsPipeline()
 	{
 		pom::ShaderLoader shaderLoader{};
-		pom::ShaderModule vertShader = shaderLoader.Load(m_Device, "shaders/shader.vert.spv");
-		pom::ShaderModule fragShader = shaderLoader.Load(m_Device, "shaders/shader.frag.spv");
+		auto shaders = shaderLoader.LoadMultiple(m_Device,
+			{
+				"shader.vert.spv",
+				"shader.frag.spv"
+			},
+			"shaders/");
 
 		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
 		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertShaderStageInfo.module = vertShader.GetShader();
+		vertShaderStageInfo.module = shaders[0].GetShader();
 		vertShaderStageInfo.pName = "main";
 		vertShaderStageInfo.pSpecializationInfo = nullptr;
 
 		VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
 		fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragShaderStageInfo.module = fragShader.GetShader();
+		fragShaderStageInfo.module = shaders[1].GetShader();
 		fragShaderStageInfo.pName = "main";
 		fragShaderStageInfo.pSpecializationInfo = nullptr;
 
@@ -464,8 +514,8 @@ private:
 		if (vkCreateGraphicsPipelines(m_Device.GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline) != VK_SUCCESS)
 			throw std::runtime_error("Failed to create Graphics Pipeline!");
 
-		vertShader.Destroy(m_Device);
-		fragShader.Destroy(m_Device);
+		for (auto& shader : shaders)
+			shader.Destroy(m_Device);
 	}
 
 	void CreateFrameBuffers()
