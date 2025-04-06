@@ -32,6 +32,7 @@ set(SOURCES
 	"${SOURCE_DIR}/GraphicsPipeline.cpp"	"${SOURCE_DIR}/GraphicsPipeline.h"
 	"${SOURCE_DIR}/FrameBuffer.cpp"			"${SOURCE_DIR}/FrameBuffer.h"
 	"${SOURCE_DIR}/Buffer.cpp"				"${SOURCE_DIR}/Buffer.h"
+	"${SOURCE_DIR}/Sampler.cpp"				"${SOURCE_DIR}/Sampler.h"
 )
 
 # Create the executable

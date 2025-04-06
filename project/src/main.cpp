@@ -45,6 +45,7 @@
 #include "Instance.h"
 #include "PhysicalDevice.h"
 #include "RenderPass.h"
+#include "Sampler.h"
 #include "Shader.h"
 #include "SwapChain.h"
 
@@ -336,7 +337,17 @@ private:
 
 		// -- Create Sampler - Requirements - [Device - Physical Device]
 		{
-			CreateTextureImageSampler();
+			pom::SamplerBuilder builder{};
+			builder
+				.SetFilters(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
+				.SetAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+				.EnableAnisotropy(m_PhysicalDevice.GetProperties().limits.maxSamplerAnisotropy)
+				.SetMipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
+				.SetMipLevels(0.f, 0.f, 0.f)
+				.SetBorderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
+				.Build(m_Device, m_TextureSampler);
+
+			m_DeletionQueue.Push([&] { m_TextureSampler.Destroy(m_Device); });
 		}
 
 		// -- Load Model - Requirements - []
@@ -415,8 +426,6 @@ private:
 	{
 		vkDestroyDescriptorPool(m_Device.GetDevice(), m_DescriptorPool, nullptr);
 
-		vkDestroySampler(m_Device.GetDevice(), m_TextureSampler, nullptr);
-
 		m_DeletionQueueSC.Flush();
 		m_DeletionQueue.Flush();
 	}
@@ -487,33 +496,6 @@ private:
 		m_CommandPool.TransitionImageLayout(m_TextureImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		stagingBuffer.Destroy(m_Device, m_Allocator);
-	}
-
-	void CreateTextureImageSampler()
-	{
-		VkPhysicalDeviceProperties properties{};
-		vkGetPhysicalDeviceProperties(m_PhysicalDevice.GetPhysicalDevice(), &properties);
-
-		VkSamplerCreateInfo samplerInfo{};
-		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerInfo.magFilter = VK_FILTER_LINEAR;
-		samplerInfo.minFilter = VK_FILTER_LINEAR;
-		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.anisotropyEnable = VK_TRUE;
-		samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-		samplerInfo.unnormalizedCoordinates = VK_FALSE;
-		samplerInfo.compareEnable = VK_FALSE;
-		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.mipLodBias = 0.0f;
-		samplerInfo.minLod = 0.0f;
-		samplerInfo.maxLod = 0.0f;
-
-		if (vkCreateSampler(m_Device.GetDevice(), &samplerInfo, nullptr, &m_TextureSampler) != VK_SUCCESS)
-			throw std::runtime_error("Failed to create Texture Sampler!");
 	}
 
 	void LoadModel()
@@ -603,7 +585,7 @@ private:
 			VkDescriptorImageInfo imageInfo{};
 			imageInfo.imageLayout = m_TextureImage.GetCurrentLayout();
 			imageInfo.imageView = m_TextureImage.GetImageView();
-			imageInfo.sampler = m_TextureSampler;
+			imageInfo.sampler = m_TextureSampler.GetSampler();
 
 			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -763,7 +745,7 @@ private:
 	std::vector<pom::FrameBuffer>	m_vFrameBuffers				{ };
 
 	pom::Image						m_TextureImage				{ };
-	VkSampler						m_TextureSampler			{ VK_NULL_HANDLE };
+	pom::Sampler					m_TextureSampler			{ };
 
 	pom::RenderPass					m_RenderPass				{ };
 	pom::DescriptorSetLayout		m_DescriptorSetLayout		{ };
