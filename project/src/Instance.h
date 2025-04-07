@@ -49,12 +49,14 @@ namespace pom
 		//--------------------------------------------------
 		InstanceBuilder& SetApplicationName(const std::string& name);
 		InstanceBuilder& SetEngineName(const std::string& name);
+		InstanceBuilder& AddInstanceExtension(const char* extName);
 		void Build(Instance& instance);
 	private:
-		static std::vector<const char*> GetRequiredExtensions();
+		void GetRequiredExtensions();
 
 		VkApplicationInfo		m_AppInfo{};
 		VkInstanceCreateInfo	m_CreateInfo{};
+		std::vector<const char*> m_vInstanceExtensions{};
 	};
 }
 

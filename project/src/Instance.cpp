@@ -44,6 +44,8 @@ pom::InstanceBuilder::InstanceBuilder()
 //--------------------------------------------------
 pom::InstanceBuilder& pom::InstanceBuilder::SetApplicationName(const std::string& name) { m_AppInfo.pApplicationName = name.c_str(); return *this; }
 pom::InstanceBuilder& pom::InstanceBuilder::SetEngineName(const std::string& name)		{ m_AppInfo.pEngineName = name.c_str(); return *this; }
+pom::InstanceBuilder& pom::InstanceBuilder::AddInstanceExtension(const char* extName)	{ m_vInstanceExtensions.push_back(extName); return *this; }
+
 void pom::InstanceBuilder::Build(Instance& instance)
 {
 	if (Debugger::IsEnabled() && !Debugger::CheckValidationLayerSupport())
@@ -53,9 +55,9 @@ void pom::InstanceBuilder::Build(Instance& instance)
 	m_CreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	m_CreateInfo.pApplicationInfo = &m_AppInfo;
 
-	auto extensions = GetRequiredExtensions();
-	m_CreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-	m_CreateInfo.ppEnabledExtensionNames = extensions.data();
+	GetRequiredExtensions();
+	m_CreateInfo.enabledExtensionCount = static_cast<uint32_t>(m_vInstanceExtensions.size());
+	m_CreateInfo.ppEnabledExtensionNames = m_vInstanceExtensions.data();
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 	if (Debugger::IsEnabled())
 	{
@@ -90,15 +92,14 @@ void pom::InstanceBuilder::Build(Instance& instance)
 	}
 }
 
-std::vector<const char*> pom::InstanceBuilder::GetRequiredExtensions()
+void pom::InstanceBuilder::GetRequiredExtensions()
 {
 	uint32_t glfwExtensionCount = 0;
 	const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+	for (uint32_t index{}; index < glfwExtensionCount; ++index)
+		m_vInstanceExtensions.push_back(glfwExtensions[index]);
 
 	if (Debugger::IsEnabled())
-		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-
-	return extensions;
+		m_vInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 }
