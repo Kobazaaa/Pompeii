@@ -32,11 +32,11 @@ FetchContent_Declare(
    GIT_PROGRESS TRUE
 )
 
-# Fetch tinyobjloader
+# Fetch assimp
 FetchContent_Declare(
-   tinyobj
-   GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
-   GIT_TAG v1.0.6
+   assimp
+   GIT_REPOSITORY https://github.com/assimp/assimp.git
+   GIT_TAG v5.4.3
    GIT_SHALLOW TRUE
    GIT_PROGRESS TRUE
 )
@@ -50,7 +50,7 @@ FetchContent_Declare(
    GIT_PROGRESS TRUE
 )
 
-FetchContent_MakeAvailable(GLFW GLM stb tinyobj vma)
+FetchContent_MakeAvailable(GLFW GLM stb assimp vma)
 
 # Link libraries to the project
 target_link_libraries(${PROJECT_NAME}
@@ -58,6 +58,7 @@ target_link_libraries(${PROJECT_NAME}
     Vulkan::Vulkan
     glfw
     glm::glm
+    assimp
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${stb_SOURCE_DIR} ${tinyobj_SOURCE_DIR} ${vma_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${stb_SOURCE_DIR} ${assimp_SOURCE_DIR}/include ${vma_SOURCE_DIR}/include)

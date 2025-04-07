@@ -1,0 +1,189 @@
+// -- Model Loading --
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
+// -- Mesh --
+#include "Model.h"
+
+// -- Output --
+#include <iostream>
+
+
+
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  Vertex	
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+//--------------------------------------------------
+//    Helpers
+//--------------------------------------------------
+
+VkVertexInputBindingDescription pom::Vertex::GetBindingDescription()
+{
+	VkVertexInputBindingDescription bindingDescription{};
+	bindingDescription.binding = 0;
+	bindingDescription.stride = sizeof(Vertex);
+	bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+	return bindingDescription;
+}
+std::vector<VkVertexInputAttributeDescription> pom::Vertex::GetAttributeDescriptions()
+{
+	std::vector<VkVertexInputAttributeDescription> attributeDescriptions(4);
+	attributeDescriptions[0].binding = 0;
+	attributeDescriptions[0].location = 0;
+	attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+	attributeDescriptions[0].offset = offsetof(Vertex, position);
+
+	attributeDescriptions[1].binding = 0;
+	attributeDescriptions[1].location = 1;
+	attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+	attributeDescriptions[1].offset = offsetof(Vertex, normal);
+
+	attributeDescriptions[2].binding = 0;
+	attributeDescriptions[2].location = 2;
+	attributeDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+	attributeDescriptions[2].offset = offsetof(Vertex, color);
+
+	attributeDescriptions[3].binding = 0;
+	attributeDescriptions[3].location = 3;
+	attributeDescriptions[3].format = VK_FORMAT_R32G32_SFLOAT;
+	attributeDescriptions[3].offset = offsetof(Vertex, texCoord);
+
+	return attributeDescriptions;
+}
+
+bool pom::Vertex::operator==(const Vertex& other) const
+{
+	return position == other.position &&
+		color == other.color &&
+		texCoord == other.texCoord;
+}
+
+
+
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  Model	
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+//--------------------------------------------------
+//    Constructor & Destructor
+//--------------------------------------------------
+void pom::Model::LoadModel(const std::string& path)
+{
+	Assimp::Importer importer;
+
+	const aiScene* pScene =
+		importer.ReadFile(path,
+		aiProcess_Triangulate |
+		aiProcess_FlipUVs |
+		aiProcess_FlipWindingOrder |
+		aiProcess_JoinIdenticalVertices |
+		aiProcess_SortByPType);
+
+	if (!pScene || pScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !pScene->mRootNode)
+	{
+		std::cerr << "ASSIMP ERROR: " << importer.GetErrorString() << "\n";
+		return;
+	}
+
+	ProcessNode(pScene->mRootNode, pScene);
+}
+void pom::Model::AllocateBuffers(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool)
+{
+	CreateVertexBuffers(device, allocator, cmdPool);
+	CreateIndexBuffers(device, allocator, cmdPool);
+}
+
+void pom::Model::DestroyBuffers(const Device& device, const VmaAllocator& allocator) const
+{
+	for (int index{ static_cast<int>(meshes.size()) - 1 }; index >= 0; --index)
+	{
+		meshes[index].indexBuffer.Destroy(device, allocator);
+		meshes[index].vertexBuffer.Destroy(device, allocator);
+	}
+}
+
+
+//--------------------------------------------------
+//    Helpers
+//--------------------------------------------------
+void pom::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene)
+{
+	for (uint32_t index{}; index < pNode->mNumMeshes; ++index)
+	{
+		aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[index]];
+		ProcessMesh(pMesh, pScene);
+	}
+
+	for (uint32_t cIdx{}; cIdx < pNode->mNumChildren; ++cIdx)
+		ProcessNode(pNode->mChildren[cIdx], pScene);
+}
+void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene)
+{
+	meshes.emplace_back();
+
+	// -- Process Vertices --
+	for (uint32_t vIdx{}; vIdx < pMesh->mNumVertices; ++vIdx)
+	{
+		Vertex vertex;
+
+		vertex.position = glm::vec3(pMesh->mVertices[vIdx].x,
+									pMesh->mVertices[vIdx].z,
+									pMesh->mVertices[vIdx].y);
+
+		if (pMesh->HasNormals())
+			vertex.normal = glm::vec3(pMesh->mNormals[vIdx].x,
+									  pMesh->mNormals[vIdx].z,
+									  pMesh->mNormals[vIdx].y);
+
+		if (pMesh->mTextureCoords[0])
+			vertex.texCoord = glm::vec2(pMesh->mTextureCoords[0][vIdx].x, pMesh->mTextureCoords[0][vIdx].y);
+		else
+			vertex.texCoord = glm::vec2(0.0f, 0.0f);
+
+		vertex.color = glm::vec3(1.f, 1.f, 1.f);
+
+		meshes.back().vertices.push_back(vertex);
+	}
+
+	// -- Process Indices --
+	for (uint32_t fIdx{}; fIdx < pMesh->mNumFaces; ++fIdx)
+	{
+		aiFace face = pMesh->mFaces[fIdx];
+		for (uint32_t iIdx{}; iIdx < face.mNumIndices; ++iIdx)
+			meshes.back().indices.push_back(face.mIndices[iIdx]);
+	}
+}
+
+void pom::Model::CreateVertexBuffers(const Device& device, const VmaAllocator allocator, CommandPool& cmdPool)
+{
+	for (Mesh& mesh : meshes)
+	{
+		BufferAllocator alloc{};
+
+		const uint32_t bufferSize = static_cast<uint32_t>(mesh.vertices.size()) * sizeof(mesh.vertices[0]);
+		alloc
+			.SetSize(bufferSize)
+			.SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+			.HostAccess(false)
+			.InitialData(mesh.vertices.data(), 0, bufferSize)
+			.Allocate(device, allocator, cmdPool, mesh.vertexBuffer);
+	}
+}
+void pom::Model::CreateIndexBuffers(const Device& device, const VmaAllocator allocator, CommandPool& cmdPool)
+{
+	for (Mesh& mesh : meshes)
+	{
+		BufferAllocator alloc{};
+
+		const uint32_t bufferSize = static_cast<uint32_t>(mesh.indices.size()) * sizeof(mesh.indices[0]);
+		alloc
+			.SetSize(bufferSize)
+			.SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
+			.HostAccess(false)
+			.InitialData(mesh.indices.data(), 0, bufferSize)
+			.Allocate(device, allocator, cmdPool, mesh.indexBuffer);
+	}
+}

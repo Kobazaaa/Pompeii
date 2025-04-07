@@ -1,8 +1,6 @@
 // -- Model Includes --
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
 
 // -- Container Includes --
 #include <array>
@@ -19,6 +17,7 @@ void pom::Renderer::Initialize(Window* pWindow)
 {
 	m_pWindow = pWindow;
 	InitializeVulkan();
+	LoadModels();
 }
 
 void pom::Renderer::Destroy()
@@ -322,35 +321,6 @@ void pom::Renderer::InitializeVulkan()
 		m_DeletionQueue.Push([&] { m_TextureSampler.Destroy(m_Device); });
 	}
 
-	// -- Load Model - Requirements - []
-	{
-		LoadModel();
-	}
-
-	// -- Create Vertex Buffer - Requirements - [Device - Allocator - Buffer - Command Pool]
-	{
-		pom::BufferAllocator bufferAlloc{};
-		bufferAlloc
-			.SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
-			.SetSize(m_vVertices.size() * sizeof(m_vVertices[0]))
-			.HostAccess(false)
-			.InitialData(m_vVertices.data(), 0, m_vVertices.size() * sizeof(m_vVertices[0]))
-			.Allocate(m_Device, m_Allocator, m_CommandPool, m_VertexBuffer);
-		m_DeletionQueue.Push([&] {m_VertexBuffer.Destroy(m_Device, m_Allocator); });
-	}
-
-	// -- Create Index Buffer - Requirements - [Device - Allocator - Buffer - Command Pool]
-	{
-		pom::BufferAllocator bufferAlloc{};
-		bufferAlloc
-			.SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
-			.SetSize(m_vIndices.size() * sizeof(m_vIndices[0]))
-			.HostAccess(false)
-			.InitialData(m_vIndices.data(), 0, m_vIndices.size() * sizeof(m_vIndices[0]))
-			.Allocate(m_Device, m_Allocator, m_CommandPool, m_IndexBuffer);
-		m_DeletionQueue.Push([&] {m_IndexBuffer.Destroy(m_Device, m_Allocator); });
-	}
-
 	// -- Create UBO - Requirements - [Device - Allocator - Buffer - Command Pool]
 	{
 		m_vUniformBuffers.resize(g_MAX_FRAMES_IN_FLIGHT);
@@ -466,48 +436,17 @@ void pom::Renderer::CreateTextureImage()
 
 	stagingBuffer.Destroy(m_Device, m_Allocator);
 }
-void pom::Renderer::LoadModel()
+void pom::Renderer::LoadModels()
 {
-	tinyobj::attrib_t attrib;
-	std::vector<tinyobj::shape_t> shapes;
-	std::vector<tinyobj::material_t> materials;
-	std::string error;
-
-	// By default, automatically triangulates
-	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &error, g_MODEL_PATH.c_str()))
-		throw std::runtime_error(error);
-
-	std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-	for (const auto& shape : shapes)
+	// -- Load Model - Requirements - []
 	{
-		int counterIdx = 0;
-		for (const auto& index : shape.mesh.indices)
-		{
-			Vertex vertex{};
+		m_Model.LoadModel("models/viking_room.obj");
+	}
 
-			vertex.position = {
-					attrib.vertices[3 * index.vertex_index + 0],
-					attrib.vertices[3 * index.vertex_index + 2],
-					attrib.vertices[3 * index.vertex_index + 1]
-			};
-			vertex.texCoord = {
-					attrib.texcoords[2 * index.texcoord_index + 0],
-					1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-			};
-			vertex.color = { 1.0f, 1.0f, 1.0f };
-
-			if (!uniqueVertices.contains(vertex))
-			{
-				uniqueVertices[vertex] = static_cast<uint32_t>(m_vVertices.size());
-				m_vVertices.push_back(vertex);
-			}
-			m_vIndices.push_back(uniqueVertices[vertex]);
-			// Swap 2 indices to make each triangle LH with clockwise front
-			if (counterIdx % 3 == 2)
-				std::swap(m_vIndices[counterIdx - 1], m_vIndices[counterIdx]);
-			++counterIdx;
-		}
+	// -- Create Vertex & Index Buffer - Requirements - [Device - Allocator - Buffer - Command Pool]
+	{
+		m_Model.AllocateBuffers(m_Device, m_Allocator, m_CommandPool);
+		m_DeletionQueue.Push([&] {m_Model.DestroyBuffers(m_Device, m_Allocator); });
 	}
 }
 void pom::Renderer::RecordCommandBuffer(pom::CommandBuffer& commandBuffer, uint32_t imageIndex) const
@@ -547,14 +486,17 @@ void pom::Renderer::RecordCommandBuffer(pom::CommandBuffer& commandBuffer, uint3
 			scissor.extent = m_SwapChain.GetExtent();
 			vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
 
-			VkBuffer vertexBuffers[] = { m_VertexBuffer.GetBuffer() };
-			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(vCmdBuffer, 0, 1, vertexBuffers, offsets);
-			vkCmdBindIndexBuffer(vCmdBuffer, m_IndexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+			for (const Mesh& mesh : m_Model.meshes)
+			{
+				VkBuffer vertexBuffers[] = { mesh.vertexBuffer.GetBuffer() };
+				VkDeviceSize offsets[] = { 0 };
+				vkCmdBindVertexBuffers(vCmdBuffer, 0, 1, vertexBuffers, offsets);
+				vkCmdBindIndexBuffer(vCmdBuffer, mesh.indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetLayout(), 0, 1, &m_vDescriptorSets[m_CurrentFrame].GetHandle(), 0, nullptr);
+				vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetLayout(), 0, 1, &m_vDescriptorSets[m_CurrentFrame].GetHandle(), 0, nullptr);
 
-			vkCmdDrawIndexed(vCmdBuffer, static_cast<uint32_t>(m_vIndices.size()), 1, 0, 0, 0);
+				vkCmdDrawIndexed(vCmdBuffer, static_cast<uint32_t>(mesh.indices.size()), 1, 0, 0, 0);
+			}
 		}
 		vkCmdEndRenderPass(vCmdBuffer);
 	}

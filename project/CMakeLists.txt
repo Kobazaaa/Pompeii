@@ -35,6 +35,7 @@ set(SOURCES
 	"${SOURCE_DIR}/Sampler.cpp"				"${SOURCE_DIR}/Sampler.h"
 	"${SOURCE_DIR}/DescriptorPool.cpp"		"${SOURCE_DIR}/DescriptorPool.h"
 	"${SOURCE_DIR}/Renderer.cpp"			"${SOURCE_DIR}/Renderer.h"
+	"${SOURCE_DIR}/Model.cpp"				"${SOURCE_DIR}/Model.h"
 )
 
 # Create the executable

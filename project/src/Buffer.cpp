@@ -32,6 +32,7 @@ pom::BufferAllocator::BufferAllocator()
 	m_UseInitialData = false;												//? CAN CHANGE
 	m_pData = nullptr;														//? CAN CHANGE
 	m_InitDataSize = 0;														//? CAN CHANGE
+	m_InitDataOffset = 0;													//? CAN CHANGE
 }
 
 pom::BufferAllocator& pom::BufferAllocator::SetSize(uint32_t size)
