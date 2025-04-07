@@ -46,13 +46,10 @@ namespace pom
 		//--------------------------------------------------
 		//    Loader
 		//--------------------------------------------------
-		ShaderModule Load(const Device& device, const std::string& filename);
-		std::vector<ShaderModule> LoadMultiple(const Device& device, const std::initializer_list<std::string>& fileNames, const std::string& prefix = "");
+		void Load(const Device& device, const std::string& filename, ShaderModule& module);
 
 	private:
 		void ReadCode(const std::string& filename);
-		ShaderModule BuildModule(const Device& device);
-
 		std::vector<char> m_vCode{};
 	};
 }

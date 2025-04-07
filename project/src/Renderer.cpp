@@ -267,22 +267,22 @@ void pom::Renderer::InitializeVulkan()
 	// -- Create Graphics Pipeline - Requirements - [Pipeline Layout - Shaders - RenderPass]
 	{
 		pom::ShaderLoader shaderLoader{};
-		auto shaders = shaderLoader.LoadMultiple(m_Device,
-			{
-				"shader.vert.spv",
-				"shader.frag.spv"
-			},
-			"shaders/");
+
+		ShaderModule vertShader;
+		ShaderModule fragShader;
+		shaderLoader.Load(m_Device, "shaders/shader.vert.spv", vertShader);
+		shaderLoader.Load(m_Device, "shaders/shader.frag.spv", fragShader);
 
 		pom::GraphicsPipelineBuilder builder{};
-
+		uint32_t arraySize = static_cast<uint32_t>(m_Model.images.size());
 		builder
 			.SetPipelineLayout(m_PipelineLayout)
 			.SetRenderPass(m_RenderPass)
 			.AddDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
 			.AddDynamicState(VK_DYNAMIC_STATE_SCISSOR)
-			.SetShader(shaders[0], VK_SHADER_STAGE_VERTEX_BIT)
-			.SetShader(shaders[1], VK_SHADER_STAGE_FRAGMENT_BIT)
+			.AddShader(vertShader, VK_SHADER_STAGE_VERTEX_BIT)
+			.AddShader(fragShader, VK_SHADER_STAGE_FRAGMENT_BIT)
+				.SetShaderSpecialization(0, 0, sizeof(uint32_t), &arraySize)
 			.SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 			.SetCullMode(VK_CULL_MODE_BACK_BIT)
 			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
@@ -294,8 +294,8 @@ void pom::Renderer::InitializeVulkan()
 		m_DeletionQueue.Push([&] { m_GraphicsPipeline.Destroy(m_Device); });
 
 
-		for (auto& shader : shaders)
-			shader.Destroy(m_Device);
+		fragShader.Destroy(m_Device);
+		vertShader.Destroy(m_Device);
 	}
 
 	// -- Create Frame Buffers - Requirements - [Device - SwapChain - RenderPass]

@@ -92,7 +92,7 @@ void pom::Mesh::Draw(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pip
 	vkCmdBindIndexBuffer(vCmdBuffer, indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 	// -- Drawing Time! --
-	vkCmdDrawIndexed(vCmdBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+	vkCmdDrawIndexed(vCmdBuffer, indexCount, 1, 0, 0, 0);
 }
 
 
@@ -123,7 +123,7 @@ void pom::Model::LoadModel(const std::string& path)
 
 	ProcessNode(pScene->mRootNode, pScene, ConvertAssimpMatrix(pScene->mRootNode->mTransformation));
 }
-void pom::Model::AllocateResources(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool)
+void pom::Model::AllocateResources(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool, bool keepHostData)
 {
 	CreateVertexBuffers(device, allocator, cmdPool);
 	CreateIndexBuffers(device, allocator, cmdPool);
@@ -143,6 +143,23 @@ void pom::Model::AllocateResources(const Device& device, const VmaAllocator& all
 			.Build(device, allocator, cmdPool, images.back());
 		images.back().GenerateImageView(device, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
 	}
+
+	// -- Destroy Host Data --
+	if (!keepHostData)
+	{
+		for (Texture& tex : textures)
+			tex.FreePixels();
+		textures.clear();
+
+		for (Mesh& mesh : meshes)
+		{
+			mesh.indices.clear();
+			mesh.vertices.clear();
+		}
+
+		pathToIdx.clear();
+	}
+
 }
 void pom::Model::Destroy(const Device& device, const VmaAllocator& allocator) const
 {
@@ -211,6 +228,7 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 
 		meshes.back().vertices.push_back(vertex);
 	}
+	meshes.back().vertexCount = static_cast<uint32_t>(meshes.back().vertices.size());
 
 	// -- Process Indices --
 	for (uint32_t fIdx{}; fIdx < pMesh->mNumFaces; ++fIdx)
@@ -219,6 +237,7 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 		for (uint32_t iIdx{}; iIdx < face.mNumIndices; ++iIdx)
 			meshes.back().indices.push_back(face.mIndices[iIdx]);
 	}
+	meshes.back().indexCount = static_cast<uint32_t>(meshes.back().indices.size());
 
 	// -- Process Materials --
 	const aiMaterial* material = pScene->mMaterials[pMesh->mMaterialIndex];

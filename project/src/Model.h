@@ -72,6 +72,8 @@ namespace pom
 
 		MeshPushConstants pc;
 		Material material;
+		uint32_t indexCount;
+		uint32_t vertexCount;
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -83,7 +85,7 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		void LoadModel(const std::string& path);
-		void AllocateResources(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool);
+		void AllocateResources(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool, bool keepHostData = false);
 		void Destroy(const Device& device, const VmaAllocator& allocator) const;
 
 		//--------------------------------------------------

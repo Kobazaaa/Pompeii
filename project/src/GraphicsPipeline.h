@@ -105,7 +105,9 @@ namespace pom
 		//--------------------------------------------------
 
 		// Shader Info
-		GraphicsPipelineBuilder& SetShader(const ShaderModule& shader, VkShaderStageFlagBits stage);
+		GraphicsPipelineBuilder& AddShader(const ShaderModule& shader, VkShaderStageFlagBits stage);
+		GraphicsPipelineBuilder& SetShaderSpecialization(uint32_t constID, uint32_t offset, uint32_t size, const void* data);
+
 
 		// Vertex Input Info
 		//! REQUIRED
@@ -156,6 +158,8 @@ namespace pom
 
 		std::vector<VkDynamicState> m_vDynamicStates;
 		std::vector<VkPipelineShaderStageCreateInfo> m_vShaderInfo;
+		std::vector<VkSpecializationMapEntry > m_vShaderSpecializationEntries;
+		std::vector<VkSpecializationInfo> m_vSpecializationInfo;
 	};
 }
 

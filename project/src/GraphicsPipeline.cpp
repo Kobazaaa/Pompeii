@@ -172,7 +172,7 @@ pom::GraphicsPipelineBuilder::GraphicsPipelineBuilder()
 //    Builder
 //--------------------------------------------------
 // Shader Info
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetShader(const ShaderModule& shader, VkShaderStageFlagBits stage)
+pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::AddShader(const ShaderModule& shader, VkShaderStageFlagBits stage)
 {
 	VkPipelineShaderStageCreateInfo shaderInfo{};
 	shaderInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -182,6 +182,27 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetShader(const Shad
 	shaderInfo.pSpecializationInfo = nullptr;
 
 	m_vShaderInfo.push_back(shaderInfo);
+
+	return *this;
+}
+pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetShaderSpecialization(uint32_t constID, uint32_t offset, uint32_t size, const void* data)
+{
+	// -- Create Entry --
+	VkSpecializationMapEntry specializationMapEntry{};
+	specializationMapEntry.constantID = constID;
+	specializationMapEntry.offset = offset;
+	specializationMapEntry.size = size;
+	m_vShaderSpecializationEntries.push_back(specializationMapEntry);
+
+	// -- Create Info --
+	m_vSpecializationInfo.emplace_back();
+	m_vSpecializationInfo.back().mapEntryCount = 1;
+	m_vSpecializationInfo.back().pMapEntries = &m_vShaderSpecializationEntries.back();
+	m_vSpecializationInfo.back().dataSize = size;
+	m_vSpecializationInfo.back().pData = data;
+
+	// -- Set Info --
+	m_vShaderInfo.back().pSpecializationInfo = &m_vSpecializationInfo.back();
 
 	return *this;
 }

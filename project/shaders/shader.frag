@@ -1,7 +1,7 @@
 #version 450
 
 // -- Texture Array Size --
-layout(constant_id = 0) const uint TEXTURE_ARRAY_SIZE = 2;
+layout(constant_id = 0) const uint TEXTURE_ARRAY_SIZE = 1;
 
 // -- Texture Array Index --
 layout(push_constant) uniform constants
