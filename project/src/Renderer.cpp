@@ -492,7 +492,8 @@ void pom::Renderer::UpdateUniformBuffer(uint32_t currentImage) const
 	float time = std::chrono::duration<float>(currentTime - startTime).count();
 
 	UniformBufferObject ubo{};
-	ubo.model = glm::scale(glm::rotate(glm::mat4(1.0f), time * glm::radians(90.f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.25, 0.25, 0.25)) ;
+	//ubo.model = glm::scale(glm::rotate(glm::mat4(1.0f), time * glm::radians(90.f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.25, 0.25, 0.25)) ;
+	ubo.model = glm::mat4(1.f);
 	ubo.view = m_pCamera->GetViewMatrix();
 	ubo.proj = m_pCamera->GetProjectionMatrix();
 

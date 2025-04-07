@@ -38,6 +38,7 @@ set(SOURCES
 	"${SOURCE_DIR}/Model.cpp"				"${SOURCE_DIR}/Model.h"
 	"${SOURCE_DIR}/Material.cpp"			"${SOURCE_DIR}/Material.h"
 	"${SOURCE_DIR}/Camera.cpp"				"${SOURCE_DIR}/Camera.h"
+	"${SOURCE_DIR}/Timer.cpp"				"${SOURCE_DIR}/Timer.h"
 )
 
 # Create the executable

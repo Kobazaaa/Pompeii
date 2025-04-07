@@ -10,6 +10,7 @@
 #include "DeletionQueue.h"
 #include "Window.h"
 #include "Camera.h"
+#include "Timer.h"
 
 
 using namespace pom;
@@ -52,12 +53,16 @@ int main()
 	try
 	{
 		// -- Main Loop --
+		Timer::Start();
 		while (!glfwWindowShouldClose(pWindow->GetWindow()))
 		{
+			Timer::Update();
 			glfwPollEvents();
 			pCamera->Update();
 			pRenderer->Update();
 			pRenderer->Render();
+
+			std::this_thread::sleep_for(Timer::SleepDurationNanoSeconds());
 		}
 	}
 	// -- Catch Failures --

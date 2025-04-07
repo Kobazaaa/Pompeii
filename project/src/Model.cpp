@@ -243,8 +243,8 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 		}
 		else
 		{
-			meshes.back().material.textureIdx = idx - 1;
-			meshes.back().pc = { idx - 1 };
+			meshes.back().material.textureIdx = insertResult.first->second;
+			meshes.back().pc = { insertResult.first->second };
 		}
 	}
 }

@@ -43,6 +43,9 @@ namespace pom
 		void ChangeSettings(const CameraSettings& settings);
 		const CameraSettings& GetSettings() const;
 
+		void SetSpeed(float speed);
+		void SetSensitivity(float sensitivity);
+
 		// -- Matrices --
 		glm::mat4 GetViewMatrix();
 		glm::mat4 GetProjectionMatrix();
@@ -65,6 +68,17 @@ namespace pom
 
 		// -- Settings --
 		CameraSettings m_Settings		{ };
+
+		float m_Pitch					{ };
+		float m_Yaw						{ };
+		float m_Roll					{ };
+
+		float m_Speed					{ 10.f };
+		float m_Sensitivity				{ 0.1f };
+
+		bool m_IsDragging				{ false };
+		float m_LastX					{ 0.f };
+		float m_LastY					{ 0.f };
 
 		// -- Dirty Flags
 		bool m_CameraDirty				{ true };
