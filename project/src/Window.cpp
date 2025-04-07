@@ -26,6 +26,8 @@ void pom::Window::Destroy() const
 //--------------------------------------------------
 GLFWwindow* pom::Window::GetWindow()			const	{ return m_pWindow; }
 glm::ivec2 pom::Window::GetSize()				const	{ return m_Size; }
+float pom::Window::GetAspectRatio()				const	{ return static_cast<float>(m_Size.x) / static_cast<float>(m_Size.y); }
+
 bool pom::Window::IsOutdated()					const	{ return m_IsOutOfDate; }
 void pom::Window::ResetOutdated()						{ m_IsOutOfDate = false; }
 

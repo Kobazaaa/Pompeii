@@ -6,8 +6,8 @@
 #include "vma/vk_mem_alloc.h"
 
 // -- Math Includes --
-#define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "glm/gtc/quaternion.hpp"
@@ -51,6 +51,7 @@ struct UniformBufferObject
 namespace pom
 {
 	class Window;
+	class Camera;
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Renderer	
@@ -62,7 +63,7 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		Renderer() = default;
-		void Initialize(Window* pWindow);
+		void Initialize(Camera* pCamera, Window* pWindow);
 		void Destroy();
 
 		//--------------------------------------------------
@@ -120,6 +121,7 @@ namespace pom
 
 		// -- Window --
 		Window*				m_pWindow			{ };
+		Camera*				m_pCamera			{ };
 
 		// -- Frame Counter --
 		uint32_t			m_CurrentFrame		{ 0 };

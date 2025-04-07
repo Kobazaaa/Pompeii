@@ -24,6 +24,7 @@ namespace pom
 		//--------------------------------------------------
 		GLFWwindow*		GetWindow()			const;
 		glm::ivec2		GetSize()			const;
+		float			GetAspectRatio()	const;
 
 		bool			IsOutdated()		const;
 		void			ResetOutdated();

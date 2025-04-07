@@ -4,10 +4,12 @@
 
 #define VMA_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
+#define GLM_FORCE_LEFT_HANDED
 
 #include "Renderer.h"
 #include "DeletionQueue.h"
 #include "Window.h"
+#include "Camera.h"
 
 
 using namespace pom;
@@ -26,10 +28,22 @@ int main()
 	}
 
 
+	// -- Create Camera --
+	CameraSettings settings
+	{
+		.fov = 45.f,
+		.aspectRatio = pWindow->GetAspectRatio(),
+		.nearPlane = 0.1f,
+		.farPlane = 1000.f
+	};
+	Camera* pCamera = new Camera(settings, pWindow);
+	m_ApplicationDQ.Push([&] { delete pCamera; });
+
+
 	// -- Create Renderer --
 	Renderer* pRenderer = new Renderer();
 	{
-		pRenderer->Initialize(pWindow);
+		pRenderer->Initialize(pCamera, pWindow);
 		m_ApplicationDQ.Push([&] { pRenderer->Destroy(); delete pRenderer; });
 	}
 
@@ -41,6 +55,7 @@ int main()
 		while (!glfwWindowShouldClose(pWindow->GetWindow()))
 		{
 			glfwPollEvents();
+			pCamera->Update();
 			pRenderer->Update();
 			pRenderer->Render();
 		}

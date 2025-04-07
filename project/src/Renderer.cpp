@@ -3,15 +3,18 @@
 
 // -- Custom Includes --
 #include "Renderer.h"
+
+#include "Camera.h"
 #include "Window.h"
 #include "Shader.h"
 
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::Renderer::Initialize(Window* pWindow)
+void pom::Renderer::Initialize(Camera* pCamera, Window* pWindow)
 {
 	m_pWindow = pWindow;
+	m_pCamera = pCamera;
 	InitializeVulkan();
 }
 
@@ -412,6 +415,16 @@ void pom::Renderer::RecreateSwapChain()
 			.Build(m_Device, m_vFrameBuffers);
 	}
 	m_DeletionQueueSC.Push([&] { for (auto& framebuffer : m_vFrameBuffers) framebuffer.Destroy(m_Device); m_vFrameBuffers.clear(); });
+
+	const CameraSettings& oldSettings = m_pCamera->GetSettings();
+	const CameraSettings settings
+	{
+		oldSettings.fov,
+		m_pWindow->GetAspectRatio(),
+		oldSettings.nearPlane,
+		oldSettings.farPlane
+	};
+	m_pCamera->ChangeSettings(settings);
 }
 void pom::Renderer::LoadModels()
 {
@@ -480,10 +493,8 @@ void pom::Renderer::UpdateUniformBuffer(uint32_t currentImage) const
 
 	UniformBufferObject ubo{};
 	ubo.model = glm::scale(glm::rotate(glm::mat4(1.0f), time * glm::radians(90.f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.25, 0.25, 0.25)) ;
-	ubo.view = glm::lookAtLH(glm::vec3(2.f, 2.0f, -20.f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	const float aspectRatio = static_cast<float>(m_SwapChain.GetExtent().width) / static_cast<float>(m_SwapChain.GetExtent().height);
-	ubo.proj = glm::perspectiveLH(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
-	ubo.proj[1][1] *= -1;
+	ubo.view = m_pCamera->GetViewMatrix();
+	ubo.proj = m_pCamera->GetProjectionMatrix();
 
 	vmaCopyMemoryToAllocation(m_Allocator, &ubo, m_vUniformBuffers[currentImage].GetMemory(), 0, sizeof(ubo));
 }
