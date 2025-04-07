@@ -1,4 +1,5 @@
 #include "CommandPool.h"
+#include "Image.h"
 #include <stdexcept>
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -23,7 +24,7 @@ pom::CommandPool& pom::CommandPool::Create(Device& device, const PhysicalDevice&
 	m_Device = device;
 	return *this;
 }
-void pom::CommandPool::Destroy()
+void pom::CommandPool::Destroy() const
 {
 	vkDestroyCommandPool(m_Device.GetDevice(), m_CommandPool, nullptr);
 }
@@ -152,7 +153,7 @@ void pom::CommandPool::CopyBufferToBuffer(const Buffer& srcBuffer, Buffer& dstBu
 	cmd.Submit(m_Device.GetGraphicQueue(), true);
 	cmd.Free();
 }
-void pom::CommandPool::CopyBufferToImage(const Buffer& buffer, VkImage image, uint32_t width, uint32_t height)
+void pom::CommandPool::CopyBufferToImage(const Buffer& buffer, const Image& image, uint32_t width, uint32_t height)
 {
 	auto& cmd = AllocateCmdBuffers(1);
 	cmd.Begin();
@@ -168,7 +169,7 @@ void pom::CommandPool::CopyBufferToImage(const Buffer& buffer, VkImage image, ui
 		region.imageOffset = { 0, 0, 0 };
 		region.imageExtent = { width, height, 1 };
 
-		vkCmdCopyBufferToImage(cmd.GetBuffer(), buffer.GetBuffer(), image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+		vkCmdCopyBufferToImage(cmd.GetBuffer(), buffer.GetBuffer(), image.GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 	}
 	cmd.End();
 	cmd.Submit(m_Device.GetGraphicQueue(), true);

@@ -2,6 +2,7 @@
 #define IMAGE_H
 
 #include <vma/vk_mem_alloc.h>
+#include "CommandPool.h"
 #include "Device.h"
 
 namespace pom
@@ -17,12 +18,12 @@ namespace pom
 		//--------------------------------------------------
 		Image() = default;
 		explicit Image(VkImage image);
-		void Destroy(Device& device, const VmaAllocator& allocator) const;
+		void Destroy(const Device& device, const VmaAllocator& allocator) const;
 
 		//--------------------------------------------------
 		//    Helpers
 		//--------------------------------------------------
-		VkImageView& GenerateImageView(Device& device, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType);
+		VkImageView& GenerateImageView(const Device& device, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType);
 		static VkFormat FindSupportedFormat(const PhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
 		//--------------------------------------------------
@@ -77,10 +78,19 @@ namespace pom
 		ImageBuilder& SetSampleCount(VkSampleCountFlagBits sampleCount);
 		ImageBuilder& SetSharingMode(VkSharingMode sharingMode);
 		ImageBuilder& SetImageType(VkImageType type);
+		ImageBuilder& InitialData(void* data, uint32_t offset, uint32_t width, uint32_t height, uint32_t dataSize, VkImageLayout finalLayout);
 
-		ImageBuilder& Build(const VmaAllocator& allocator, Image& image);
+		void Build(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool, Image& image) const;
 
 	private:
+		bool m_UseInitialData;
+		void* m_pData;
+		uint32_t m_InitDataSize;
+		uint32_t m_InitDataWidth;
+		uint32_t m_InitDataHeight;
+		uint32_t m_InitDataOffset;
+		VkImageLayout m_FinalLayout;
+
 		VkImageCreateInfo m_ImageInfo{};
 		VmaAllocationCreateInfo m_AllocInfo{};
 	};

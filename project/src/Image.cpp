@@ -9,13 +9,13 @@
 //    Constructor & Destructor
 //--------------------------------------------------
 pom::Image::Image(VkImage image) : m_Image(image){}
-void pom::Image::Destroy(Device& device, const VmaAllocator& allocator) const
+void pom::Image::Destroy(const Device& device, const VmaAllocator& allocator) const
 {
 	vkDestroyImageView(device.GetDevice(), m_ImageView, nullptr);
 	vkDestroyImage(device.GetDevice(), m_Image, nullptr);
 	vmaFreeMemory(allocator, m_ImageMemory);
 }
-VkImageView& pom::Image::GenerateImageView(Device& device, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType)
+VkImageView& pom::Image::GenerateImageView(const Device& device, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType)
 {
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -87,6 +87,14 @@ pom::ImageBuilder::ImageBuilder()
 	m_AllocInfo = {};
 	m_AllocInfo.usage = VMA_MEMORY_USAGE_AUTO;						// CAN'T CHANGE
 	m_AllocInfo.requiredFlags = 0;									//? CAN CHANGE
+
+	m_UseInitialData = false;										//? CAN CHANGE
+	m_pData = nullptr;												//? CAN CHANGE
+	m_InitDataSize = 0;												//? CAN CHANGE
+	m_InitDataHeight = 0;											//? CAN CHANGE
+	m_InitDataWidth = 0;											//? CAN CHANGE
+	m_InitDataOffset = 0;											//? CAN CHANGE
+	m_FinalLayout = VK_IMAGE_LAYOUT_UNDEFINED;						//? CAN CHANGE
 }
 
 
@@ -105,12 +113,41 @@ pom::ImageBuilder& pom::ImageBuilder::SetArrayLayers(uint32_t layers)						{ m_I
 pom::ImageBuilder& pom::ImageBuilder::SetSampleCount(VkSampleCountFlagBits sampleCount)		{ m_ImageInfo.samples = sampleCount; return *this; }
 pom::ImageBuilder& pom::ImageBuilder::SetSharingMode(VkSharingMode sharingMode)				{ m_ImageInfo.sharingMode = sharingMode; return *this; }
 pom::ImageBuilder& pom::ImageBuilder::SetImageType(VkImageType type)						{ m_ImageInfo.imageType = type; return *this; }
-pom::ImageBuilder& pom::ImageBuilder::Build(const VmaAllocator& allocator, Image& image)
+pom::ImageBuilder& pom::ImageBuilder::InitialData(void* data, uint32_t offset, uint32_t width, uint32_t height, uint32_t dataSize, VkImageLayout finalLayout)
+{
+	m_UseInitialData = true;
+	m_pData = data;
+	m_InitDataOffset = offset;
+	m_InitDataSize = dataSize;
+	m_InitDataHeight = height;
+	m_InitDataWidth = width;
+	m_ImageInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	m_FinalLayout = finalLayout;
+	return *this;
+}
+
+void pom::ImageBuilder::Build(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool, Image& image) const
 {
 	image.m_ImageInfo = m_ImageInfo;
 	image.m_CurrentLayout = m_ImageInfo.initialLayout;
 	if (vmaCreateImage(allocator, &m_ImageInfo, &m_AllocInfo, &image.m_Image, &image.m_ImageMemory, nullptr) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Image!");
 
-	return *this;
+	if (m_UseInitialData)
+	{
+		Buffer stagingBuffer;
+		BufferAllocator stagingAllocator{};
+		stagingAllocator
+			.SetUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
+			.HostAccess(true)
+			.SetSize(m_InitDataSize)
+			.Allocate(device, allocator, cmdPool, stagingBuffer);
+		vmaCopyMemoryToAllocation(allocator, m_pData, stagingBuffer.GetMemory(), m_InitDataOffset, m_InitDataSize);
+
+		cmdPool.TransitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		cmdPool.CopyBufferToImage(stagingBuffer, image, m_InitDataWidth, m_InitDataHeight);
+		cmdPool.TransitionImageLayout(image, m_FinalLayout);
+
+		stagingBuffer.Destroy(device, allocator);
+	}
 }

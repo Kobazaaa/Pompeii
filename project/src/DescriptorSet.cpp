@@ -38,7 +38,7 @@ pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetType(VkDesc
 pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetCount(uint32_t count)					{ m_vLayoutBindings.back().descriptorCount = count; return *this; }
 pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetShaderStages(VkShaderStageFlags flags) { m_vLayoutBindings.back().stageFlags = flags; return *this; }
 
-void pom::DescriptorSetLayoutBuilder::Build(const Device& device, DescriptorSetLayout& descriptorSetLayout) const
+void pom::DescriptorSetLayoutBuilder::Build(const Device& device, DescriptorSetLayout& descriptorSetLayout)
 {
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -49,6 +49,8 @@ void pom::DescriptorSetLayoutBuilder::Build(const Device& device, DescriptorSetL
 
 	if (vkCreateDescriptorSetLayout(device.GetDevice(), &layoutInfo, nullptr, &descriptorSetLayout.m_Layout) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Descriptor Set Layout!");
+
+	m_vLayoutBindings.clear();
 }
 
 
@@ -74,7 +76,7 @@ const pom::DescriptorSetLayout& pom::DescriptorSet::GetLayout() const {	return m
 //    Writing
 //--------------------------------------------------
 
-pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteBuffer(const DescriptorSet& set, uint32_t binding, const Buffer& buffer, uint32_t offset, uint32_t range)
+pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddBufferInfo(const Buffer& buffer, uint32_t offset, uint32_t range)
 {
 	VkDescriptorBufferInfo bufferInfo{};
 	bufferInfo.buffer = buffer.GetBuffer();
@@ -82,6 +84,10 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteBuffer(const Descriptor
 	bufferInfo.range = range;
 	m_vBufferInfos.push_back(bufferInfo);
 
+	return *this;
+}
+pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteBuffers(const DescriptorSet& set, uint32_t binding)
+{
 	VkWriteDescriptorSet write{};
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.dstSet = set.GetHandle();
@@ -89,7 +95,7 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteBuffer(const Descriptor
 	write.dstArrayElement = 0;
 	write.descriptorType = set.GetLayout().GetBindings()[binding].descriptorType;
 	write.descriptorCount = set.GetLayout().GetBindings()[binding].descriptorCount;
-	write.pBufferInfo = &m_vBufferInfos.back();
+	write.pBufferInfo = m_vBufferInfos.data();
 	write.pImageInfo = nullptr;
 	write.pTexelBufferView = nullptr;
 	m_vDescriptorWrites.push_back(write);
@@ -97,7 +103,7 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteBuffer(const Descriptor
 	return *this;
 }
 
-pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteImage(const DescriptorSet& set, uint32_t binding, const Image& image, const Sampler& sampler)
+pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddImageInfo(const Image& image, const Sampler& sampler)
 {
 	VkDescriptorImageInfo imageInfo{};
 	imageInfo.imageLayout = image.GetCurrentLayout();
@@ -105,6 +111,10 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteImage(const DescriptorS
 	imageInfo.sampler = sampler.GetSampler();
 	m_vImageInfos.push_back(imageInfo);
 
+	return *this;
+}
+pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteImages(const DescriptorSet& set, uint32_t binding)
+{
 	VkWriteDescriptorSet write{};
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.dstSet = set.GetHandle();
@@ -112,7 +122,7 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteImage(const DescriptorS
 	write.dstArrayElement = 0;
 	write.descriptorType = set.GetLayout().GetBindings()[binding].descriptorType;
 	write.descriptorCount = set.GetLayout().GetBindings()[binding].descriptorCount;
-	write.pImageInfo = &m_vImageInfos.back();
+	write.pImageInfo = m_vImageInfos.data();
 	write.pBufferInfo = nullptr;
 	write.pTexelBufferView = nullptr;
 	m_vDescriptorWrites.push_back(write);

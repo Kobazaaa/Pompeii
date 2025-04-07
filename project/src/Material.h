@@ -1,0 +1,53 @@
+#ifndef MATERIAL_TEXTURE_H
+#define MATERIAL_TEXTURE_H
+
+// -- Texture Includes --
+#include "stb_image.h"
+
+// -- Custom Includes --
+#include "DescriptorSet.h"
+#include "Image.h"
+#include "glm/vec2.hpp"
+
+namespace pom
+{
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//? ~~	  Texture	
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	class Texture final
+	{
+	public:
+		//--------------------------------------------------
+		//    Constructor & Destructor
+		//--------------------------------------------------
+		Texture() = default;
+		void LoadFromFile(const std::string& path);
+		void FreePixels() const;
+
+
+		//--------------------------------------------------
+		//    Accessors & Mutators
+		//--------------------------------------------------
+		stbi_uc* GetPixels() const;
+		uint32_t GetMemorySize() const;
+		glm::ivec2 GetExtent() const;
+
+	private:
+		stbi_uc* m_pPixels;
+		int m_Width;
+		int m_Height;
+		int m_Channels;
+	};
+
+
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//? ~~	  Material	
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	struct Material
+	{
+		// -- Diffuse --
+		uint32_t textureIdx;
+	};
+}
+
+#endif // MATERIAL_TEXTURE_H

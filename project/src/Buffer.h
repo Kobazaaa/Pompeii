@@ -34,7 +34,7 @@ namespace pom
 		BufferAllocator& HostAccess(bool access);
 		BufferAllocator& InitialData(void* data, uint32_t offset, uint32_t size);
 
-		void Allocate(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool, Buffer& buffer);
+		void Allocate(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool, Buffer& buffer) const;
 
 	private:
 		bool m_UseInitialData;

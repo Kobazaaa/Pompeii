@@ -91,7 +91,7 @@ void pom::SwapChainBuilder::Build(Device& device, const VmaAllocator& allocator,
 		.SetFormat(format)
 		.SetUsageFlags(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
 		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-		.Build(allocator, swapChain.m_DepthImage);
+		.Build(device, allocator, cmdPool, swapChain.m_DepthImage);
 	swapChain.m_DepthImage.GenerateImageView(device, format, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
 	cmdPool.TransitionImageLayout(swapChain.m_DepthImage, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }

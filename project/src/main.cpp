@@ -3,6 +3,8 @@
 #include <cstdlib>
 
 #define VMA_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+
 #include "Renderer.h"
 #include "DeletionQueue.h"
 #include "Window.h"

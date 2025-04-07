@@ -84,7 +84,7 @@ pom::BufferAllocator& pom::BufferAllocator::InitialData(void* data, uint32_t off
 	return *this;
 }
 
-void pom::BufferAllocator::Allocate(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool, Buffer& buffer)
+void pom::BufferAllocator::Allocate(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool, Buffer& buffer) const
 {
 	vmaCreateBuffer(allocator, &m_CreateInfo, &m_AllocCreateInfo, &buffer.m_Buffer, &buffer.m_Memory, nullptr);
 

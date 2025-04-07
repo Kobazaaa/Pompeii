@@ -87,7 +87,6 @@ namespace pom
 		std::vector<FrameBuffer>	m_vFrameBuffers			{ };
 
 		// -- Model --
-		Image						m_TextureImage			{ };
 		Sampler						m_TextureSampler		{ };
 		Model						m_Model					{ };
 
@@ -98,9 +97,11 @@ namespace pom
 
 		// -- Descriptors
 		std::vector<Buffer>			m_vUniformBuffers		{ };
-		DescriptorSetLayout			m_DescriptorSetLayout	{ };
+		DescriptorSetLayout			m_UniformDSL				{ };
+		DescriptorSetLayout			m_TextureDSL				{ };
 		DescriptorPool				m_DescriptorPool		{ };
-		std::vector<DescriptorSet>	m_vDescriptorSets		{ };
+		std::vector<DescriptorSet>	m_vUniformDS			{ };
+		std::vector<DescriptorSet>	m_vTextureDS			{ };
 
 		// -- Command --
 		CommandPool					m_CommandPool			{ };
@@ -113,7 +114,6 @@ namespace pom
 		//    Helpers
 		//--------------------------------------------------
 		void RecreateSwapChain();
-		void CreateTextureImage();
 		void LoadModels();
 		void RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex) const;
 		void UpdateUniformBuffer(uint32_t currentImage) const;

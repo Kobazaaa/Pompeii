@@ -56,7 +56,7 @@ namespace pom
 		//! REQUIRED
 		DescriptorSetLayoutBuilder& SetShaderStages(VkShaderStageFlags flags);
 
-		void Build(const Device& device, DescriptorSetLayout& descriptorSetLayout) const;
+		void Build(const Device& device, DescriptorSetLayout& descriptorSetLayout);
 
 	private:
 		std::vector<VkDescriptorSetLayoutBinding> m_vLayoutBindings;
@@ -99,8 +99,12 @@ namespace pom
 		//--------------------------------------------------
 		//    Writing
 		//--------------------------------------------------
-		DescriptorSetWriter& WriteBuffer(const DescriptorSet& set, uint32_t binding, const Buffer& buffer, uint32_t offset, uint32_t range);
-		DescriptorSetWriter& WriteImage(const DescriptorSet& set, uint32_t binding, const Image& image, const Sampler& sampler);
+		DescriptorSetWriter& AddBufferInfo(const Buffer& buffer, uint32_t offset, uint32_t range);
+		DescriptorSetWriter& WriteBuffers(const DescriptorSet& set, uint32_t binding);
+
+		DescriptorSetWriter& AddImageInfo(const Image& image, const Sampler& sampler);
+		DescriptorSetWriter& WriteImages(const DescriptorSet& set, uint32_t binding);
+
 		void Execute(const Device& device);
 
 	private:

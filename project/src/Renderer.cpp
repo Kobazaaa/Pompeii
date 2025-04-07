@@ -1,7 +1,3 @@
-// -- Model Includes --
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 // -- Container Includes --
 #include <array>
 
@@ -17,7 +13,6 @@ void pom::Renderer::Initialize(Window* pWindow)
 {
 	m_pWindow = pWindow;
 	InitializeVulkan();
-	LoadModels();
 }
 
 void pom::Renderer::Destroy()
@@ -190,35 +185,40 @@ void pom::Renderer::InitializeVulkan()
 		m_DeletionQueueSC.Push([&] { m_SwapChain.Destroy(m_Device, m_Allocator); });
 	}
 
+	// -- Load Models - Requirements - []
+	{
+		LoadModels();
+	}
+
 	// -- Create Render Pass - Requirements - [Device - SwapChain - Depth Buffer]
 	{
 		pom::RenderPassBuilder builder{};
 
 		builder
 			.NewAttachment()
-			.SetFormat(m_SwapChain.GetFormat())
-			.SetSamples(VK_SAMPLE_COUNT_1_BIT)
-			.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE)
-			.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
-			.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			.SetFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
-			.AddColorAttachment(0)
+				.SetFormat(m_SwapChain.GetFormat())
+				.SetSamples(VK_SAMPLE_COUNT_1_BIT)
+				.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE)
+				.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
+				.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+				.SetFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+				.AddColorAttachment(0)
 			.NewAttachment()
-			.SetFormat(m_SwapChain.GetDepthImage().GetFormat())
-			.SetSamples(VK_SAMPLE_COUNT_1_BIT)
-			.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE)
-			.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
-			.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			.SetFinalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-			.AddDepthAttachment(1)
+				.SetFormat(m_SwapChain.GetDepthImage().GetFormat())
+				.SetSamples(VK_SAMPLE_COUNT_1_BIT)
+				.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE)
+				.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
+				.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+				.SetFinalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+				.AddDepthAttachment(1)
 			.NewSubpass()
-			.SetBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
+				.SetBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
 			.NewDependency()
-			.SetSrcSubPass(VK_SUBPASS_EXTERNAL)
-			.SetDstSubPass(0)
-			.SetSrcMasks(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0)
-			.SetDstMasks(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+				.SetSrcSubPass(VK_SUBPASS_EXTERNAL)
+				.SetDstSubPass(0)
+				.SetSrcMasks(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0)
+				.SetDstMasks(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
 			.Build(m_Device, m_RenderPass);
 		m_DeletionQueue.Push([&] { m_RenderPass.Destroy(m_Device); });
 	}
@@ -227,16 +227,22 @@ void pom::Renderer::InitializeVulkan()
 	{
 		pom::DescriptorSetLayoutBuilder builder{};
 
+		// -- Uniform Buffer Descriptor --
 		builder
 			.NewLayoutBinding()
 				.SetType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 				.SetShaderStages(VK_SHADER_STAGE_VERTEX_BIT)
+			.Build(m_Device, m_UniformDSL);
+		m_DeletionQueue.Push([&] { m_UniformDSL.Destroy(m_Device); });
+
+		// -- Texture Array Descriptor --
+		builder
 			.NewLayoutBinding()
 				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
-			.Build(m_Device, m_DescriptorSetLayout);
-
-		m_DeletionQueue.Push([&] { m_DescriptorSetLayout.Destroy(m_Device); });
+				.SetCount(static_cast<uint32_t>(m_Model.images.size()))
+			.Build(m_Device, m_TextureDSL);
+		m_DeletionQueue.Push([&] { m_TextureDSL.Destroy(m_Device); });
 	}
 
 	// -- Create Graphics Pipeline Layout - Requirements - [Device - Descriptor Set Layout]
@@ -244,7 +250,12 @@ void pom::Renderer::InitializeVulkan()
 		pom::GraphicsPipelineLayoutBuilder builder{};
 
 		builder
-			.AddLayout(m_DescriptorSetLayout)
+			.NewPushConstantRange()
+				.SetPCOffset(0)
+				.SetPCSize(sizeof(MeshPushConstants))
+				.SetPCStageFlags(VK_SHADER_STAGE_FRAGMENT_BIT)
+			.AddLayout(m_UniformDSL)
+			.AddLayout(m_TextureDSL)
 			.Build(m_Device, m_PipelineLayout);
 
 		m_DeletionQueue.Push([&] {m_PipelineLayout.Destroy(m_Device); });
@@ -301,11 +312,6 @@ void pom::Renderer::InitializeVulkan()
 		m_DeletionQueueSC.Push([&] { for (auto& framebuffer : m_vFrameBuffers) framebuffer.Destroy(m_Device); m_vFrameBuffers.clear(); });
 	}
 
-	// -- Create Texture - Requirements - [Device - Allocator - Image - CommandPool]
-	{
-		CreateTextureImage();
-	}
-
 	// -- Create Sampler - Requirements - [Device - Physical Device]
 	{
 		pom::SamplerBuilder builder{};
@@ -339,24 +345,34 @@ void pom::Renderer::InitializeVulkan()
 	// -- Create Descriptor Pool - Requirements - [Device]
 	{
 		m_DescriptorPool
-			.SetMaxSets(g_MAX_FRAMES_IN_FLIGHT)
-			.AddPoolSizeLayout(m_DescriptorSetLayout)
+			.SetMaxSets(30)
+			.AddPoolSizeLayout(m_UniformDSL)
+			.AddPoolSizeLayout(m_TextureDSL)
 			.Create(m_Device);
 		m_DeletionQueue.Push([&] {m_DescriptorPool.Destroy(m_Device); });
 	}
 
 	// -- Allocate Descriptor Sets - Requirements - [Device - Descriptor Pool - Descriptor Set Layout - UBO]
 	{
-		m_vDescriptorSets = m_DescriptorPool.AllocateSets(m_Device, m_DescriptorSetLayout, g_MAX_FRAMES_IN_FLIGHT);
+		m_vUniformDS = m_DescriptorPool.AllocateSets(m_Device, m_UniformDSL, g_MAX_FRAMES_IN_FLIGHT);
+		m_vTextureDS = m_DescriptorPool.AllocateSets(m_Device, m_TextureDSL, 1);
 
+		// -- Write UBO --
 		pom::DescriptorSetWriter writer{};
 		for (size_t i{}; i < g_MAX_FRAMES_IN_FLIGHT; ++i)
 		{
 			writer
-				.WriteBuffer(m_vDescriptorSets[i], 0, m_vUniformBuffers[i], 0, sizeof(UniformBufferObject))
-				.WriteImage(m_vDescriptorSets[i], 1, m_TextureImage, m_TextureSampler)
+				.AddBufferInfo(m_vUniformBuffers[i], 0, sizeof(UniformBufferObject))
+				.WriteBuffers(m_vUniformDS[i], 0)
 				.Execute(m_Device);
 		}
+
+		// -- Write Textures --
+		for (Image& image : m_Model.images)
+		{
+			writer.AddImageInfo(image, m_TextureSampler);
+		}
+		writer.WriteImages(m_vTextureDS[0], 0).Execute(m_Device);
 	}
 
 	// -- Create Sync Objects - Requirements - [Device]
@@ -397,61 +413,22 @@ void pom::Renderer::RecreateSwapChain()
 	}
 	m_DeletionQueueSC.Push([&] { for (auto& framebuffer : m_vFrameBuffers) framebuffer.Destroy(m_Device); m_vFrameBuffers.clear(); });
 }
-void pom::Renderer::CreateTextureImage()
-{
-	int texWidth;
-	int texHeight;
-	int texChannels;
-	stbi_uc* pixels = stbi_load(g_TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-	VkDeviceSize imageSize = texWidth * texHeight * 4;
-
-	if (!pixels)
-		throw std::runtime_error("Failed to load Texture Image!");
-
-	pom::Buffer stagingBuffer;
-	pom::BufferAllocator stagingAllocator{};
-	stagingAllocator
-		.SetUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
-		.HostAccess(true)
-		.SetSize(imageSize)
-		.Allocate(m_Device, m_Allocator, m_CommandPool, stagingBuffer);
-	vmaCopyMemoryToAllocation(m_Allocator, pixels, stagingBuffer.GetMemory(), 0, imageSize);
-
-	stbi_image_free(pixels);
-
-	pom::ImageBuilder builder{};
-	builder.SetWidth(texWidth)
-		.SetHeight(texHeight)
-		.SetFormat(VK_FORMAT_R8G8B8A8_SRGB)
-		.SetTiling(VK_IMAGE_TILING_OPTIMAL)
-		.SetUsageFlags(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
-		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-		.Build(m_Allocator, m_TextureImage);
-	m_TextureImage.GenerateImageView(m_Device, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
-	m_DeletionQueue.Push([&] { m_TextureImage.Destroy(m_Device, m_Allocator); });
-
-	m_CommandPool.TransitionImageLayout(m_TextureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	m_CommandPool.CopyBufferToImage(stagingBuffer, m_TextureImage.GetImage(), static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-	m_CommandPool.TransitionImageLayout(m_TextureImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-	stagingBuffer.Destroy(m_Device, m_Allocator);
-}
 void pom::Renderer::LoadModels()
 {
 	// -- Load Model - Requirements - []
 	{
-		m_Model.LoadModel("models/viking_room.obj");
+		m_Model.LoadModel("models/Viking Room.fbx");
 	}
 
 	// -- Create Vertex & Index Buffer - Requirements - [Device - Allocator - Buffer - Command Pool]
 	{
-		m_Model.AllocateBuffers(m_Device, m_Allocator, m_CommandPool);
-		m_DeletionQueue.Push([&] {m_Model.DestroyBuffers(m_Device, m_Allocator); });
+		m_Model.AllocateResources(m_Device, m_Allocator, m_CommandPool);
+		m_DeletionQueue.Push([&] {m_Model.Destroy(m_Device, m_Allocator); });
 	}
 }
 void pom::Renderer::RecordCommandBuffer(pom::CommandBuffer& commandBuffer, uint32_t imageIndex) const
 {
-	VkCommandBuffer vCmdBuffer = commandBuffer.GetBuffer();
+	const VkCommandBuffer& vCmdBuffer = commandBuffer.GetBuffer();
 	commandBuffer.Begin(0);
 	{
 		VkRenderPassBeginInfo renderPassInfo{};
@@ -486,17 +463,9 @@ void pom::Renderer::RecordCommandBuffer(pom::CommandBuffer& commandBuffer, uint3
 			scissor.extent = m_SwapChain.GetExtent();
 			vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
 
-			for (const Mesh& mesh : m_Model.meshes)
-			{
-				VkBuffer vertexBuffers[] = { mesh.vertexBuffer.GetBuffer() };
-				VkDeviceSize offsets[] = { 0 };
-				vkCmdBindVertexBuffers(vCmdBuffer, 0, 1, vertexBuffers, offsets);
-				vkCmdBindIndexBuffer(vCmdBuffer, mesh.indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
-				vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetLayout(), 0, 1, &m_vDescriptorSets[m_CurrentFrame].GetHandle(), 0, nullptr);
-
-				vkCmdDrawIndexed(vCmdBuffer, static_cast<uint32_t>(mesh.indices.size()), 1, 0, 0, 0);
-			}
+			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetLayout(), 0, 1, &m_vUniformDS[m_CurrentFrame].GetHandle(), 0, nullptr);
+			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetLayout(), 1, 1, &m_vTextureDS[0].GetHandle(), 0, nullptr);
+			m_Model.Draw(commandBuffer, m_PipelineLayout);
 		}
 		vkCmdEndRenderPass(vCmdBuffer);
 	}
@@ -510,10 +479,10 @@ void pom::Renderer::UpdateUniformBuffer(uint32_t currentImage) const
 	float time = std::chrono::duration<float>(currentTime - startTime).count();
 
 	UniformBufferObject ubo{};
-	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.f), glm::vec3(0.0f, 1.0f, 0.0f));
-	ubo.view = glm::lookAtLH(glm::vec3(2.0f, 2.0f, -2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	ubo.model = glm::scale(glm::rotate(glm::mat4(1.0f), time * glm::radians(90.f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.25, 0.25, 0.25)) ;
+	ubo.view = glm::lookAtLH(glm::vec3(2.f, 2.0f, -20.f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	const float aspectRatio = static_cast<float>(m_SwapChain.GetExtent().width) / static_cast<float>(m_SwapChain.GetExtent().height);
-	ubo.proj = glm::perspectiveLH(glm::radians(45.0f), aspectRatio, 0.1f, 10.0f);
+	ubo.proj = glm::perspectiveLH(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
 	ubo.proj[1][1] *= -1;
 
 	vmaCopyMemoryToAllocation(m_Allocator, &ubo, m_vUniformBuffers[currentImage].GetMemory(), 0, sizeof(ubo));

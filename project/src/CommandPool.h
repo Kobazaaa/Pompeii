@@ -4,10 +4,10 @@
 #include "CommandBuffer.h"
 #include "Buffer.h"
 #include "Device.h"
-#include "Image.h"
 
 namespace pom
 {
+	class Image;
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  CommandPool	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -19,7 +19,7 @@ namespace pom
 		//--------------------------------------------------
 		CommandPool() = default;
 		CommandPool& Create(Device& device, const PhysicalDevice& physicalDevice);
-		void Destroy();
+		void Destroy() const;
 
 
 		//--------------------------------------------------
@@ -35,7 +35,7 @@ namespace pom
 		//--------------------------------------------------
 		void TransitionImageLayout(Image& image, VkImageLayout newLayout);
 		void CopyBufferToBuffer(const Buffer& srcBuffer, Buffer& dstBuffer, VkDeviceSize size);
-		void CopyBufferToImage(const Buffer& buffer, VkImage image, uint32_t width, uint32_t height);
+		void CopyBufferToImage(const Buffer& buffer, const Image& image, uint32_t width, uint32_t height);
 
 	private:
 		VkCommandPool				m_CommandPool		{ VK_NULL_HANDLE};

@@ -1,6 +1,4 @@
 // -- Model Loading --
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
 // -- Mesh --
@@ -8,7 +6,7 @@
 
 // -- Output --
 #include <iostream>
-
+#include <sstream>
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,6 +60,41 @@ bool pom::Vertex::operator==(const Vertex& other) const
 }
 
 
+//--------------------------------------------------
+//    Commands
+//--------------------------------------------------
+void pom::Mesh::Destroy(const Device& device, const VmaAllocator& allocator) const
+{
+	indexBuffer.Destroy(device, allocator);
+	vertexBuffer.Destroy(device, allocator);
+}
+void pom::Mesh::Draw(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pipelineLayout) const
+{
+	// -- Get Vulkan Command Buffer --
+	const VkCommandBuffer& vCmdBuffer = cmdBuffer.GetBuffer();
+
+	// -- Bind Push Constants --
+	vkCmdPushConstants(
+		vCmdBuffer,
+		pipelineLayout.GetLayout(),
+		VK_SHADER_STAGE_FRAGMENT_BIT,
+		0,
+		sizeof(MeshPushConstants),
+		&pc
+	);
+
+	// -- Bind Vertex Buffer --
+	VkBuffer vertexBuffers[] = { vertexBuffer.GetBuffer() };
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(vCmdBuffer, 0, 1, vertexBuffers, offsets);
+
+	// -- Bind Index Buffer --
+	vkCmdBindIndexBuffer(vCmdBuffer, indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+	// -- Drawing Time! --
+	vkCmdDrawIndexed(vCmdBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+}
+
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Model	
@@ -78,7 +111,7 @@ void pom::Model::LoadModel(const std::string& path)
 		importer.ReadFile(path,
 		aiProcess_Triangulate |
 		aiProcess_FlipUVs |
-		aiProcess_FlipWindingOrder |
+		//aiProcess_FlipWindingOrder |
 		aiProcess_JoinIdenticalVertices |
 		aiProcess_SortByPType);
 
@@ -88,39 +121,68 @@ void pom::Model::LoadModel(const std::string& path)
 		return;
 	}
 
-	ProcessNode(pScene->mRootNode, pScene);
+	ProcessNode(pScene->mRootNode, pScene, ConvertAssimpMatrix(pScene->mRootNode->mTransformation));
 }
-void pom::Model::AllocateBuffers(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool)
+void pom::Model::AllocateResources(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool)
 {
 	CreateVertexBuffers(device, allocator, cmdPool);
 	CreateIndexBuffers(device, allocator, cmdPool);
+
+	// -- Build Image --
+	for (Texture& tex : textures)
+	{
+		images.emplace_back();
+		ImageBuilder builder{};
+		builder.SetWidth(tex.GetExtent().x)
+			.SetHeight(tex.GetExtent().y)
+			.SetFormat(VK_FORMAT_R8G8B8A8_SRGB)
+			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
+			.SetUsageFlags(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+			.InitialData(tex.GetPixels(), 0, tex.GetExtent().x, tex.GetExtent().y, tex.GetMemorySize(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+			.Build(device, allocator, cmdPool, images.back());
+		images.back().GenerateImageView(device, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+	}
+}
+void pom::Model::Destroy(const Device& device, const VmaAllocator& allocator) const
+{
+	for (const Texture& tex : textures)
+		tex.FreePixels();
+	for (const Image& image : images)
+		image.Destroy(device, allocator);
+
+	for (int index{ static_cast<int>(meshes.size()) - 1 }; index >= 0; --index)
+		meshes[index].Destroy(device, allocator);
 }
 
-void pom::Model::DestroyBuffers(const Device& device, const VmaAllocator& allocator) const
+//--------------------------------------------------
+//    Commands
+//--------------------------------------------------
+void pom::Model::Draw(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pipelineLayout) const
 {
-	for (int index{ static_cast<int>(meshes.size()) - 1 }; index >= 0; --index)
-	{
-		meshes[index].indexBuffer.Destroy(device, allocator);
-		meshes[index].vertexBuffer.Destroy(device, allocator);
-	}
+	for (const Mesh& mesh : meshes)
+		mesh.Draw(cmdBuffer, pipelineLayout);
 }
 
 
 //--------------------------------------------------
 //    Helpers
 //--------------------------------------------------
-void pom::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene)
+void pom::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene, const glm::mat4& parentTransform)
 {
+	glm::mat4 nodeTransform = ConvertAssimpMatrix(pNode->mTransformation);
+	glm::mat4 globalTransform = parentTransform * nodeTransform;
+
 	for (uint32_t index{}; index < pNode->mNumMeshes; ++index)
 	{
 		aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[index]];
-		ProcessMesh(pMesh, pScene);
+		ProcessMesh(pMesh, pScene, globalTransform);
 	}
 
 	for (uint32_t cIdx{}; cIdx < pNode->mNumChildren; ++cIdx)
-		ProcessNode(pNode->mChildren[cIdx], pScene);
+		ProcessNode(pNode->mChildren[cIdx], pScene, globalTransform);
 }
-void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene)
+void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const glm::mat4& transform)
 {
 	meshes.emplace_back();
 
@@ -130,8 +192,10 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene)
 		Vertex vertex;
 
 		vertex.position = glm::vec3(pMesh->mVertices[vIdx].x,
-									pMesh->mVertices[vIdx].z,
-									pMesh->mVertices[vIdx].y);
+									pMesh->mVertices[vIdx].y,
+									pMesh->mVertices[vIdx].z);
+		glm::vec4 pos = transform * glm::vec4(vertex.position, 1);
+		vertex.position = glm::vec3(pos);
 
 		if (pMesh->HasNormals())
 			vertex.normal = glm::vec3(pMesh->mNormals[vIdx].x,
@@ -155,6 +219,44 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene)
 		for (uint32_t iIdx{}; iIdx < face.mNumIndices; ++iIdx)
 			meshes.back().indices.push_back(face.mIndices[iIdx]);
 	}
+
+	// -- Process Materials --
+	const aiMaterial* material = pScene->mMaterials[pMesh->mMaterialIndex];
+
+	// -- Diffuse --
+	uint32_t count = material->GetTextureCount(aiTextureType_DIFFUSE);
+	for (uint32_t mIdx{}; mIdx < count; ++mIdx)
+	{
+		aiString texturePath;
+		material->GetTexture(aiTextureType_DIFFUSE, mIdx, &texturePath);
+		std::stringstream ss;
+		ss << "textures/" << texturePath.C_Str();
+
+		uint32_t idx = static_cast<uint32_t>(textures.size());
+		auto insertResult = pathToIdx.insert({ss.str(), idx});
+		if (insertResult.second)
+		{
+			meshes.back().material.textureIdx = idx;
+			meshes.back().pc = { idx };
+			textures.emplace_back();
+			textures.back().LoadFromFile(ss.str());
+		}
+		else
+		{
+			meshes.back().material.textureIdx = idx - 1;
+			meshes.back().pc = { idx - 1 };
+		}
+	}
+}
+
+glm::mat4 pom::Model::ConvertAssimpMatrix(const aiMatrix4x4& mat)
+{
+	return glm::mat4(
+		mat.a1, mat.b1, mat.c1, mat.d1,
+		mat.a2, mat.b2, mat.c2, mat.d2,
+		mat.a3, mat.b3, mat.c3, mat.d3,
+		mat.a4, mat.b4, mat.c4, mat.d4
+	);
 }
 
 void pom::Model::CreateVertexBuffers(const Device& device, const VmaAllocator allocator, CommandPool& cmdPool)
