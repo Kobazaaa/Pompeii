@@ -137,7 +137,8 @@ void pom::Renderer::InitializeVulkan()
 	// -- Select GPU - Requirements - [Window - Instance]
 	{
 		PhysicalDeviceSelector selector;
-		selector.AddExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+		selector
+			.AddExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
 			.PickPhysicalDevice(m_Context, m_pWindow->GetVulkanSurface());
 	}
 
@@ -148,7 +149,8 @@ void pom::Renderer::InitializeVulkan()
 
 		DeviceBuilder deviceBuilder{};
 
-		deviceBuilder.SetFeatures(desiredFeatures)
+		deviceBuilder
+			.SetFeatures(desiredFeatures)
 			.Build(m_Context);
 
 		m_Context.deletionQueue.Push([&] { m_Context.device.Destroy(); });
@@ -445,12 +447,12 @@ void pom::Renderer::LoadModels()
 {
 	// -- Load Model - Requirements - []
 	{
-		m_Model.LoadModel("models/Viking Room.fbx");
+		m_Model.LoadModel("models/sponza.obj");
 	}
 
 	// -- Create Vertex & Index Buffer - Requirements - [Device - Allocator - Buffer - Command Pool]
 	{
-		m_Model.AllocateResources(m_Context, m_CommandPool);
+		m_Model.AllocateResources(m_Context, m_CommandPool, false);
 		m_Context.deletionQueue.Push([&] {m_Model.Destroy(m_Context); });
 	}
 }

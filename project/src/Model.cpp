@@ -117,6 +117,7 @@ void pom::Model::LoadModel(const std::string& path)
 	const aiScene* pScene =
 		importer.ReadFile(path,
 		aiProcess_Triangulate |
+		aiProcess_OptimizeMeshes |
 		aiProcess_FlipUVs |
 		//aiProcess_FlipWindingOrder |
 		aiProcess_JoinIdenticalVertices |

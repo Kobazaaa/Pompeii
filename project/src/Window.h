@@ -27,7 +27,7 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		Window() = default;
-		void Initialize(int width, int height, const char* title);
+		void Initialize(const char* title, bool fullScreen, int width = 800, int height = 600);
 		void Destroy() const;
 
 		//--------------------------------------------------
@@ -36,6 +36,8 @@ namespace pom
 		GLFWwindow*		GetHandle()			const;
 		glm::ivec2		GetSize()			const;
 		float			GetAspectRatio()	const;
+		bool			IsFullScreen()		const;
+		void			ToggleFullScreen();
 
 		bool			IsOutdated()		const;
 		void			ResetOutdated();
@@ -49,6 +51,8 @@ namespace pom
 
 		GLFWwindow*		m_pWindow			{ nullptr };
 		glm::ivec2		m_Size				{ };
+		glm::ivec2		m_WindowedSize		{ };
+		bool			m_Fullscreen		{ };
 		bool			m_IsOutOfDate		{ false };
 		VkSurfaceKHR	m_VulkanSurface		{ VK_NULL_HANDLE };
 	};

@@ -27,7 +27,7 @@ int main()
 	// -- Create Window --
 	Window* pWindow = new Window();
 	{
-		pWindow->Initialize(800, 600, "Vulkan Refactored");
+		pWindow->Initialize("Vulkan Refactored", false, 800, 600);
 		m_ApplicationDQ.Push([&] { pWindow->Destroy(); delete pWindow; });
 	}
 
@@ -38,7 +38,7 @@ int main()
 		.fov = 45.f,
 		.aspectRatio = pWindow->GetAspectRatio(),
 		.nearPlane = 0.1f,
-		.farPlane = 1000.f
+		.farPlane = 10000.f
 	};
 	Camera* pCamera = new Camera(settings, pWindow);
 	m_ApplicationDQ.Push([&] { delete pCamera; });
@@ -57,9 +57,18 @@ int main()
 	{
 		// -- Main Loop --
 		Timer::Start();
+		bool wasPressed = false;
+		bool isPressed = false;
+
 		while (!glfwWindowShouldClose(pWindow->GetHandle()))
 		{
 			Timer::Update();
+
+			isPressed = glfwGetKey(pWindow->GetHandle(), GLFW_KEY_F11) == GLFW_PRESS;
+			if (isPressed && !wasPressed)
+				pWindow->ToggleFullScreen();
+			wasPressed = isPressed;
+
 			glfwPollEvents();
 			pCamera->Update();
 			pRenderer->Update();
