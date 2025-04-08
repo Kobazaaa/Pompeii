@@ -3,7 +3,6 @@
 
 // -- Vulkan Includes --
 #include <vulkan/vulkan.h>
-#include "vma/vk_mem_alloc.h"
 
 // -- Math Includes --
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -12,35 +11,32 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "glm/gtc/quaternion.hpp"
 
-// -- Container Includes --
+// -- Standard Library --
 #include <vector>
 
-// -- Helper Includes --
-#include <optional>
-#include <chrono>
-
-// -- Custom Includes --
+// -- Pompeii Includes --
+#include "Context.h"
 #include "CommandPool.h"
-#include "DeletionQueue.h"
 #include "DescriptorPool.h"
 #include "DescriptorSet.h"
-#include "Device.h"
 #include "FrameBuffer.h"
 #include "GraphicsPipeline.h"
-#include "Image.h"
 #include "Window.h"
-#include "Instance.h"
 #include "Model.h"
-#include "PhysicalDevice.h"
 #include "RenderPass.h"
 #include "Sampler.h"
 #include "SwapChain.h"
+#include "SyncManager.h"
 
 
-const std::string g_TEXTURE_PATH = "textures/viking_room.png";
+// -- Forward Declarations --
+namespace pom
+{
+	class Window;
+	class Camera;
+}
 
-constexpr int g_MAX_FRAMES_IN_FLIGHT = 2;
-
+// -- UBO --
 struct UniformBufferObject
 {
 	alignas(16) glm::mat4 model;
@@ -50,9 +46,6 @@ struct UniformBufferObject
 
 namespace pom
 {
-	class Window;
-	class Camera;
-
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Renderer	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -79,13 +72,12 @@ namespace pom
 		void InitializeVulkan();
 
 		// -- Vulkan Context --
-		Instance					m_Instance				{ };
-		PhysicalDevice				m_PhysicalDevice		{ };
-		Device						m_Device				{ };
+		Context						m_Context				{ };
 
 		// -- SwapChain --
 		SwapChain					m_SwapChain				{ };
 		std::vector<FrameBuffer>	m_vFrameBuffers			{ };
+		uint32_t					m_MaxFramesInFlight		{ 2 };
 
 		// -- Model --
 		Sampler						m_TextureSampler		{ };
@@ -98,8 +90,8 @@ namespace pom
 
 		// -- Descriptors
 		std::vector<Buffer>			m_vUniformBuffers		{ };
-		DescriptorSetLayout			m_UniformDSL				{ };
-		DescriptorSetLayout			m_TextureDSL				{ };
+		DescriptorSetLayout			m_UniformDSL			{ };
+		DescriptorSetLayout			m_TextureDSL			{ };
 		DescriptorPool				m_DescriptorPool		{ };
 		std::vector<DescriptorSet>	m_vUniformDS			{ };
 		std::vector<DescriptorSet>	m_vTextureDS			{ };
@@ -107,9 +99,6 @@ namespace pom
 		// -- Command --
 		CommandPool					m_CommandPool			{ };
 		SyncManager					m_SyncManager			{ };
-
-		// -- VMA --
-		VmaAllocator				m_Allocator				{ VK_NULL_HANDLE };
 
 		//--------------------------------------------------
 		//    Helpers
@@ -127,7 +116,6 @@ namespace pom
 		uint32_t			m_CurrentFrame		{ 0 };
 
 		// -- Deletion Queues --
-		DeletionQueue	m_DeletionQueue		{ };
 		DeletionQueue	m_DeletionQueueSC	{ };
 
 	};

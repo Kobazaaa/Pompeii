@@ -1,13 +1,17 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+// -- Math Includes --
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+// -- Forward Declarations --
+namespace pom { class Window; }
+
+
 namespace pom
 {
-	class Window;
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  CameraSettings	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

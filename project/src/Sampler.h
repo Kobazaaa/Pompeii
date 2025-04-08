@@ -1,7 +1,11 @@
 #ifndef SAMPLER_H
 #define SAMPLER_H
 
-#include "Device.h"
+// -- Vulkan Includes --
+#include <vulkan/vulkan.h>
+
+// -- Forward Declarations --
+namespace pom { struct Context; }
 
 namespace pom
 {
@@ -15,12 +19,12 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		Sampler() = default;
-		void Destroy(const Device& device) const;
+		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		const VkSampler& GetSampler() const;
+		const VkSampler& GetHandle() const;
 
 	private:
 		VkSampler m_Sampler;
@@ -57,7 +61,7 @@ namespace pom
 		// All 0 by default
 		SamplerBuilder& SetMipLevels(float bias, float min, float max);
 
-		void Build(const Device& device, Sampler& sampler);
+		void Build(const Context& context, Sampler& sampler) const;
 
 	private:
 		VkSamplerCreateInfo m_CreateInfo{};

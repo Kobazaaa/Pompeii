@@ -1,7 +1,10 @@
-#include "Shader.h"
-
+// -- Standard Library --
 #include <fstream>
 #include <stdexcept>
+
+// -- Pompeii Includes --
+#include "Shader.h"
+#include "Context.h"
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -11,13 +14,13 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::ShaderModule::Destroy(const Device& device) const { vkDestroyShaderModule(device.GetDevice(), m_Shader, nullptr); }
+void pom::ShaderModule::Destroy(const Context& context) const { vkDestroyShaderModule(context.device.GetHandle(), m_Shader, nullptr); }
 
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkShaderModule& pom::ShaderModule::GetShader()  const { return m_Shader; }
+const VkShaderModule& pom::ShaderModule::GetHandle()  const { return m_Shader; }
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -28,7 +31,7 @@ const VkShaderModule& pom::ShaderModule::GetShader()  const { return m_Shader; }
 //    Loader
 //--------------------------------------------------
 
-void pom::ShaderLoader::Load(const Device& device, const std::string& filename, ShaderModule& module)
+void pom::ShaderLoader::Load(const Context& context, const std::string& filename, ShaderModule& module)
 {
 	ReadCode(filename);
 
@@ -37,7 +40,7 @@ void pom::ShaderLoader::Load(const Device& device, const std::string& filename, 
 	createInfo.codeSize = m_vCode.size();
 	createInfo.pCode = reinterpret_cast<const uint32_t*>(m_vCode.data());
 
-	if (vkCreateShaderModule(device.GetDevice(), &createInfo, nullptr, &module.m_Shader) != VK_SUCCESS)
+	if (vkCreateShaderModule(context.device.GetHandle(), &createInfo, nullptr, &module.m_Shader) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Shader Module!");
 
 	m_vCode.clear();

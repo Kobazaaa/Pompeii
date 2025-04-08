@@ -1,5 +1,9 @@
-#include "Sampler.h"
+// -- Standard Library --
 #include <stdexcept>
+
+//-- Pompeii Includes --
+#include "Sampler.h"
+#include "Context.h"
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Sampler	
@@ -8,12 +12,12 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::Sampler::Destroy(const Device& device)	const { vkDestroySampler(device.GetDevice(), m_Sampler, nullptr); }
+void pom::Sampler::Destroy(const Context& context)	const { vkDestroySampler(context.device.GetHandle(), m_Sampler, nullptr); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkSampler& pom::Sampler::GetSampler()			const { return m_Sampler; }
+const VkSampler& pom::Sampler::GetHandle()			const { return m_Sampler; }
 
 
 
@@ -92,8 +96,8 @@ pom::SamplerBuilder& pom::SamplerBuilder::SetMipLevels(float bias, float min, fl
 	return *this;
 }
 
-void pom::SamplerBuilder::Build(const Device& device, Sampler& sampler)
+void pom::SamplerBuilder::Build(const Context& context, Sampler& sampler) const
 {
-	if (vkCreateSampler(device.GetDevice(), &m_CreateInfo, nullptr, &sampler.m_Sampler) != VK_SUCCESS)
+	if (vkCreateSampler(context.device.GetHandle(), &m_CreateInfo, nullptr, &sampler.m_Sampler) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Texture Sampler!");
 }

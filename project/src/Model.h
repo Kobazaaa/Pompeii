@@ -1,8 +1,11 @@
 #ifndef MODEL_MESH_H
 #define MODEL_MESH_H
 
-// -- Containers --
+// -- Standard Library --
 #include <unordered_map>
+
+// -- Vulkan Includes
+#include <vulkan/vulkan.h>
 
 // -- Math Includes --
 #include <glm/glm.hpp>
@@ -12,15 +15,24 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 
-// -- Custom Includes --
-#include "CommandBuffer.h"
-#include "GraphicsPipeline.h"
+// -- Pompeii Includes --
 #include "Material.h"
-#include "DescriptorPool.h"
+#include "Buffer.h"
+#include "Image.h"
 
+// -- Forward Declarations --
 struct aiNode;
 struct aiScene;
 struct aiMesh;
+namespace pom
+{
+	class CommandPool;
+	class CommandBuffer;
+	class GraphicsPipelineLayout;
+	struct Context;
+}
+
+
 namespace pom
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -58,7 +70,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Commands
 		//--------------------------------------------------
-		void Destroy(const Device& device, const VmaAllocator& allocator) const;
+		void Destroy(const Context& context) const;
 		void Draw(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pipelineLayout) const;
 
 		//--------------------------------------------------
@@ -85,8 +97,8 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		void LoadModel(const std::string& path);
-		void AllocateResources(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool, bool keepHostData = false);
-		void Destroy(const Device& device, const VmaAllocator& allocator) const;
+		void AllocateResources(const Context& context, CommandPool& cmdPool, bool keepHostData = false);
+		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
 		//    Commands
@@ -111,8 +123,8 @@ namespace pom
 
 		static glm::mat4 ConvertAssimpMatrix(const aiMatrix4x4& mat);
 
-		void CreateVertexBuffers(const Device& device, VmaAllocator allocator, CommandPool& cmdPool);
-		void CreateIndexBuffers(const Device& device, const VmaAllocator allocator, CommandPool& cmdPool);
+		void CreateVertexBuffers(const Context& context, CommandPool& cmdPool);
+		void CreateIndexBuffers(const Context& context, CommandPool& cmdPool);
 	};
 }
 

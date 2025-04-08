@@ -1,20 +1,37 @@
 #ifndef BUFFER_H
 #define BUFFER_H
 
+// -- Vulkan Includes --
 #include <vma/vk_mem_alloc.h>
-#include "Device.h"
 
+// -- Forward Declarations --
 namespace pom
 {
 	class CommandPool;
+	struct Context;
+}
+
+
+namespace pom
+{
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//? ~~	  Buffer	
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	class Buffer final
 	{
 	public:
+		//--------------------------------------------------
+		//    Constructor & Destructor
+		//--------------------------------------------------
 		Buffer() = default;
-		void Destroy(const Device& device, const VmaAllocator& allocator) const;
+		void Destroy(const Context& context) const;
 
-		const VkBuffer& GetBuffer() const;
-		const VmaAllocation& GetMemory() const;
+		//--------------------------------------------------
+		//    Accessors & Mutators
+		//--------------------------------------------------
+		const VkBuffer& GetHandle() const;
+		const VmaAllocation& GetMemoryHandle() const;
+
 	private:
 		VmaAllocation m_Memory;
 		VkBuffer m_Buffer;
@@ -22,11 +39,20 @@ namespace pom
 		friend class BufferAllocator;
 	};
 
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//? ~~	  Buffer Allocator	
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	class BufferAllocator final
 	{
 	public:
+		//--------------------------------------------------
+		//    Constructor & Destructor
+		//--------------------------------------------------
 		BufferAllocator();
 
+		//--------------------------------------------------
+		//    Allocator
+		//--------------------------------------------------
 		BufferAllocator& SetSize(uint32_t size);
 		BufferAllocator& SetUsage(VkBufferUsageFlags usage);
 		BufferAllocator& SetMemUsage(VmaMemoryUsage usage);
@@ -34,7 +60,7 @@ namespace pom
 		BufferAllocator& HostAccess(bool access);
 		BufferAllocator& InitialData(void* data, uint32_t offset, uint32_t size);
 
-		void Allocate(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool, Buffer& buffer) const;
+		void Allocate(const Context& context, CommandPool& cmdPool, Buffer& buffer) const;
 
 	private:
 		bool m_UseInitialData;

@@ -1,10 +1,20 @@
 #ifndef SYNC_MANAGER_H
 #define SYNC_MANAGER_H
 
-#include "Device.h"
+// -- Vulkan Includes --
+#include "vulkan/vulkan.h"
 
+// -- Standard Library --
+#include <vector>
+
+// -- Forward Declarations --
+namespace pom { struct Context; }
+
+
+// -- Class --
 namespace pom
 {
+	// -- Helper Structs --
 	struct FrameSync
 	{
 		VkSemaphore imageAvailable;
@@ -29,8 +39,8 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		SyncManager() = default;
-		void Create(const Device& device, uint32_t maxFramesInFlight);
-		void Cleanup();
+		void Create(const Context& context, uint32_t maxFramesInFlight);
+		void Cleanup(const Context& context);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
@@ -40,12 +50,11 @@ namespace pom
 		//--------------------------------------------------
 		//    Makers
 		//--------------------------------------------------
-		VkSemaphore CreateSemaphore();
-		VkFence CreateFence(bool signaled);
+		const VkSemaphore& CreateSemaphore(const Context& context);
+		const VkFence& CreateFence(const Context& context, bool signaled);
 
 	private:
 		uint32_t					m_MaxFrames		{};
-		Device						m_Device		{};
 
 		std::vector<VkSemaphore>	m_vSemaphores	{};
 		std::vector<VkFence>		m_vFences		{};

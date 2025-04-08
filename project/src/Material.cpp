@@ -1,5 +1,9 @@
-#include "Material.h"
+// -- Standard Library --
 #include <stdexcept>
+
+// -- Pompeii Includes --
+#include "Material.h"
+
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Texture	

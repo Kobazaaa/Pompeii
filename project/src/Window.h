@@ -1,14 +1,25 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
+// -- Vulkan Includes --
+#include "vulkan/vulkan.h"
+
+// -- GLFW Includes --
 #define GLFW_INCLUDE_VULKAN
-#include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
 
-#include "Instance.h"
+// -- Math Includes --
+#include <glm/glm.hpp>
 
+//-- Forward Declarations --
+namespace pom { struct Context; }
+
+// -- Class --
 namespace pom
 {
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//? ~~	  Window	
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	class Window final
 	{
 	public:
@@ -22,15 +33,16 @@ namespace pom
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		GLFWwindow*		GetWindow()			const;
+		GLFWwindow*		GetHandle()			const;
 		glm::ivec2		GetSize()			const;
 		float			GetAspectRatio()	const;
 
 		bool			IsOutdated()		const;
 		void			ResetOutdated();
+		static void		WaitEvents();
 
 		VkSurfaceKHR	GetVulkanSurface()	const;
-		VkSurfaceKHR	CreateVulkanSurface(Instance& instance);
+		VkSurfaceKHR	CreateVulkanSurface(const Context& context);
 	private:
 		// Callback for when the window gets resized
 		static void FrameBufferResizeCallback(GLFWwindow* window, int width, int height);

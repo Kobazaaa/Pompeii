@@ -1,5 +1,12 @@
-#include "FrameBuffer.h"
+// -- Standard Library --
 #include <stdexcept>
+
+// -- Pompeii Includes --
+#include "FrameBuffer.h"
+#include "Context.h"
+#include "RenderPass.h"
+#include "Image.h"
+
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  FrameBuffer	
@@ -8,12 +15,12 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::FrameBuffer::Destroy(const Device& device) const { vkDestroyFramebuffer(device.GetDevice(), m_Buffer, nullptr); }
+void pom::FrameBuffer::Destroy(const Context& context) const { vkDestroyFramebuffer(context.device.GetHandle(), m_Buffer, nullptr); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkFramebuffer& pom::FrameBuffer::GetBuffer() const { return m_Buffer; }
+const VkFramebuffer& pom::FrameBuffer::GetHandle() const { return m_Buffer; }
 
 
 
@@ -42,12 +49,12 @@ pom::FrameBufferBuilder::FrameBufferBuilder()
 //--------------------------------------------------
 pom::FrameBufferBuilder& pom::FrameBufferBuilder::SetRenderPass(const RenderPass& renderPass)
 {
-	m_CreateInfo.renderPass = renderPass.GetRenderPass();
+	m_CreateInfo.renderPass = renderPass.GetHandle();
 	return *this;
 }
 pom::FrameBufferBuilder& pom::FrameBufferBuilder::AddAttachment(const Image& image)
 {
-	m_vAttachments.push_back(image.GetImageView());
+	m_vAttachments.push_back(image.GetViewHandle());
 	m_CreateInfo.attachmentCount = static_cast<uint32_t>(m_vAttachments.size());
 	m_CreateInfo.pAttachments = m_vAttachments.data();
 	return *this;
@@ -59,14 +66,14 @@ pom::FrameBufferBuilder& pom::FrameBufferBuilder::SetExtent(uint32_t width, uint
 	return *this;
 }
 
-void pom::FrameBufferBuilder::Build(const Device& device, FrameBuffer& frameBuffer) const
+void pom::FrameBufferBuilder::Build(const Context& context, FrameBuffer& frameBuffer) const
 {
-	if (vkCreateFramebuffer(device.GetDevice(), &m_CreateInfo, nullptr, &frameBuffer.m_Buffer) != VK_SUCCESS)
+	if (vkCreateFramebuffer(context.device.GetHandle(), &m_CreateInfo, nullptr, &frameBuffer.m_Buffer) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Framebuffer!");
 }
 
-void pom::FrameBufferBuilder::Build(const Device& device, std::vector<FrameBuffer>& frameBuffers) const
+void pom::FrameBufferBuilder::Build(const Context& context, std::vector<FrameBuffer>& frameBuffers) const
 {
 	frameBuffers.emplace_back();
-	Build(device, frameBuffers.back());
+	Build(context, frameBuffers.back());
 }

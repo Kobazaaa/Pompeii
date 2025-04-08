@@ -1,13 +1,36 @@
 #ifndef DEBUGGER_H
 #define DEBUGGER_H
 
+// -- Vulkan Includes --
+#include <vulkan/vulkan.h>
+
+// -- Standard Library --
 #include <string>
 #include <vector>
-#include <vulkan/vulkan.h>
+
+// -- Forward Declarations --
+namespace pom { struct Context; }
+
 
 namespace pom
 {
-	class Instance;
+	struct InstanceDebugUtils
+	{
+		VkInstance							instance						{ VK_NULL_HANDLE };
+		VkDebugUtilsMessengerEXT			debugUtilsMessenger				{ VK_NULL_HANDLE };
+
+		PFN_vkCreateDebugUtilsMessengerEXT	createDebugUtilsMessengerEXT	{ nullptr };
+		PFN_vkDestroyDebugUtilsMessengerEXT destroyDebugUtilsMessengerEXT	{ nullptr };
+	};
+	struct DeviceDebugUtils
+	{
+		VkDevice							device							{ VK_NULL_HANDLE };
+
+		PFN_vkSetDebugUtilsObjectNameEXT	setDebugUtilsObjectNameEXT		{ nullptr };
+		PFN_vkCmdBeginDebugUtilsLabelEXT	cmdBeginDebugUtilsLabelEXT		{ nullptr };
+		PFN_vkCmdEndDebugUtilsLabelEXT		cmdEndDebugUtilsLabelEXT		{ nullptr };
+		PFN_vkCmdInsertDebugUtilsLabelEXT	cmdInsertDebugUtilsLabelEXT		{ nullptr };
+	};
 
 	class Debugger final
 	{
@@ -17,8 +40,10 @@ namespace pom
 		//--------------------------------------------------
 		static void SetEnabled(bool enabled);
 		static void AddValidationLayer(const char* layer);
-		static void SetupMessenger(const Instance& instance);
-		static void DestroyMessenger(const Instance& instance);
+		static void Setup(const Context& context);
+		static void Destroy();
+
+		static void SetDebugObjectName(uint64_t objectHandle, VkObjectType objectType, const std::string& name);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
@@ -37,13 +62,14 @@ namespace pom
 															const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 															void* pUserData);
 
-		static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-												const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
-		static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
+		static void SetupInstanceDebugUtils(const Context& context);
+		static void SetupDeviceDebugUtils(const Context& context);
 
-		inline static bool							m_IsEnabled			{ false };
-		inline static std::vector<const char*>		m_vValidationLayers	{};
-		inline static VkDebugUtilsMessengerEXT		m_DebugMessenger	{};
+		inline static bool							m_IsEnabled				{ false };
+		inline static std::vector<const char*>		m_vValidationLayers		{ };
+
+		inline static InstanceDebugUtils			m_InstanceDebugUtils	{ };
+		inline static DeviceDebugUtils				m_DeviceDebugUtils		{ };
 	};
 }
 

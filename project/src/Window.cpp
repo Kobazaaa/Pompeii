@@ -1,5 +1,14 @@
-#include "Window.h"
+// -- Standard Library --
 #include <stdexcept>
+
+// -- Pompeii Includes --
+#include "Context.h"
+#include "Window.h"
+
+
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  Window	
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //--------------------------------------------------
 //    Constructor & Destructor
@@ -21,28 +30,30 @@ void pom::Window::Destroy() const
 	glfwTerminate();
 }
 
+
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-GLFWwindow* pom::Window::GetWindow()			const	{ return m_pWindow; }
+GLFWwindow* pom::Window::GetHandle()			const	{ return m_pWindow; }
 glm::ivec2 pom::Window::GetSize()				const	{ return m_Size; }
 float pom::Window::GetAspectRatio()				const	{ return static_cast<float>(m_Size.x) / static_cast<float>(m_Size.y); }
 
 bool pom::Window::IsOutdated()					const	{ return m_IsOutOfDate; }
 void pom::Window::ResetOutdated()						{ m_IsOutOfDate = false; }
+void pom::Window::WaitEvents()							{ glfwWaitEvents(); }
 
 VkSurfaceKHR pom::Window::GetVulkanSurface()	const	{ return m_VulkanSurface;  }
-VkSurfaceKHR pom::Window::CreateVulkanSurface(Instance& instance)
+VkSurfaceKHR pom::Window::CreateVulkanSurface(const Context& context)
 {
-	if (glfwCreateWindowSurface(instance.GetInstance(), m_pWindow, nullptr, &m_VulkanSurface) != VK_SUCCESS)
+	if (glfwCreateWindowSurface(context.instance.GetHandle(), m_pWindow, nullptr, &m_VulkanSurface) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Window Surface!");
 	return m_VulkanSurface;
 }
 
 // Callback
-void pom::Window::FrameBufferResizeCallback(GLFWwindow* window, int width, int height)
+void pom::Window::FrameBufferResizeCallback(GLFWwindow* window, int, int)
 {
-	Window* pWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+	Window* pWindow = static_cast<Window*>(glfwGetWindowUserPointer(window));
 	pWindow->m_IsOutOfDate = true;
 	glfwGetFramebufferSize(pWindow->m_pWindow, &pWindow->m_Size.x, &pWindow->m_Size.y);
 }

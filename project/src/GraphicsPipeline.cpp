@@ -1,5 +1,12 @@
-#include "GraphicsPipeline.h"
+// -- Standard Library --
 #include <stdexcept>
+
+// -- Pompeii Includes --
+#include "GraphicsPipeline.h"
+#include "Context.h"
+#include "Shader.h"
+#include "DescriptorSet.h"
+#include "RenderPass.h"
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  GraphicsPipelineLayout	
@@ -8,12 +15,12 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::GraphicsPipelineLayout::Destroy(const Device& device)		const { vkDestroyPipelineLayout(device.GetDevice(), m_Layout, nullptr); }
+void pom::GraphicsPipelineLayout::Destroy(const Context& context)		const { vkDestroyPipelineLayout(context.device.GetHandle(), m_Layout, nullptr); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkPipelineLayout& pom::GraphicsPipelineLayout::GetLayout()	const { return m_Layout; }
+const VkPipelineLayout& pom::GraphicsPipelineLayout::GetHandle()	const { return m_Layout; }
 
 
 
@@ -51,13 +58,13 @@ pom::GraphicsPipelineLayoutBuilder& pom::GraphicsPipelineLayoutBuilder::SetPCSiz
 
 pom::GraphicsPipelineLayoutBuilder& pom::GraphicsPipelineLayoutBuilder::AddLayout(const pom::DescriptorSetLayout& descriptorSetLayout)
 {
-	m_vDescriptorLayouts.push_back(descriptorSetLayout.GetLayout());
+	m_vDescriptorLayouts.push_back(descriptorSetLayout.GetHandle());
 	m_PipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(m_vDescriptorLayouts.size());
 	m_PipelineLayoutInfo.pSetLayouts = m_vDescriptorLayouts.data();
 	return *this;
 }
 
-void pom::GraphicsPipelineLayoutBuilder::Build(const Device& device, GraphicsPipelineLayout& pipelineLayout)
+void pom::GraphicsPipelineLayoutBuilder::Build(const Context& context, GraphicsPipelineLayout& pipelineLayout)
 {
 	if (!m_vPushConstantRanges.empty())
 	{
@@ -65,7 +72,7 @@ void pom::GraphicsPipelineLayoutBuilder::Build(const Device& device, GraphicsPip
 		m_PipelineLayoutInfo.pPushConstantRanges = m_vPushConstantRanges.data();
 	}
 
-	if (vkCreatePipelineLayout(device.GetDevice(), &m_PipelineLayoutInfo, nullptr, &pipelineLayout.m_Layout) != VK_SUCCESS)
+	if (vkCreatePipelineLayout(context.device.GetHandle(), &m_PipelineLayoutInfo, nullptr, &pipelineLayout.m_Layout) != VK_SUCCESS)
 		throw std::runtime_error("failed to create Pipeline Layout!");
 }
 
@@ -78,12 +85,12 @@ void pom::GraphicsPipelineLayoutBuilder::Build(const Device& device, GraphicsPip
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::GraphicsPipeline::Destroy(const Device& device) const { vkDestroyPipeline(device.GetDevice(), m_Pipeline, nullptr); }
+void pom::GraphicsPipeline::Destroy(const Context& context) const { vkDestroyPipeline(context.device.GetHandle(), m_Pipeline, nullptr); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkPipeline& pom::GraphicsPipeline::GetPipeline() const { return m_Pipeline; }
+const VkPipeline& pom::GraphicsPipeline::GetHandle() const { return m_Pipeline; }
 
 
 
@@ -177,7 +184,7 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::AddShader(const Shad
 	VkPipelineShaderStageCreateInfo shaderInfo{};
 	shaderInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	shaderInfo.stage = stage;
-	shaderInfo.module = shader.GetShader();
+	shaderInfo.module = shader.GetHandle();
 	shaderInfo.pName = "main";
 	shaderInfo.pSpecializationInfo = nullptr;
 
@@ -266,17 +273,17 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::AddDynamicState(VkDy
 // Pipeline & Render Pass
 pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetPipelineLayout(const GraphicsPipelineLayout& layout)
 {
-	m_PipelineLayout = layout.GetLayout();
+	m_PipelineLayout = layout.GetHandle();
 	return *this;
 }
 pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetRenderPass(const RenderPass& renderPass)
 {
-	m_RenderPass = renderPass.GetRenderPass();
+	m_RenderPass = renderPass.GetHandle();
 	return *this;
 }
 
 // Build
-void pom::GraphicsPipelineBuilder::Build(const Device& device, GraphicsPipeline& pipeline) const
+void pom::GraphicsPipelineBuilder::Build(const Context& context, GraphicsPipeline& pipeline) const
 {
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -296,6 +303,6 @@ void pom::GraphicsPipelineBuilder::Build(const Device& device, GraphicsPipeline&
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 	pipelineInfo.basePipelineIndex = -1;
 
-	if (vkCreateGraphicsPipelines(device.GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline.m_Pipeline) != VK_SUCCESS)
+	if (vkCreateGraphicsPipelines(context.device.GetHandle(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline.m_Pipeline) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Graphics Pipeline!");
 }

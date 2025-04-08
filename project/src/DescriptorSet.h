@@ -1,12 +1,21 @@
 #ifndef DESCRIPTOR_SET_H
 #define DESCRIPTOR_SET_H
 
+// -- Vulkan Includes --
+#include <vulkan/vulkan.h>
+
+// -- Standard Library --
 #include <vector>
 
-#include "Buffer.h"
-#include "Device.h"
-#include "Image.h"
-#include "Sampler.h"
+// -- Forward Declarations --
+namespace pom
+{
+	class Buffer;
+	class Image;
+	class Sampler;
+	struct Context;
+}
+
 
 namespace pom
 {
@@ -20,13 +29,14 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		DescriptorSetLayout() = default;
-		void Destroy(const Device& device) const;
+		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		const VkDescriptorSetLayout& GetLayout() const;
+		const VkDescriptorSetLayout& GetHandle() const;
 		const std::vector<VkDescriptorSetLayoutBinding>& GetBindings() const;
+
 	private:
 		VkDescriptorSetLayout m_Layout;
 		std::vector<VkDescriptorSetLayoutBinding> m_vLayoutBindings;
@@ -56,7 +66,7 @@ namespace pom
 		//! REQUIRED
 		DescriptorSetLayoutBuilder& SetShaderStages(VkShaderStageFlags flags);
 
-		void Build(const Device& device, DescriptorSetLayout& descriptorSetLayout);
+		void Build(const Context& context, DescriptorSetLayout& descriptorSetLayout);
 
 	private:
 		std::vector<VkDescriptorSetLayoutBinding> m_vLayoutBindings;
@@ -105,7 +115,7 @@ namespace pom
 		DescriptorSetWriter& AddImageInfo(const Image& image, const Sampler& sampler);
 		DescriptorSetWriter& WriteImages(const DescriptorSet& set, uint32_t binding);
 
-		void Execute(const Device& device);
+		void Execute(const Context& context);
 
 	private:
 		std::vector<VkWriteDescriptorSet> m_vDescriptorWrites;

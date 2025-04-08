@@ -1,6 +1,12 @@
 #ifndef DEVICE_H
 #define DEVICE_H
-#include "PhysicalDevice.h"
+
+// -- Vulkan Includes --
+#include <vulkan/vulkan.h>
+
+// -- Forward Declarations --
+namespace pom { struct Context; }
+
 
 namespace pom
 {
@@ -20,7 +26,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		const VkDevice& GetDevice()		  const;
+		const VkDevice& GetHandle()		  const;
 		const VkQueue&  GetGraphicQueue() const;
 		const VkQueue&  GetPresentQueue() const;
 
@@ -53,7 +59,7 @@ namespace pom
 		//    Builder
 		//--------------------------------------------------
 		DeviceBuilder& SetFeatures(const VkPhysicalDeviceFeatures& features);
-		Device& Build(const PhysicalDevice& physicalDevice, Device& device) const;
+		void Build(Context& context) const;
 
 	private:
 		VkPhysicalDeviceFeatures m_DesiredFeatures{};

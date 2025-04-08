@@ -1,9 +1,20 @@
 #ifndef FRAME_BUFFER_H
 #define FRAME_BUFFER_H
 
-#include "Device.h"
-#include "Image.h"
-#include "RenderPass.h"
+// -- Vulkan Includes --
+#include <vulkan/vulkan.h>
+
+// -- Standard Library --
+#include <vector>
+
+// -- Forward Declarations --
+namespace pom
+{
+	class RenderPass;
+	class Image;
+	struct Context;
+}
+
 
 namespace pom
 {
@@ -17,12 +28,12 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		FrameBuffer() = default;
-		void Destroy(const Device& device) const;
+		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		const VkFramebuffer& GetBuffer() const;
+		const VkFramebuffer& GetHandle() const;
 
 	private:
 		VkFramebuffer m_Buffer;
@@ -52,8 +63,8 @@ namespace pom
 		//! REQUIRED
 		FrameBufferBuilder& SetExtent(uint32_t width, uint32_t height);
 
-		void Build(const Device& device, FrameBuffer& frameBuffer) const;
-		void Build(const Device& device, std::vector<FrameBuffer>& frameBuffers) const;
+		void Build(const Context& context, FrameBuffer& frameBuffer) const;
+		void Build(const Context& context, std::vector<FrameBuffer>& frameBuffers) const;
 
 	private:
 		VkFramebufferCreateInfo m_CreateInfo{};

@@ -1,9 +1,15 @@
-#include "PhysicalDevice.h"
-
+// -- Standard Library --
 #include <iostream>
 #include <map>
 #include <set>
 #include <vector>
+
+// -- Pompeii Includes --
+#include "PhysicalDevice.h"
+#include "Debugger.h"
+#include "Context.h"
+#include "ConsoleTextSettings.h"
+
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -27,7 +33,7 @@ void pom::PhysicalDevice::Initialize(VkPhysicalDevice physicalDevice, const std:
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkPhysicalDevice& pom::PhysicalDevice::GetPhysicalDevice()										 const		{ return m_PhysicalDevice; }
+const VkPhysicalDevice& pom::PhysicalDevice::GetHandle()										 const		{ return m_PhysicalDevice; }
 VkPhysicalDeviceProperties pom::PhysicalDevice::GetProperties()											 const		{ return m_Properties; }
 VkFormatProperties pom::PhysicalDevice::GetFormatProperties(VkFormat format)							 const		{ VkFormatProperties props{}; vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &props); return props; }
 VkPhysicalDeviceFeatures pom::PhysicalDevice::GetFeatures()												 const		{ return m_Features; }
@@ -126,16 +132,16 @@ pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::AddExtension(const cha
 	m_vDesiredExtensions.push_back(ext);
 	return *this;
 }
-pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::PickPhysicalDevice(const Instance& instance, PhysicalDevice& physicalDevice, VkSurfaceKHR surface)
+pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::PickPhysicalDevice(Context& context, VkSurfaceKHR surface)
 {
 	uint32_t deviceCount = 0;
-	vkEnumeratePhysicalDevices(instance.GetInstance(), &deviceCount, nullptr);
+	vkEnumeratePhysicalDevices(context.instance.GetHandle(), &deviceCount, nullptr);
 
 	if (deviceCount == 0)
 		throw std::runtime_error("Failed to find GPUs with Vulkan Support!");
 
 	std::vector<VkPhysicalDevice> devices(deviceCount);
-	vkEnumeratePhysicalDevices(instance.GetInstance(), &deviceCount, devices.data());
+	vkEnumeratePhysicalDevices(context.instance.GetHandle(), &deviceCount, devices.data());
 
 	std::multimap<uint32_t, PhysicalDevice> candidates;
 	for (const auto& device : devices)
@@ -149,7 +155,7 @@ pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::PickPhysicalDevice(con
 	// Check if the best candidate is even suitable
 	if (candidates.rbegin()->first > 0)
 	{
-		physicalDevice = candidates.rbegin()->second;
+		context.physicalDevice = candidates.rbegin()->second;
 	}
 	else
 		throw std::runtime_error("Failed to find a suitable GPU!");
@@ -157,12 +163,12 @@ pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::PickPhysicalDevice(con
 	if (Debugger::IsEnabled())
 	{
 		// Print selected GPU
-		VkPhysicalDeviceProperties deviceProperties = physicalDevice.GetProperties();
-		vkGetPhysicalDeviceProperties(physicalDevice.GetPhysicalDevice(), &deviceProperties);
-		std::cout << "\nChosen GPU Data:\n"
+		VkPhysicalDeviceProperties deviceProperties = context.physicalDevice.GetProperties();
+		vkGetPhysicalDeviceProperties(context.physicalDevice.GetHandle(), &deviceProperties);
+		std::cout << INFO_TXT << "Chosen GPU Data:\n"
 			<< "\tName: " << deviceProperties.deviceName << "\n"
 			<< "\tDriver Version: " << deviceProperties.driverVersion << "\n"
-			<< "\tVendorID: " << deviceProperties.vendorID << "\n";
+			<< "\tVendorID: " << deviceProperties.vendorID << "\n\n" << RESET_TXT;
 	}
 
 	return *this;

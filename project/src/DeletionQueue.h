@@ -1,11 +1,15 @@
 #ifndef DELETION_QUEUE_H
 #define DELETION_QUEUE_H
 
+// -- Standard Library --
 #include <functional>
 #include <vector>
 
 namespace pom
 {
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//? ~~	  DeletionQueue	
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	class DeletionQueue
 	{
 	public:
@@ -18,7 +22,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Queue
 		//--------------------------------------------------
-		void Push(std::function<void()> dtor);
+		void Push(const std::function<void()>& dtor);
 		void Flush();
 
 	private:

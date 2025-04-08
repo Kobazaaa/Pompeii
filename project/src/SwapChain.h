@@ -1,17 +1,26 @@
 #ifndef SWAPCHAIN_H
 #define SWAPCHAIN_H
+
+// -- Vulkan Includes --
+#include "vulkan/vulkan.h"
+
+// -- Standard Library --
 #include <vector>
 
-#include "CommandPool.h"
-#include "Device.h"
-#include "PhysicalDevice.h"
-#include "Window.h"
+// -- Pompeii Includes --
 #include "Image.h"
+
+// -- Forward Declarations --
+namespace pom
+{
+	class CommandPool;
+	class Window;
+	class SwapChain;
+	struct Context;
+}
 
 namespace pom
 {
-	class SwapChain;
-
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  SwapChainBuilder	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -30,7 +39,7 @@ namespace pom
 		SwapChainBuilder& SetDesiredImageCount(uint32_t count);
 		SwapChainBuilder& SetImageUsage(VkImageUsageFlags usage);
 		SwapChainBuilder& SetImageArrayLayers(uint32_t layerCount);
-		void Build(Device& device, const VmaAllocator& allocator, PhysicalDevice& physicalDevice, const Window& window, SwapChain& swapChain, CommandPool& cmdPool);
+		void Build(Context& context, const Window& window, SwapChain& swapChain, CommandPool& cmdPool);
 
 	private:
 		//--------------------------------------------------
@@ -55,13 +64,13 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		SwapChain() = default;
-		void Destroy(Device& device, const VmaAllocator& allocator) const;
-		void Recreate(Device& device, const VmaAllocator& allocator, PhysicalDevice& physicalDevice, const Window& window, CommandPool& cmdPool);
+		void Destroy(Context& context) const;
+		void Recreate(Context& context, const Window& window, CommandPool& cmdPool);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		VkSwapchainKHR& GetSwapChain();
+		VkSwapchainKHR& GetHandle();
 		std::vector<Image>& GetImages();
 		uint32_t GetImageCount() const;
 

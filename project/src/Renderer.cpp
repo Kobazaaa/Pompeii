@@ -1,12 +1,14 @@
-// -- Container Includes --
+// -- Standard Library --
+#include <stdexcept>
 #include <array>
 
-// -- Custom Includes --
+// -- Pompeii Includes --
 #include "Renderer.h"
-
 #include "Camera.h"
+#include "Debugger.h"
 #include "Window.h"
 #include "Shader.h"
+#include "CommandBuffer.h"
 
 //--------------------------------------------------
 //    Constructor & Destructor
@@ -20,9 +22,9 @@ void pom::Renderer::Initialize(Camera* pCamera, Window* pWindow)
 
 void pom::Renderer::Destroy()
 {
-	m_Device.WaitIdle();
+	m_Context.device.WaitIdle();
 	m_DeletionQueueSC.Flush();
-	m_DeletionQueue.Flush();
+	m_Context.deletionQueue.Flush();
 }
 
 
@@ -38,11 +40,11 @@ void pom::Renderer::Render()
 {
 	// -- Wait for the current frame to be done --
 	const auto& frameSync = m_SyncManager.GetFrameSync(m_CurrentFrame);
-	vkWaitForFences(m_Device.GetDevice(), 1, &frameSync.inFlight, VK_TRUE, UINT64_MAX);
+	vkWaitForFences(m_Context.device.GetHandle(), 1, &frameSync.inFlight, VK_TRUE, UINT64_MAX);
 
 	// -- Acquire new Image from SwapChain --
 	uint32_t imageIndex;
-	VkResult result = vkAcquireNextImageKHR(m_Device.GetDevice(), m_SwapChain.GetSwapChain(), UINT64_MAX, frameSync.imageAvailable, VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(m_Context.device.GetHandle(), m_SwapChain.GetHandle(), UINT64_MAX, frameSync.imageAvailable, VK_NULL_HANDLE, &imageIndex);
 
 	// -- If SwapChain Image not good, recreate Swap Chain --
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
@@ -54,21 +56,21 @@ void pom::Renderer::Render()
 		throw std::runtime_error("Failed to acquire Swap Chain Image");
 
 	// -- Reset Fence to be un-signaled (not done) --
-	vkResetFences(m_Device.GetDevice(), 1, &frameSync.inFlight);
+	vkResetFences(m_Context.device.GetHandle(), 1, &frameSync.inFlight);
 
 	// -- Record Command Buffer --
-	pom::CommandBuffer& cmdBuffer = m_CommandPool.GetBuffer(m_CurrentFrame);
+	CommandBuffer& cmdBuffer = m_CommandPool.GetBuffer(m_CurrentFrame);
 	cmdBuffer.Reset();
 	RecordCommandBuffer(cmdBuffer, imageIndex);
 
 	// -- Submit Commands with Semaphores --
-	const pom::SemaphoreInfo semaphoreInfo
+	const SemaphoreInfo semaphoreInfo
 	{
 		.vWaitSemaphores = { frameSync.imageAvailable },
 		.vWaitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT },
 		.vSignalSemaphores = { frameSync.renderFinished }
 	};
-	cmdBuffer.Submit(m_Device.GetGraphicQueue(), false, semaphoreInfo, frameSync.inFlight);
+	cmdBuffer.Submit(m_Context.device.GetGraphicQueue(), false, semaphoreInfo, frameSync.inFlight);
 
 	// -- Create Present Info --
 	VkPresentInfoKHR presentInfo{};
@@ -76,14 +78,14 @@ void pom::Renderer::Render()
 	presentInfo.waitSemaphoreCount = static_cast<uint32_t>(semaphoreInfo.vSignalSemaphores.size());
 	presentInfo.pWaitSemaphores = semaphoreInfo.vSignalSemaphores.data();
 
-	VkSwapchainKHR swapChains[] = { m_SwapChain.GetSwapChain() };
+	VkSwapchainKHR swapChains[] = { m_SwapChain.GetHandle() };
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
 	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = nullptr;
 
 	// -- Present --
-	result = vkQueuePresentKHR(m_Device.GetPresentQueue(), &presentInfo);
+	result = vkQueuePresentKHR(m_Context.device.GetPresentQueue(), &presentInfo);
 
 	// -- If Present failed or out of date, recreate SwapChain --
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_pWindow->IsOutdated())
@@ -95,7 +97,7 @@ void pom::Renderer::Render()
 		throw std::runtime_error("Failed to present Swap Chain Image!");
 
 	// -- Go to next frame --
-	m_CurrentFrame = (m_CurrentFrame + 1) % g_MAX_FRAMES_IN_FLIGHT;
+	m_CurrentFrame = (m_CurrentFrame + 1) % m_MaxFramesInFlight;
 }
 
 
@@ -106,42 +108,37 @@ void pom::Renderer::InitializeVulkan()
 {
 	// -- Enable Debugger - Requirements - [Debug Mode]
 	{
-#ifdef NDEBUG
-		pom::Debugger::SetEnabled(false);
+#if _DEBUG
+		Debugger::SetEnabled(true);
+		Debugger::AddValidationLayer("VK_LAYER_KHRONOS_validation");
 #else
-		pom::Debugger::SetEnabled(true);
-		pom::Debugger::AddValidationLayer("VK_LAYER_KHRONOS_validation");
+		pom::Debugger::SetEnabled(false);
 #endif
 	}
 
 	// -- Create Instance - Requirements - []
 	{
-		pom::InstanceBuilder builder;
+		InstanceBuilder builder;
 
-		builder.SetApplicationName("Vulkan Refactored")
+		builder
+			.SetApplicationName("Vulkan Refactored")
 			.SetEngineName("No Engine")
-			.Build(m_Instance);
+			.Build(m_Context);
 
-		m_DeletionQueue.Push([&] { m_Instance.Destroy(); });
-	}
-
-	// -- Setup Debugger - Requirements - [Instance]
-	{
-		pom::Debugger::SetupMessenger(m_Instance);
-		m_DeletionQueue.Push([&] { pom::Debugger::DestroyMessenger(m_Instance); });
+		m_Context.deletionQueue.Push([&] { m_Context.instance.Destroy(); });
 	}
 
 	// -- Create Surface - Requirements - [Window - Instance]
 	{
-		m_pWindow->CreateVulkanSurface(m_Instance);
-		m_DeletionQueue.Push([&] { vkDestroySurfaceKHR(m_Instance.GetInstance(), m_pWindow->GetVulkanSurface(), nullptr); });
+		m_pWindow->CreateVulkanSurface(m_Context);
+		m_Context.deletionQueue.Push([&] { vkDestroySurfaceKHR(m_Context.instance.GetHandle(), m_pWindow->GetVulkanSurface(), nullptr); });
 	}
 
 	// -- Select GPU - Requirements - [Window - Instance]
 	{
-		pom::PhysicalDeviceSelector selector;
+		PhysicalDeviceSelector selector;
 		selector.AddExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
-			.PickPhysicalDevice(m_Instance, m_PhysicalDevice, m_pWindow->GetVulkanSurface());
+			.PickPhysicalDevice(m_Context, m_pWindow->GetVulkanSurface());
 	}
 
 	// -- Create Device - Requirements - [Physical Device - Instance]
@@ -149,53 +146,62 @@ void pom::Renderer::InitializeVulkan()
 		VkPhysicalDeviceFeatures desiredFeatures{};
 		desiredFeatures.samplerAnisotropy = VK_TRUE;
 
-		pom::DeviceBuilder deviceBuilder{};
+		DeviceBuilder deviceBuilder{};
 
 		deviceBuilder.SetFeatures(desiredFeatures)
-			.Build(m_PhysicalDevice, m_Device);
+			.Build(m_Context);
 
-		m_DeletionQueue.Push([&] { m_Device.Destroy(); });
+		m_Context.deletionQueue.Push([&] { m_Context.device.Destroy(); });
+	}
+
+	// -- Setup Debugger - Requirements - [Instance]
+	{
+#if _DEBUG
+		Debugger::Setup(m_Context);
+		m_Context.deletionQueue.Push([&] { Debugger::Destroy(); });
+#endif
 	}
 
 	// -- Create Allocator - Requirements - [Device - Physical Device - Instance]
 	{
 		VmaAllocatorCreateInfo allocatorInfo = {};
-		allocatorInfo.physicalDevice = m_PhysicalDevice.GetPhysicalDevice();
-		allocatorInfo.device = m_Device.GetDevice();
-		allocatorInfo.instance = m_Instance.GetInstance();
+		allocatorInfo.physicalDevice = m_Context.physicalDevice.GetHandle();
+		allocatorInfo.device = m_Context.device.GetHandle();
+		allocatorInfo.instance = m_Context.instance.GetHandle();
 
-		vmaCreateAllocator(&allocatorInfo, &m_Allocator);
-		m_DeletionQueue.Push([&] { vmaDestroyAllocator(m_Allocator); });
+		vmaCreateAllocator(&allocatorInfo, &m_Context.allocator);
+		m_Context.deletionQueue.Push([&] { vmaDestroyAllocator(m_Context.allocator); });
 	}
 
 	// -- Create Command Pool - Requirements - [Device - Physical Device]
 	{
-		m_CommandPool.Create(m_Device, m_PhysicalDevice)
-			.AllocateCmdBuffers(g_MAX_FRAMES_IN_FLIGHT);
+		m_CommandPool.Create(m_Context)
+			.AllocateCmdBuffers(m_MaxFramesInFlight);
 
-		m_DeletionQueue.Push([&] { m_CommandPool.Destroy(); });
+		m_Context.deletionQueue.Push([&] { m_CommandPool.Destroy(); });
 	}
 
 	// -- Create SwapChain - Requirements - [Device - Allocator - Physical Device, Window, Command Pool]
 	{
-		pom::SwapChainBuilder builder;
+		SwapChainBuilder builder;
 
 		builder.SetDesiredImageCount(2)
 			.SetImageArrayLayers(1)
 			.SetImageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
-			.Build(m_Device, m_Allocator, m_PhysicalDevice, *m_pWindow, m_SwapChain, m_CommandPool);
+			.Build(m_Context, *m_pWindow, m_SwapChain, m_CommandPool);
 
-		m_DeletionQueueSC.Push([&] { m_SwapChain.Destroy(m_Device, m_Allocator); });
+		m_DeletionQueueSC.Push([&] { m_SwapChain.Destroy(m_Context); });
 	}
 
 	// -- Load Models - Requirements - []
 	{
 		LoadModels();
+		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(m_Model.images.front().GetHandle()), VK_OBJECT_TYPE_IMAGE, "I AM OUTSTANDING LOOK AT ME");
 	}
 
 	// -- Create Render Pass - Requirements - [Device - SwapChain - Depth Buffer]
 	{
-		pom::RenderPassBuilder builder{};
+		RenderPassBuilder builder{};
 
 		builder
 			.NewAttachment()
@@ -222,21 +228,21 @@ void pom::Renderer::InitializeVulkan()
 				.SetSrcMasks(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0)
 				.SetDstMasks(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
 					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-			.Build(m_Device, m_RenderPass);
-		m_DeletionQueue.Push([&] { m_RenderPass.Destroy(m_Device); });
+			.Build(m_Context, m_RenderPass);
+		m_Context.deletionQueue.Push([&] { m_RenderPass.Destroy(m_Context); });
 	}
 
 	// -- Create Descriptor Set Layout - Requirements - [Device]
 	{
-		pom::DescriptorSetLayoutBuilder builder{};
+		DescriptorSetLayoutBuilder builder{};
 
 		// -- Uniform Buffer Descriptor --
 		builder
 			.NewLayoutBinding()
 				.SetType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 				.SetShaderStages(VK_SHADER_STAGE_VERTEX_BIT)
-			.Build(m_Device, m_UniformDSL);
-		m_DeletionQueue.Push([&] { m_UniformDSL.Destroy(m_Device); });
+			.Build(m_Context, m_UniformDSL);
+		m_Context.deletionQueue.Push([&] { m_UniformDSL.Destroy(m_Context); });
 
 		// -- Texture Array Descriptor --
 		builder
@@ -244,13 +250,13 @@ void pom::Renderer::InitializeVulkan()
 				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
 				.SetCount(static_cast<uint32_t>(m_Model.images.size()))
-			.Build(m_Device, m_TextureDSL);
-		m_DeletionQueue.Push([&] { m_TextureDSL.Destroy(m_Device); });
+			.Build(m_Context, m_TextureDSL);
+		m_Context.deletionQueue.Push([&] { m_TextureDSL.Destroy(m_Context); });
 	}
 
 	// -- Create Graphics Pipeline Layout - Requirements - [Device - Descriptor Set Layout]
 	{
-		pom::GraphicsPipelineLayoutBuilder builder{};
+		GraphicsPipelineLayoutBuilder builder{};
 
 		builder
 			.NewPushConstantRange()
@@ -259,21 +265,21 @@ void pom::Renderer::InitializeVulkan()
 				.SetPCStageFlags(VK_SHADER_STAGE_FRAGMENT_BIT)
 			.AddLayout(m_UniformDSL)
 			.AddLayout(m_TextureDSL)
-			.Build(m_Device, m_PipelineLayout);
+			.Build(m_Context, m_PipelineLayout);
 
-		m_DeletionQueue.Push([&] {m_PipelineLayout.Destroy(m_Device); });
+		m_Context.deletionQueue.Push([&] {m_PipelineLayout.Destroy(m_Context); });
 	}
 
 	// -- Create Graphics Pipeline - Requirements - [Pipeline Layout - Shaders - RenderPass]
 	{
-		pom::ShaderLoader shaderLoader{};
+		ShaderLoader shaderLoader{};
 
 		ShaderModule vertShader;
 		ShaderModule fragShader;
-		shaderLoader.Load(m_Device, "shaders/shader.vert.spv", vertShader);
-		shaderLoader.Load(m_Device, "shaders/shader.frag.spv", fragShader);
+		shaderLoader.Load(m_Context, "shaders/shader.vert.spv", vertShader);
+		shaderLoader.Load(m_Context, "shaders/shader.frag.spv", fragShader);
 
-		pom::GraphicsPipelineBuilder builder{};
+		GraphicsPipelineBuilder builder{};
 		uint32_t arraySize = static_cast<uint32_t>(m_Model.images.size());
 		builder
 			.SetPipelineLayout(m_PipelineLayout)
@@ -290,59 +296,59 @@ void pom::Renderer::InitializeVulkan()
 			.SetDepthTest(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS)
 			.SetVertexBindingDesc(Vertex::GetBindingDescription())
 			.SetVertexAttributeDesc(Vertex::GetAttributeDescriptions())
-			.Build(m_Device, m_GraphicsPipeline);
-		m_DeletionQueue.Push([&] { m_GraphicsPipeline.Destroy(m_Device); });
+			.Build(m_Context, m_GraphicsPipeline);
+		m_Context.deletionQueue.Push([&] { m_GraphicsPipeline.Destroy(m_Context); });
 
 
-		fragShader.Destroy(m_Device);
-		vertShader.Destroy(m_Device);
+		fragShader.Destroy(m_Context);
+		vertShader.Destroy(m_Context);
 	}
 
 	// -- Create Frame Buffers - Requirements - [Device - SwapChain - RenderPass]
 	{
 		m_vFrameBuffers.clear();
-		for (const pom::Image& image : m_SwapChain.GetImages())
+		for (const Image& image : m_SwapChain.GetImages())
 		{
-			pom::FrameBufferBuilder builder{};
+			FrameBufferBuilder builder{};
 			builder
 				.SetRenderPass(m_RenderPass)
 				.AddAttachment(image)
 				.AddAttachment(m_SwapChain.GetDepthImage())
 				.SetExtent(m_SwapChain.GetExtent().width, m_SwapChain.GetExtent().height)
-				.Build(m_Device, m_vFrameBuffers);
+				.Build(m_Context, m_vFrameBuffers);
 		}
 
-		m_DeletionQueueSC.Push([&] { for (auto& framebuffer : m_vFrameBuffers) framebuffer.Destroy(m_Device); m_vFrameBuffers.clear(); });
+		m_DeletionQueueSC.Push([&] { for (auto& framebuffer : m_vFrameBuffers) framebuffer.Destroy(m_Context); m_vFrameBuffers.clear(); });
 	}
 
 	// -- Create Sampler - Requirements - [Device - Physical Device]
 	{
-		pom::SamplerBuilder builder{};
+		SamplerBuilder builder{};
 		builder
 			.SetFilters(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
 			.SetAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
-			.EnableAnisotropy(m_PhysicalDevice.GetProperties().limits.maxSamplerAnisotropy)
+			.EnableAnisotropy(m_Context.physicalDevice.GetProperties().limits.maxSamplerAnisotropy)
 			.SetMipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
 			.SetMipLevels(0.f, 0.f, 0.f)
 			.SetBorderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
-			.Build(m_Device, m_TextureSampler);
+			.Build(m_Context, m_TextureSampler);
 
-		m_DeletionQueue.Push([&] { m_TextureSampler.Destroy(m_Device); });
+		m_Context.deletionQueue.Push([&] { m_TextureSampler.Destroy(m_Context); });
 	}
 
 	// -- Create UBO - Requirements - [Device - Allocator - Buffer - Command Pool]
 	{
-		m_vUniformBuffers.resize(g_MAX_FRAMES_IN_FLIGHT);
-		for (size_t i{}; i < g_MAX_FRAMES_IN_FLIGHT; ++i)
+		m_vUniformBuffers.resize(m_MaxFramesInFlight);
+		for (size_t i{}; i < m_MaxFramesInFlight; ++i)
 		{
-			pom::BufferAllocator bufferAlloc{};
+			BufferAllocator bufferAlloc{};
 			bufferAlloc
 				.SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
 				.SetSize(sizeof(UniformBufferObject))
 				.HostAccess(true)
-				.Allocate(m_Device, m_Allocator, m_CommandPool, m_vUniformBuffers[i]);
+				.Allocate(m_Context, m_CommandPool, m_vUniformBuffers[i]);
 		}
-		m_DeletionQueue.Push([&] { for (auto& ubo : m_vUniformBuffers) ubo.Destroy(m_Device, m_Allocator); });
+		m_Context.deletionQueue.Push([&] { for (auto& ubo : m_vUniformBuffers) ubo.Destroy(m_Context); });
 	}
 
 	// -- Create Descriptor Pool - Requirements - [Device]
@@ -351,23 +357,23 @@ void pom::Renderer::InitializeVulkan()
 			.SetMaxSets(30)
 			.AddPoolSizeLayout(m_UniformDSL)
 			.AddPoolSizeLayout(m_TextureDSL)
-			.Create(m_Device);
-		m_DeletionQueue.Push([&] {m_DescriptorPool.Destroy(m_Device); });
+			.Create(m_Context);
+		m_Context.deletionQueue.Push([&] {m_DescriptorPool.Destroy(m_Context); });
 	}
 
 	// -- Allocate Descriptor Sets - Requirements - [Device - Descriptor Pool - Descriptor Set Layout - UBO]
 	{
-		m_vUniformDS = m_DescriptorPool.AllocateSets(m_Device, m_UniformDSL, g_MAX_FRAMES_IN_FLIGHT);
-		m_vTextureDS = m_DescriptorPool.AllocateSets(m_Device, m_TextureDSL, 1);
+		m_vUniformDS = m_DescriptorPool.AllocateSets(m_Context, m_UniformDSL, m_MaxFramesInFlight);
+		m_vTextureDS = m_DescriptorPool.AllocateSets(m_Context, m_TextureDSL, 1);
 
 		// -- Write UBO --
-		pom::DescriptorSetWriter writer{};
-		for (size_t i{}; i < g_MAX_FRAMES_IN_FLIGHT; ++i)
+		DescriptorSetWriter writer{};
+		for (size_t i{}; i < m_MaxFramesInFlight; ++i)
 		{
 			writer
 				.AddBufferInfo(m_vUniformBuffers[i], 0, sizeof(UniformBufferObject))
 				.WriteBuffers(m_vUniformDS[i], 0)
-				.Execute(m_Device);
+				.Execute(m_Context);
 		}
 
 		// -- Write Textures --
@@ -375,13 +381,13 @@ void pom::Renderer::InitializeVulkan()
 		{
 			writer.AddImageInfo(image, m_TextureSampler);
 		}
-		writer.WriteImages(m_vTextureDS[0], 0).Execute(m_Device);
+		writer.WriteImages(m_vTextureDS[0], 0).Execute(m_Context);
 	}
 
 	// -- Create Sync Objects - Requirements - [Device]
 	{
-		m_SyncManager.Create(m_Device, g_MAX_FRAMES_IN_FLIGHT);
-		m_DeletionQueue.Push([&] {m_SyncManager.Cleanup(); });
+		m_SyncManager.Create(m_Context, m_MaxFramesInFlight);
+		m_Context.deletionQueue.Push([&] {m_SyncManager.Cleanup(m_Context); });
 	}
 }
 
@@ -395,26 +401,26 @@ void pom::Renderer::RecreateSwapChain()
 	while (size.x == 0 || size.y == 0)
 	{
 		size = m_pWindow->GetSize();
-		glfwWaitEvents();
+		m_pWindow->WaitEvents();
 	}
 
-	m_Device.WaitIdle();
+	m_Context.device.WaitIdle();
 	m_DeletionQueueSC.Flush();
 
-	m_SwapChain.Recreate(m_Device, m_Allocator, m_PhysicalDevice, *m_pWindow, m_CommandPool);
-	m_DeletionQueueSC.Push([&] { m_SwapChain.Destroy(m_Device, m_Allocator); });
+	m_SwapChain.Recreate(m_Context, *m_pWindow, m_CommandPool);
+	m_DeletionQueueSC.Push([&] { m_SwapChain.Destroy(m_Context); });
 
-	for (const pom::Image& image : m_SwapChain.GetImages())
+	for (const Image& image : m_SwapChain.GetImages())
 	{
-		pom::FrameBufferBuilder builder{};
+		FrameBufferBuilder builder{};
 		builder
 			.SetRenderPass(m_RenderPass)
 			.AddAttachment(image)
 			.AddAttachment(m_SwapChain.GetDepthImage())
 			.SetExtent(m_SwapChain.GetExtent().width, m_SwapChain.GetExtent().height)
-			.Build(m_Device, m_vFrameBuffers);
+			.Build(m_Context, m_vFrameBuffers);
 	}
-	m_DeletionQueueSC.Push([&] { for (auto& framebuffer : m_vFrameBuffers) framebuffer.Destroy(m_Device); m_vFrameBuffers.clear(); });
+	m_DeletionQueueSC.Push([&] { for (auto& framebuffer : m_vFrameBuffers) framebuffer.Destroy(m_Context); m_vFrameBuffers.clear(); });
 
 	const CameraSettings& oldSettings = m_pCamera->GetSettings();
 	const CameraSettings settings
@@ -435,19 +441,19 @@ void pom::Renderer::LoadModels()
 
 	// -- Create Vertex & Index Buffer - Requirements - [Device - Allocator - Buffer - Command Pool]
 	{
-		m_Model.AllocateResources(m_Device, m_Allocator, m_CommandPool);
-		m_DeletionQueue.Push([&] {m_Model.Destroy(m_Device, m_Allocator); });
+		m_Model.AllocateResources(m_Context, m_CommandPool);
+		m_Context.deletionQueue.Push([&] {m_Model.Destroy(m_Context); });
 	}
 }
-void pom::Renderer::RecordCommandBuffer(pom::CommandBuffer& commandBuffer, uint32_t imageIndex) const
+void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex) const
 {
-	const VkCommandBuffer& vCmdBuffer = commandBuffer.GetBuffer();
+	const VkCommandBuffer& vCmdBuffer = commandBuffer.GetHandle();
 	commandBuffer.Begin(0);
 	{
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = m_RenderPass.GetRenderPass();
-		renderPassInfo.framebuffer = m_vFrameBuffers[imageIndex].GetBuffer();
+		renderPassInfo.renderPass = m_RenderPass.GetHandle();
+		renderPassInfo.framebuffer = m_vFrameBuffers[imageIndex].GetHandle();
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = m_SwapChain.GetExtent();
 
@@ -460,7 +466,7 @@ void pom::Renderer::RecordCommandBuffer(pom::CommandBuffer& commandBuffer, uint3
 
 		vkCmdBeginRenderPass(vCmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		{
-			vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline.GetPipeline());
+			vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline.GetHandle());
 
 			VkViewport viewport{};
 			viewport.x = 0.0f;
@@ -476,8 +482,8 @@ void pom::Renderer::RecordCommandBuffer(pom::CommandBuffer& commandBuffer, uint3
 			scissor.extent = m_SwapChain.GetExtent();
 			vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
 
-			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetLayout(), 0, 1, &m_vUniformDS[m_CurrentFrame].GetHandle(), 0, nullptr);
-			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetLayout(), 1, 1, &m_vTextureDS[0].GetHandle(), 0, nullptr);
+			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vUniformDS[m_CurrentFrame].GetHandle(), 0, nullptr);
+			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 1, 1, &m_vTextureDS[0].GetHandle(), 0, nullptr);
 			m_Model.Draw(commandBuffer, m_PipelineLayout);
 		}
 		vkCmdEndRenderPass(vCmdBuffer);
@@ -486,16 +492,11 @@ void pom::Renderer::RecordCommandBuffer(pom::CommandBuffer& commandBuffer, uint3
 }
 void pom::Renderer::UpdateUniformBuffer(uint32_t currentImage) const
 {
-	static auto startTime = std::chrono::high_resolution_clock::now();
-
-	auto currentTime = std::chrono::high_resolution_clock::now();
-	float time = std::chrono::duration<float>(currentTime - startTime).count();
-
 	UniformBufferObject ubo{};
-	//ubo.model = glm::scale(glm::rotate(glm::mat4(1.0f), time * glm::radians(90.f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.25, 0.25, 0.25)) ;
+	//ubo.model = glm::scale(glm::rotate(glm::mat4(1.0f), Timer::GetTotalTime() * glm::radians(90.f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.25, 0.25, 0.25)) ;
 	ubo.model = glm::mat4(1.f);
 	ubo.view = m_pCamera->GetViewMatrix();
 	ubo.proj = m_pCamera->GetProjectionMatrix();
 
-	vmaCopyMemoryToAllocation(m_Allocator, &ubo, m_vUniformBuffers[currentImage].GetMemory(), 0, sizeof(ubo));
+	vmaCopyMemoryToAllocation(m_Context.allocator, &ubo, m_vUniformBuffers[currentImage].GetMemoryHandle(), 0, sizeof(ubo));
 }

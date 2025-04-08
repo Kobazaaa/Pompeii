@@ -1,18 +1,21 @@
+// -- Standard Library --
 #include <iostream>
 #include <stdexcept>
 #include <cstdlib>
 
+// -- Defines --
 #define VMA_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define GLM_FORCE_LEFT_HANDED
 
+// -- Pompeii Includes
 #include "Renderer.h"
 #include "DeletionQueue.h"
 #include "Window.h"
 #include "Camera.h"
 #include "Timer.h"
 
-
+// -- Using Pompeii namespace --
 using namespace pom;
 
 int main()
@@ -54,7 +57,7 @@ int main()
 	{
 		// -- Main Loop --
 		Timer::Start();
-		while (!glfwWindowShouldClose(pWindow->GetWindow()))
+		while (!glfwWindowShouldClose(pWindow->GetHandle()))
 		{
 			Timer::Update();
 			glfwPollEvents();

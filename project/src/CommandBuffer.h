@@ -1,9 +1,19 @@
 #ifndef COMMAND_BUFFER_H
 #define COMMAND_BUFFER_H
+
+// -- Vulkan Includes --
 #include <vulkan/vulkan.h>
 
-#include "Device.h"
+// -- Pompeii Includes --
 #include "SyncManager.h"
+
+// -- Forward Declarations --
+namespace pom
+{
+	class Device;
+	struct SemaphoreInfo;
+}
+
 
 namespace pom
 {
@@ -17,13 +27,13 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		CommandBuffer() = default;
-		void Allocate(Device device, VkCommandPool pool, VkCommandBuffer buffer);
+		void Allocate(VkCommandPool pool, VkCommandBuffer buffer);
 
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		VkCommandBuffer& GetBuffer();
+		VkCommandBuffer& GetHandle();
 
 
 		//--------------------------------------------------
@@ -33,10 +43,9 @@ namespace pom
 		void End() const;
 		void Submit(VkQueue queue, bool waitIdle, const SemaphoreInfo& semaphoreInfo = {}, VkFence fence = VK_NULL_HANDLE) const;
 		void Reset() const;
-		void Free() const;
+		void Free(const Device& device) const;
 
 	private:
-		Device			m_Device	{};
 		VkCommandBuffer m_CmdBuffer { VK_NULL_HANDLE };
 		VkCommandPool	m_PoolOwner	{ VK_NULL_HANDLE };
 	};

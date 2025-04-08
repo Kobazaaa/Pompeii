@@ -1,13 +1,15 @@
 #ifndef MATERIAL_TEXTURE_H
 #define MATERIAL_TEXTURE_H
 
+// -- Standard Library --
+#include <string>
+
 // -- Texture Includes --
 #include "stb_image.h"
 
-// -- Custom Includes --
-#include "DescriptorSet.h"
-#include "Image.h"
+// -- Math Includes --
 #include "glm/vec2.hpp"
+
 
 namespace pom
 {

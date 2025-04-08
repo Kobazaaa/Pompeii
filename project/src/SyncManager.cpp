@@ -1,5 +1,10 @@
-#include "SyncManager.h"
+// -- Standard Library --
 #include <stdexcept>
+
+// -- Pompeii Includes --
+#include "SyncManager.h"
+#include "Context.h"
+
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  SyncManager	
@@ -8,26 +13,25 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::SyncManager::Create(const Device& device, uint32_t maxFramesInFlight)
+void pom::SyncManager::Create(const Context& context, uint32_t maxFramesInFlight)
 {
 	m_MaxFrames = maxFramesInFlight;
-	m_Device = device;
 
 	m_vFrameSyncs.resize(maxFramesInFlight);
 	for (uint32_t index{}; index < maxFramesInFlight; ++index)
 	{
-		m_vFrameSyncs[index].imageAvailable = CreateSemaphore();
-		m_vFrameSyncs[index].renderFinished = CreateSemaphore();
-		m_vFrameSyncs[index].inFlight = CreateFence(true);
+		m_vFrameSyncs[index].imageAvailable = CreateSemaphore(context);
+		m_vFrameSyncs[index].renderFinished = CreateSemaphore(context);
+		m_vFrameSyncs[index].inFlight = CreateFence(context, true);
 	}
 }
-void pom::SyncManager::Cleanup()
+void pom::SyncManager::Cleanup(const Context& context)
 {
 	for (auto& semaphore : m_vSemaphores)
-		vkDestroySemaphore(m_Device.GetDevice(), semaphore, nullptr);
+		vkDestroySemaphore(context.device.GetHandle(), semaphore, nullptr);
 
 	for (auto& fence : m_vFences)
-		vkDestroyFence(m_Device.GetDevice(), fence, nullptr);
+		vkDestroyFence(context.device.GetHandle(), fence, nullptr);
 
 	m_vFrameSyncs.clear();
 	m_vSemaphores.clear();
@@ -37,37 +41,34 @@ void pom::SyncManager::Cleanup()
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const pom::FrameSync& pom::SyncManager::GetFrameSync(uint32_t frame) const
-{
-	return m_vFrameSyncs[frame % m_MaxFrames];
-}
+const pom::FrameSync& pom::SyncManager::GetFrameSync(uint32_t frame) const { return m_vFrameSyncs[frame % m_MaxFrames]; }
 
 
 //--------------------------------------------------
 //    Makers
 //--------------------------------------------------
-VkSemaphore pom::SyncManager::CreateSemaphore()
+const VkSemaphore& pom::SyncManager::CreateSemaphore(const Context& context)
 {
 	VkSemaphoreCreateInfo semaphoreInfo{};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
 	VkSemaphore semaphore;
-	if (vkCreateSemaphore(m_Device.GetDevice(), &semaphoreInfo, nullptr, &semaphore) != VK_SUCCESS)
+	if (vkCreateSemaphore(context.device.GetHandle(), &semaphoreInfo, nullptr, &semaphore) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create semaphore!");
 
 	m_vSemaphores.push_back(semaphore);
-	return semaphore;
+	return m_vSemaphores.back();
 }
-VkFence pom::SyncManager::CreateFence(bool signaled)
+const VkFence& pom::SyncManager::CreateFence(const Context& context, bool signaled)
 {
 	VkFenceCreateInfo fenceInfo{};
 	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fenceInfo.flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
 
 	VkFence fence;
-	if (vkCreateFence(m_Device.GetDevice(), &fenceInfo, nullptr, &fence) != VK_SUCCESS)
+	if (vkCreateFence(context.device.GetHandle(), &fenceInfo, nullptr, &fence) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create fence!");
 
 	m_vFences.push_back(fence);
-	return fence;
+	return m_vFences.back();
 }

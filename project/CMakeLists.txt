@@ -39,11 +39,18 @@ set(SOURCES
 	"${SOURCE_DIR}/Material.cpp"			"${SOURCE_DIR}/Material.h"
 	"${SOURCE_DIR}/Camera.cpp"				"${SOURCE_DIR}/Camera.h"
 	"${SOURCE_DIR}/Timer.cpp"				"${SOURCE_DIR}/Timer.h"
+											"${SOURCE_DIR}/Context.h"
+											"${SOURCE_DIR}/ConsoleTextSettings.h"
 )
 
 # Create the executable
 add_executable(${PROJECT_NAME} ${SOURCES})
 
+# Max Warning Level & Warnings as Errors
+target_compile_options(${PROJECT_NAME} PRIVATE
+  $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
+)
 
 
 #--------------------------------------------------

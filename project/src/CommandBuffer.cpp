@@ -1,6 +1,10 @@
-#include "CommandBuffer.h"
-
+// -- Standard Library --
 #include <stdexcept>
+
+// -- Pompeii Includes --
+#include "CommandBuffer.h"
+#include "Device.h"
+
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  CommandBuffer	
@@ -9,9 +13,8 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::CommandBuffer::Allocate(Device device, VkCommandPool pool, VkCommandBuffer buffer)
+void pom::CommandBuffer::Allocate(VkCommandPool pool, VkCommandBuffer buffer)
 {
-	m_Device = device;
 	m_PoolOwner = pool;
 	m_CmdBuffer = buffer;
 }
@@ -20,7 +23,7 @@ void pom::CommandBuffer::Allocate(Device device, VkCommandPool pool, VkCommandBu
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-VkCommandBuffer& pom::CommandBuffer::GetBuffer() { return m_CmdBuffer; }
+VkCommandBuffer& pom::CommandBuffer::GetHandle() { return m_CmdBuffer; }
 
 
 //--------------------------------------------------
@@ -71,4 +74,4 @@ void pom::CommandBuffer::Submit(VkQueue queue, bool waitIdle, const SemaphoreInf
 		vkQueueWaitIdle(queue);
 }
 void pom::CommandBuffer::Reset() const { vkResetCommandBuffer(m_CmdBuffer, 0); }
-void pom::CommandBuffer::Free() const { vkFreeCommandBuffers(m_Device.GetDevice(), m_PoolOwner, 1, &m_CmdBuffer); }
+void pom::CommandBuffer::Free(const Device& device) const { vkFreeCommandBuffers(device.GetHandle(), m_PoolOwner, 1, &m_CmdBuffer); }

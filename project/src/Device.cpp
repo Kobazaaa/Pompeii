@@ -1,6 +1,12 @@
-#include "Device.h"
+// -- Standard Library --
 #include <set>
 #include <stdexcept>
+
+// -- Pompeii Includes --
+#include "Device.h"
+#include "Debugger.h"
+#include "Context.h"
+
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Device	
@@ -15,7 +21,7 @@ void pom::Device::Destroy() const				{ vkDestroyDevice(m_Device, nullptr); }
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkDevice& pom::Device::GetDevice()		const { return m_Device; }
+const VkDevice& pom::Device::GetHandle()		const { return m_Device; }
 const VkQueue& pom::Device::GetGraphicQueue()	const { return m_GraphicsQueue; }
 const VkQueue& pom::Device::GetPresentQueue()	const { return m_PresentQueue; }
 
@@ -41,9 +47,9 @@ pom::DeviceBuilder& pom::DeviceBuilder::SetFeatures(const VkPhysicalDeviceFeatur
 	m_DesiredFeatures = features;
 	return *this;
 }
-pom::Device& pom::DeviceBuilder::Build(const PhysicalDevice& physicalDevice, Device& device) const
+void pom::DeviceBuilder::Build(Context& context) const
 {
-	pom::QueueFamilyIndices indices = physicalDevice.GetQueueFamilies();
+	pom::QueueFamilyIndices indices = context.physicalDevice.GetQueueFamilies();
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
@@ -65,8 +71,8 @@ pom::Device& pom::DeviceBuilder::Build(const PhysicalDevice& physicalDevice, Dev
 	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 	createInfo.pEnabledFeatures = &m_DesiredFeatures;
-	createInfo.enabledExtensionCount = physicalDevice.GetExtensionsCount();
-	createInfo.ppEnabledExtensionNames = physicalDevice.GetExtensions().data();
+	createInfo.enabledExtensionCount = context.physicalDevice.GetExtensionsCount();
+	createInfo.ppEnabledExtensionNames = context.physicalDevice.GetExtensions().data();
 
 	if (pom::Debugger::IsEnabled())
 	{
@@ -78,11 +84,9 @@ pom::Device& pom::DeviceBuilder::Build(const PhysicalDevice& physicalDevice, Dev
 		createInfo.enabledLayerCount = 0;
 	}
 
-	if (vkCreateDevice(physicalDevice.GetPhysicalDevice(), &createInfo, nullptr, &device.m_Device) != VK_SUCCESS)
+	if (vkCreateDevice(context.physicalDevice.GetHandle(), &createInfo, nullptr, &context.device.m_Device) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Logical Device!");
 
-	vkGetDeviceQueue(device.GetDevice(), indices.graphicsFamily.value(), 0, &device.m_GraphicsQueue);
-	vkGetDeviceQueue(device.GetDevice(), indices.presentFamily.value(), 0, &device.m_PresentQueue);
-
-	return device;
+	vkGetDeviceQueue(context.device.GetHandle(), indices.graphicsFamily.value(), 0, &context.device.m_GraphicsQueue);
+	vkGetDeviceQueue(context.device.GetHandle(), indices.presentFamily.value(), 0, &context.device.m_PresentQueue);
 }

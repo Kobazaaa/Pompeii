@@ -1,9 +1,20 @@
 #ifndef GRAPHICS_PIPELINE_H
 #define GRAPHICS_PIPELINE_H
-#include "DescriptorSet.h"
-#include "Device.h"
-#include "RenderPass.h"
-#include "Shader.h"
+
+// -- Vulkan Includes --
+#include <vulkan/vulkan.h>
+
+// -- Standard Library --
+#include <vector>
+
+// -- Forward Declarations --
+namespace pom
+{
+	class RenderPass;
+	class ShaderModule;
+	class DescriptorSetLayout;
+	struct Context;
+}
 
 namespace pom
 {
@@ -17,13 +28,13 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		GraphicsPipelineLayout() = default;
-		void Destroy(const Device& device) const;
+		void Destroy(const Context& context) const;
 
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		const VkPipelineLayout& GetLayout() const;
+		const VkPipelineLayout& GetHandle() const;
 
 	private:
 		VkPipelineLayout m_Layout;
@@ -58,7 +69,7 @@ namespace pom
 		//! REQUIRED
 		GraphicsPipelineLayoutBuilder& AddLayout(const pom::DescriptorSetLayout& descriptorSetLayout);
 
-		void Build(const Device& device, GraphicsPipelineLayout& pipelineLayout);
+		void Build(const Context& context, GraphicsPipelineLayout& pipelineLayout);
 	private:
 		VkPipelineLayoutCreateInfo m_PipelineLayoutInfo{};
 		std::vector<VkPushConstantRange> m_vPushConstantRanges;
@@ -77,12 +88,12 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		GraphicsPipeline() = default;
-		void Destroy(const Device& device) const;
+		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		const VkPipeline& GetPipeline() const;
+		const VkPipeline& GetHandle() const;
 
 	private:
 		VkPipeline m_Pipeline;
@@ -139,7 +150,7 @@ namespace pom
 		//! REQUIRED
 		GraphicsPipelineBuilder& SetRenderPass(const RenderPass& renderPass);
 
-		void Build(const Device& device, GraphicsPipeline& pipeline) const;
+		void Build(const Context& context, GraphicsPipeline& pipeline) const;
 
 	private:
 		// wtf vulkan

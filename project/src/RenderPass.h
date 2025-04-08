@@ -1,9 +1,15 @@
 #ifndef RENDER_PASS_H
 #define RENDER_PASS_H
-#include <vector>
+
+// -- Vulkan Includes --
 #include <vulkan/vulkan.h>
 
-#include "Device.h"
+// -- Standard Library --
+#include <vector>
+
+// -- Forward Declarations --
+namespace pom { struct Context; }
+
 
 namespace pom
 {
@@ -17,12 +23,12 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		RenderPass() = default;
-		void Destroy(const Device& device) const;
+		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		const VkRenderPass& GetRenderPass() const;
+		const VkRenderPass& GetHandle() const;
 
 	private:
 		VkRenderPass m_RenderPass;
@@ -63,7 +69,7 @@ namespace pom
 		RenderPassBuilder& SetSrcMasks(VkPipelineStageFlags stageFlags, VkAccessFlags accessFlags);
 		RenderPassBuilder& SetDstMasks(VkPipelineStageFlags stageFlags, VkAccessFlags accessFlags);
 
-		void Build(const Device& device, RenderPass& renderPass) const;
+		void Build(const Context& context, RenderPass& renderPass) const;
 
 	private:
 		std::vector<VkAttachmentDescription>	m_vAttachmentDescriptions{};

@@ -1,9 +1,23 @@
 #ifndef COMMAND_POOL_H
 #define COMMAND_POOL_H
 
-#include "CommandBuffer.h"
-#include "Buffer.h"
+// -- Vulkan Includes --
+#include "vulkan/vulkan.h"
+
+// -- Standard Library --
+#include <vector>
+
+// -- Pompeii Includes --
 #include "Device.h"
+#include "CommandBuffer.h"
+
+// -- Forward Declarations --
+namespace pom
+{
+	class Buffer;
+	struct Context;
+}
+
 
 namespace pom
 {
@@ -18,14 +32,14 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		CommandPool() = default;
-		CommandPool& Create(Device& device, const PhysicalDevice& physicalDevice);
+		CommandPool& Create(const Context& context);
 		void Destroy() const;
 
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		VkCommandPool& GetPool();
+		VkCommandPool& GetHandle();
 		CommandBuffer& GetBuffer(uint32_t bufferIdx);
 		CommandBuffer& AllocateCmdBuffers(uint32_t count, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 

@@ -1,6 +1,12 @@
+// -- Standard Library --
+#include <stdexcept>
+
+// -- Pompeii Includes --
+#include "Context.h"
 #include "CommandPool.h"
 #include "Image.h"
-#include <stdexcept>
+#include "Buffer.h"
+
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  CommandPool	
@@ -9,31 +15,31 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::CommandPool& pom::CommandPool::Create(Device& device, const PhysicalDevice& physicalDevice)
+pom::CommandPool& pom::CommandPool::Create(const Context& context)
 {
-	pom::QueueFamilyIndices queueFamilyIndices = physicalDevice.GetQueueFamilies();
+	pom::QueueFamilyIndices queueFamilyIndices = context.physicalDevice.GetQueueFamilies();
 
 	VkCommandPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
-	if (vkCreateCommandPool(device.GetDevice(), &poolInfo, nullptr, &m_CommandPool) != VK_SUCCESS)
+	if (vkCreateCommandPool(context.device.GetHandle(), &poolInfo, nullptr, &m_CommandPool) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Command Pool!");
 
-	m_Device = device;
+	m_Device = context.device;
 	return *this;
 }
 void pom::CommandPool::Destroy() const
 {
-	vkDestroyCommandPool(m_Device.GetDevice(), m_CommandPool, nullptr);
+	vkDestroyCommandPool(m_Device.GetHandle(), m_CommandPool, nullptr);
 }
 
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-VkCommandPool& pom::CommandPool::GetPool() { return m_CommandPool; }
+VkCommandPool& pom::CommandPool::GetHandle() { return m_CommandPool; }
 pom::CommandBuffer& pom::CommandPool::GetBuffer(uint32_t bufferIdx)
 {
 	if (bufferIdx < 0 || bufferIdx >= m_vCommandBuffers.size())
@@ -51,11 +57,11 @@ pom::CommandBuffer& pom::CommandPool::AllocateCmdBuffers(uint32_t count, VkComma
 	for (uint32_t index{}; index < count; ++index)
 	{
 		VkCommandBuffer cmdBuffer;
-		if (vkAllocateCommandBuffers(m_Device.GetDevice(), &allocInfo, &cmdBuffer) != VK_SUCCESS)
+		if (vkAllocateCommandBuffers(m_Device.GetHandle(), &allocInfo, &cmdBuffer) != VK_SUCCESS)
 			throw std::runtime_error("Failed to allocate command buffer!");
 
 		m_vCommandBuffers.emplace_back();
-		m_vCommandBuffers.back().Allocate(m_Device, m_CommandPool, cmdBuffer);
+		m_vCommandBuffers.back().Allocate(m_CommandPool, cmdBuffer);
 	}
 
 	return m_vCommandBuffers.back();
@@ -77,7 +83,7 @@ void pom::CommandPool::TransitionImageLayout(Image& image, VkImageLayout newLayo
 		barrier.newLayout = newLayout;
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = image.GetImage();
+		barrier.image = image.GetHandle();
 		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
@@ -124,7 +130,7 @@ void pom::CommandPool::TransitionImageLayout(Image& image, VkImageLayout newLayo
 		else barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
 		vkCmdPipelineBarrier(
-			cmd.GetBuffer(),
+			cmd.GetHandle(),
 			sourceStage, destinationStage,
 			0,
 			0, nullptr,
@@ -136,7 +142,7 @@ void pom::CommandPool::TransitionImageLayout(Image& image, VkImageLayout newLayo
 	}
 	cmd.End();
 	cmd.Submit(m_Device.GetGraphicQueue(), true);
-	cmd.Free();
+	cmd.Free(m_Device);
 }
 void pom::CommandPool::CopyBufferToBuffer(const Buffer& srcBuffer, Buffer& dstBuffer, VkDeviceSize size)
 {
@@ -147,11 +153,11 @@ void pom::CommandPool::CopyBufferToBuffer(const Buffer& srcBuffer, Buffer& dstBu
 		copyRegion.srcOffset = 0;
 		copyRegion.dstOffset = 0;
 		copyRegion.size = size;
-		vkCmdCopyBuffer(cmd.GetBuffer(), srcBuffer.GetBuffer(), dstBuffer.GetBuffer(), 1, &copyRegion);
+		vkCmdCopyBuffer(cmd.GetHandle(), srcBuffer.GetHandle(), dstBuffer.GetHandle(), 1, &copyRegion);
 	}
 	cmd.End();
 	cmd.Submit(m_Device.GetGraphicQueue(), true);
-	cmd.Free();
+	cmd.Free(m_Device);
 }
 void pom::CommandPool::CopyBufferToImage(const Buffer& buffer, const Image& image, uint32_t width, uint32_t height)
 {
@@ -169,9 +175,9 @@ void pom::CommandPool::CopyBufferToImage(const Buffer& buffer, const Image& imag
 		region.imageOffset = { 0, 0, 0 };
 		region.imageExtent = { width, height, 1 };
 
-		vkCmdCopyBufferToImage(cmd.GetBuffer(), buffer.GetBuffer(), image.GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+		vkCmdCopyBufferToImage(cmd.GetHandle(), buffer.GetHandle(), image.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 	}
 	cmd.End();
 	cmd.Submit(m_Device.GetGraphicQueue(), true);
-	cmd.Free();
+	cmd.Free(m_Device);
 }

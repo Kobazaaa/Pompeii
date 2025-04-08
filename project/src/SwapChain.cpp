@@ -1,8 +1,13 @@
-#include "SwapChain.h"
-
+// -- Standard Library --
 #include <algorithm>
-#include <array>
 #include <stdexcept>
+
+// -- Pompeii Includes --
+#include "SwapChain.h"
+#include "Context.h"
+#include "Window.h"
+#include "CommandPool.h"
+
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  SwapChainBuilder	
@@ -14,10 +19,10 @@
 pom::SwapChainBuilder& pom::SwapChainBuilder::SetDesiredImageCount(uint32_t count) { m_DesiredImageCount = count; return *this; }
 pom::SwapChainBuilder& pom::SwapChainBuilder::SetImageUsage(VkImageUsageFlags usage) { m_CreateInfo.imageUsage = usage; return *this; }
 pom::SwapChainBuilder& pom::SwapChainBuilder::SetImageArrayLayers(uint32_t layerCount) { m_CreateInfo.imageArrayLayers = layerCount; return *this; }
-void pom::SwapChainBuilder::Build(Device& device, const VmaAllocator& allocator, PhysicalDevice& physicalDevice, const Window& window, SwapChain& swapChain, CommandPool& cmdPool)
+void pom::SwapChainBuilder::Build(Context& context, const Window& window, SwapChain& swapChain, CommandPool& cmdPool)
 {
 	// Get Support details
-	const SwapChainSupportDetails swapChainSupport = physicalDevice.GetSwapChainSupportDetails(window.GetVulkanSurface());
+	const SwapChainSupportDetails swapChainSupport = context.physicalDevice.GetSwapChainSupportDetails(window.GetVulkanSurface());
 
 	// Choose
 	const VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -39,7 +44,7 @@ void pom::SwapChainBuilder::Build(Device& device, const VmaAllocator& allocator,
 	m_CreateInfo.imageExtent = extent;
 
 
-	pom::QueueFamilyIndices indices = physicalDevice.GetQueueFamilies();
+	pom::QueueFamilyIndices indices = context.physicalDevice.GetQueueFamilies();
 	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 	if (indices.graphicsFamily != indices.presentFamily)
 	{
@@ -61,16 +66,16 @@ void pom::SwapChainBuilder::Build(Device& device, const VmaAllocator& allocator,
 	m_CreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
 	swapChain.m_OriginalBuilder = *this;
-	if (vkCreateSwapchainKHR(device.GetDevice(), &m_CreateInfo, nullptr, &swapChain.m_SwapChain) != VK_SUCCESS)
+	if (vkCreateSwapchainKHR(context.device.GetHandle(), &m_CreateInfo, nullptr, &swapChain.m_SwapChain) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Swap Chain!");
 
-	vkGetSwapchainImagesKHR(device.GetDevice(), swapChain.m_SwapChain, &imageCount, nullptr);
+	vkGetSwapchainImagesKHR(context.device.GetHandle(), swapChain.m_SwapChain, &imageCount, nullptr);
 	std::vector<VkImage> vImages;
 	vImages.resize(imageCount);
-	vkGetSwapchainImagesKHR(device.GetDevice(), swapChain.m_SwapChain, &imageCount, vImages.data());
+	vkGetSwapchainImagesKHR(context.device.GetHandle(), swapChain.m_SwapChain, &imageCount, vImages.data());
 
 	swapChain.m_vSwapChainImages.resize(imageCount);
-	for (int index{}; index < imageCount; ++index)
+	for (uint32_t index{}; index < imageCount; ++index)
 	{
 		swapChain.m_vSwapChainImages[index] = Image(vImages[index]);
 	}
@@ -79,10 +84,10 @@ void pom::SwapChainBuilder::Build(Device& device, const VmaAllocator& allocator,
 	swapChain.m_SwapChainExtent = extent;
 
 	for (size_t index = 0; index < swapChain.GetImageCount(); ++index)
-		swapChain.m_vSwapChainImages[index].GenerateImageView(device, swapChain.GetFormat(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+		swapChain.m_vSwapChainImages[index].GenerateImageView(context, swapChain.GetFormat(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
 
 	// Create Depth Resources
-	VkFormat format = Image::FindSupportedFormat(physicalDevice, { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+	VkFormat format = Image::FindSupportedFormat(context.physicalDevice, { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
 		VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	ImageBuilder imageBuilder{};
 	imageBuilder.SetWidth(extent.width)
@@ -91,8 +96,8 @@ void pom::SwapChainBuilder::Build(Device& device, const VmaAllocator& allocator,
 		.SetFormat(format)
 		.SetUsageFlags(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
 		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-		.Build(device, allocator, cmdPool, swapChain.m_DepthImage);
-	swapChain.m_DepthImage.GenerateImageView(device, format, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
+		.Build(context, cmdPool, swapChain.m_DepthImage);
+	swapChain.m_DepthImage.GenerateImageView(context, format, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
 	cmdPool.TransitionImageLayout(swapChain.m_DepthImage, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
@@ -150,18 +155,18 @@ VkPresentModeKHR pom::SwapChainBuilder::ChooseSwapPresentMode(const std::vector<
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::SwapChain::Destroy(Device& device, const VmaAllocator& allocator) const
+void pom::SwapChain::Destroy(Context& context) const
 {
-	m_DepthImage.Destroy(device, allocator);
+	m_DepthImage.Destroy(context);
 
 	for (auto& image : m_vSwapChainImages)
-		vkDestroyImageView(device.GetDevice(), image.GetImageView(), nullptr);
+		vkDestroyImageView(context.device.GetHandle(), image.GetViewHandle(), nullptr);
 
-	vkDestroySwapchainKHR(device.GetDevice(), m_SwapChain, nullptr);
+	vkDestroySwapchainKHR(context.device.GetHandle(), m_SwapChain, nullptr);
 }
-void pom::SwapChain::Recreate(Device& device, const VmaAllocator& allocator, PhysicalDevice& physicalDevice, const Window& window, CommandPool& cmdPool)
+void pom::SwapChain::Recreate(Context& context, const Window& window, CommandPool& cmdPool)
 {
-	m_OriginalBuilder.Build(device, allocator, physicalDevice, window, *this, cmdPool);
+	m_OriginalBuilder.Build(context, window, *this, cmdPool);
 }
 
 
@@ -170,7 +175,7 @@ void pom::SwapChain::Recreate(Device& device, const VmaAllocator& allocator, Phy
 //--------------------------------------------------
 pom::Image& pom::SwapChain::GetDepthImage()						{ return m_DepthImage; }
 std::vector<pom::Image>& pom::SwapChain::GetImages()			{ return m_vSwapChainImages; }
-VkSwapchainKHR& pom::SwapChain::GetSwapChain()					{ return m_SwapChain; }
+VkSwapchainKHR& pom::SwapChain::GetHandle()					{ return m_SwapChain; }
 uint32_t pom::SwapChain::GetImageCount()			const		{ return static_cast<uint32_t>(m_vSwapChainImages.size()); }
 VkFormat pom::SwapChain::GetFormat()				const		{ return m_SwapChainImageFormat; }
 VkExtent2D pom::SwapChain::GetExtent()				const		{ return m_SwapChainExtent; }

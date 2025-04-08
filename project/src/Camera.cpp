@@ -1,15 +1,15 @@
+// -- Standard Library --
+#include <algorithm>
+#include <iostream>
+
 // -- Keyboard --
 #include "GLFW/glfw3.h"
 
-// -- Custom Includes --
+// -- Pompeii Includes --
 #include "Camera.h"
 #include "Window.h"
 #include "Timer.h"
 
-// -- Standard Library --
-#include <algorithm>
-#include <functional>
-#include <iostream>
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  CLASS HERE	
@@ -20,7 +20,7 @@
 //--------------------------------------------------
 pom::Camera::Camera(const CameraSettings& settings, const Window* pWindow)
 	: m_Settings(settings)
-	, m_pWindow(pWindow->GetWindow())
+	, m_pWindow(pWindow->GetHandle())
 {}
 
 

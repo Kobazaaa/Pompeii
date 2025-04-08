@@ -1,9 +1,16 @@
 #ifndef SHADER_H
 #define SHADER_H
 
+// -- Vulkan Includes --
+#include "vulkan/vulkan.h"
+
+// --  Standard Library --
 #include <string>
 #include <vector>
-#include "Device.h"
+
+// -- Forward Declarations --
+namespace pom { struct Context; }
+
 
 namespace pom
 {
@@ -17,13 +24,13 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		ShaderModule() = default;
-		void Destroy(const Device& device) const;
+		void Destroy(const Context& context) const;
 
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		const VkShaderModule& GetShader() const;
+		const VkShaderModule& GetHandle() const;
 
 	private:
 		VkShaderModule m_Shader;
@@ -46,7 +53,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Loader
 		//--------------------------------------------------
-		void Load(const Device& device, const std::string& filename, ShaderModule& module);
+		void Load(const Context& context, const std::string& filename, ShaderModule& module);
 
 	private:
 		void ReadCode(const std::string& filename);

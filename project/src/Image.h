@@ -1,9 +1,20 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
+// -- Vulkan Includes --
 #include <vma/vk_mem_alloc.h>
-#include "CommandPool.h"
-#include "Device.h"
+
+// -- Standard Library --
+#include <vector>
+
+// -- Forward Declarations --
+namespace pom
+{
+	class PhysicalDevice;
+	class CommandPool;
+	struct Context;
+}
+
 
 namespace pom
 {
@@ -18,19 +29,19 @@ namespace pom
 		//--------------------------------------------------
 		Image() = default;
 		explicit Image(VkImage image);
-		void Destroy(const Device& device, const VmaAllocator& allocator) const;
+		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
 		//    Helpers
 		//--------------------------------------------------
-		VkImageView& GenerateImageView(const Device& device, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType);
+		VkImageView& GenerateImageView(const Context& context, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType);
 		static VkFormat FindSupportedFormat(const PhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		const VkImage& GetImage() const;
-		const VkImageView& GetImageView() const;
+		const VkImage& GetHandle() const;
+		const VkImageView& GetViewHandle() const;
 		VkFormat GetFormat() const;
 		VkImageLayout GetCurrentLayout() const;
 		bool HasStencilComponent() const;
@@ -42,7 +53,7 @@ namespace pom
 		VmaAllocation m_ImageMemory		{ VK_NULL_HANDLE };
 
 		VkImageLayout m_CurrentLayout	{ VK_IMAGE_LAYOUT_UNDEFINED };
-		VkImageCreateInfo m_ImageInfo	{};
+		VkImageCreateInfo m_ImageInfo	{ };
 
 		friend class ImageBuilder;
 	};
@@ -80,7 +91,7 @@ namespace pom
 		ImageBuilder& SetImageType(VkImageType type);
 		ImageBuilder& InitialData(void* data, uint32_t offset, uint32_t width, uint32_t height, uint32_t dataSize, VkImageLayout finalLayout);
 
-		void Build(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool, Image& image) const;
+		void Build(const Context& context, CommandPool& cmdPool, Image& image) const;
 
 	private:
 		bool m_UseInitialData;

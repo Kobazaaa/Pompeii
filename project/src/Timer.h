@@ -1,10 +1,17 @@
-#pragma once
-#include <chrono>
+#ifndef TIMER_H
+#define TIMER_H
 
+// -- Time --
+#include <chrono>
 using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
+
+// -- Class --
 namespace pom
 {
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//? ~~	  Timer	
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	class Timer final
 	{
 	public:
@@ -39,16 +46,18 @@ namespace pom
 		//    Time Variables
 		//--------------------------------------------------
 		// Immutable
-		static constexpr float	TARGET_FPS				{ 60.f };
+		static constexpr float	TARGET_FPS					{ 60.f };
 
 		// Mutable
-		inline static float				m_TotalTimeSeconds{};
-		inline static float				m_DeltaTimeSeconds{};
-		inline static float				m_SleepTimeSeconds{};
+		inline static float				m_TotalTimeSeconds	{ };
+		inline static float				m_DeltaTimeSeconds	{ };
+		inline static float				m_SleepTimeSeconds	{ };
 
-		inline static int				m_Ticks{};
+		inline static int				m_Ticks				{ };
 
-		inline static TimePoint			m_CurrentTimePoint{};
-		inline static TimePoint			m_LastTimePoint{};
+		inline static TimePoint			m_CurrentTimePoint	{ };
+		inline static TimePoint			m_LastTimePoint		{ };
 	};
 }
+
+#endif // TIMER_H

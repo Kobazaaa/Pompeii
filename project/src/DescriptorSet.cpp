@@ -1,6 +1,12 @@
-#include "DescriptorSet.h"
-
+// -- Standard Library --
 #include <stdexcept>
+
+// -- Pompeii Includes --
+#include "DescriptorSet.h"
+#include "Buffer.h"
+#include "Context.h"
+#include "Image.h"
+#include "Sampler.h"
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -10,12 +16,12 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::DescriptorSetLayout::Destroy(const Device& device) const { vkDestroyDescriptorSetLayout(device.GetDevice(), m_Layout, nullptr); }
+void pom::DescriptorSetLayout::Destroy(const Context& context) const { vkDestroyDescriptorSetLayout(context.device.GetHandle(), m_Layout, nullptr); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkDescriptorSetLayout& pom::DescriptorSetLayout::GetLayout() const { return m_Layout; }
+const VkDescriptorSetLayout& pom::DescriptorSetLayout::GetHandle() const { return m_Layout; }
 const std::vector<VkDescriptorSetLayoutBinding>& pom::DescriptorSetLayout::GetBindings() const { return m_vLayoutBindings; }
 
 
@@ -38,7 +44,7 @@ pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetType(VkDesc
 pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetCount(uint32_t count)					{ m_vLayoutBindings.back().descriptorCount = count; return *this; }
 pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetShaderStages(VkShaderStageFlags flags) { m_vLayoutBindings.back().stageFlags = flags; return *this; }
 
-void pom::DescriptorSetLayoutBuilder::Build(const Device& device, DescriptorSetLayout& descriptorSetLayout)
+void pom::DescriptorSetLayoutBuilder::Build(const Context& context, DescriptorSetLayout& descriptorSetLayout)
 {
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -47,7 +53,7 @@ void pom::DescriptorSetLayoutBuilder::Build(const Device& device, DescriptorSetL
 
 	descriptorSetLayout.m_vLayoutBindings = m_vLayoutBindings;
 
-	if (vkCreateDescriptorSetLayout(device.GetDevice(), &layoutInfo, nullptr, &descriptorSetLayout.m_Layout) != VK_SUCCESS)
+	if (vkCreateDescriptorSetLayout(context.device.GetHandle(), &layoutInfo, nullptr, &descriptorSetLayout.m_Layout) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Descriptor Set Layout!");
 
 	m_vLayoutBindings.clear();
@@ -79,7 +85,7 @@ const pom::DescriptorSetLayout& pom::DescriptorSet::GetLayout() const {	return m
 pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddBufferInfo(const Buffer& buffer, uint32_t offset, uint32_t range)
 {
 	VkDescriptorBufferInfo bufferInfo{};
-	bufferInfo.buffer = buffer.GetBuffer();
+	bufferInfo.buffer = buffer.GetHandle();
 	bufferInfo.offset = offset;
 	bufferInfo.range = range;
 	m_vBufferInfos.push_back(bufferInfo);
@@ -107,8 +113,8 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddImageInfo(const Image& im
 {
 	VkDescriptorImageInfo imageInfo{};
 	imageInfo.imageLayout = image.GetCurrentLayout();
-	imageInfo.imageView = image.GetImageView();
-	imageInfo.sampler = sampler.GetSampler();
+	imageInfo.imageView = image.GetViewHandle();
+	imageInfo.sampler = sampler.GetHandle();
 	m_vImageInfos.push_back(imageInfo);
 
 	return *this;
@@ -130,9 +136,9 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteImages(const Descriptor
 	return *this;
 }
 
-void pom::DescriptorSetWriter::Execute(const Device& device)
+void pom::DescriptorSetWriter::Execute(const Context& context)
 {
-	vkUpdateDescriptorSets(device.GetDevice(), static_cast<uint32_t>(m_vDescriptorWrites.size()), m_vDescriptorWrites.data(), 0, nullptr);
+	vkUpdateDescriptorSets(context.device.GetHandle(), static_cast<uint32_t>(m_vDescriptorWrites.size()), m_vDescriptorWrites.data(), 0, nullptr);
 
 	m_vDescriptorWrites.clear();
 	m_vImageInfos.clear();

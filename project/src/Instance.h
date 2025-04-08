@@ -1,10 +1,16 @@
 #ifndef INSTANCE_H
 #define INSTANCE_H
 
-#include <string>
+// -- Vulkan Includes --
 #include <vulkan/vulkan.h>
 
-#include "Debugger.h"
+// -- Standard Library --
+#include <string>
+#include <vector>
+
+// -- Forward Declarations --
+namespace pom { struct Context; }
+
 
 namespace pom
 {
@@ -23,7 +29,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		const VkInstance& GetInstance() const;
+		const VkInstance& GetHandle() const;
 
 	private:
 		VkInstance	m_Instance	{ VK_NULL_HANDLE };
@@ -43,14 +49,14 @@ namespace pom
 		//--------------------------------------------------	
 		InstanceBuilder();
 
-
 		//--------------------------------------------------
 		//    Builder
 		//--------------------------------------------------
 		InstanceBuilder& SetApplicationName(const std::string& name);
 		InstanceBuilder& SetEngineName(const std::string& name);
 		InstanceBuilder& AddInstanceExtension(const char* extName);
-		void Build(Instance& instance);
+		void Build(Context& context);
+
 	private:
 		void GetRequiredExtensions();
 

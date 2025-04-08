@@ -1,12 +1,15 @@
+// -- Standard Library --
+#include <iostream>
+#include <sstream>
+
 // -- Model Loading --
 #include <assimp/postprocess.h>
 
-// -- Mesh --
+// -- Pompeii Includes --
 #include "Model.h"
-
-// -- Output --
-#include <iostream>
-#include <sstream>
+#include "GraphicsPipeline.h"
+#include "Context.h"
+#include "CommandBuffer.h"
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -63,20 +66,20 @@ bool pom::Vertex::operator==(const Vertex& other) const
 //--------------------------------------------------
 //    Commands
 //--------------------------------------------------
-void pom::Mesh::Destroy(const Device& device, const VmaAllocator& allocator) const
+void pom::Mesh::Destroy(const Context& context) const
 {
-	indexBuffer.Destroy(device, allocator);
-	vertexBuffer.Destroy(device, allocator);
+	indexBuffer.Destroy(context);
+	vertexBuffer.Destroy(context);
 }
 void pom::Mesh::Draw(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pipelineLayout) const
 {
 	// -- Get Vulkan Command Buffer --
-	const VkCommandBuffer& vCmdBuffer = cmdBuffer.GetBuffer();
+	const VkCommandBuffer& vCmdBuffer = cmdBuffer.GetHandle();
 
 	// -- Bind Push Constants --
 	vkCmdPushConstants(
 		vCmdBuffer,
-		pipelineLayout.GetLayout(),
+		pipelineLayout.GetHandle(),
 		VK_SHADER_STAGE_FRAGMENT_BIT,
 		0,
 		sizeof(MeshPushConstants),
@@ -84,12 +87,12 @@ void pom::Mesh::Draw(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pip
 	);
 
 	// -- Bind Vertex Buffer --
-	VkBuffer vertexBuffers[] = { vertexBuffer.GetBuffer() };
+	VkBuffer vertexBuffers[] = { vertexBuffer.GetHandle() };
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(vCmdBuffer, 0, 1, vertexBuffers, offsets);
 
 	// -- Bind Index Buffer --
-	vkCmdBindIndexBuffer(vCmdBuffer, indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(vCmdBuffer, indexBuffer.GetHandle(), 0, VK_INDEX_TYPE_UINT32);
 
 	// -- Drawing Time! --
 	vkCmdDrawIndexed(vCmdBuffer, indexCount, 1, 0, 0, 0);
@@ -123,10 +126,10 @@ void pom::Model::LoadModel(const std::string& path)
 
 	ProcessNode(pScene->mRootNode, pScene, ConvertAssimpMatrix(pScene->mRootNode->mTransformation));
 }
-void pom::Model::AllocateResources(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool, bool keepHostData)
+void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool, bool keepHostData)
 {
-	CreateVertexBuffers(device, allocator, cmdPool);
-	CreateIndexBuffers(device, allocator, cmdPool);
+	CreateVertexBuffers(context, cmdPool);
+	CreateIndexBuffers(context, cmdPool);
 
 	// -- Build Image --
 	for (Texture& tex : textures)
@@ -140,8 +143,8 @@ void pom::Model::AllocateResources(const Device& device, const VmaAllocator& all
 			.SetUsageFlags(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 			.InitialData(tex.GetPixels(), 0, tex.GetExtent().x, tex.GetExtent().y, tex.GetMemorySize(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-			.Build(device, allocator, cmdPool, images.back());
-		images.back().GenerateImageView(device, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+			.Build(context, cmdPool, images.back());
+		images.back().GenerateImageView(context, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
 	}
 
 	// -- Destroy Host Data --
@@ -161,15 +164,15 @@ void pom::Model::AllocateResources(const Device& device, const VmaAllocator& all
 	}
 
 }
-void pom::Model::Destroy(const Device& device, const VmaAllocator& allocator) const
+void pom::Model::Destroy(const Context& context) const
 {
 	for (const Texture& tex : textures)
 		tex.FreePixels();
 	for (const Image& image : images)
-		image.Destroy(device, allocator);
+		image.Destroy(context);
 
 	for (int index{ static_cast<int>(meshes.size()) - 1 }; index >= 0; --index)
-		meshes[index].Destroy(device, allocator);
+		meshes[index].Destroy(context);
 }
 
 //--------------------------------------------------
@@ -278,7 +281,7 @@ glm::mat4 pom::Model::ConvertAssimpMatrix(const aiMatrix4x4& mat)
 	);
 }
 
-void pom::Model::CreateVertexBuffers(const Device& device, const VmaAllocator allocator, CommandPool& cmdPool)
+void pom::Model::CreateVertexBuffers(const Context& context, CommandPool& cmdPool)
 {
 	for (Mesh& mesh : meshes)
 	{
@@ -290,10 +293,10 @@ void pom::Model::CreateVertexBuffers(const Device& device, const VmaAllocator al
 			.SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
 			.HostAccess(false)
 			.InitialData(mesh.vertices.data(), 0, bufferSize)
-			.Allocate(device, allocator, cmdPool, mesh.vertexBuffer);
+			.Allocate(context, cmdPool, mesh.vertexBuffer);
 	}
 }
-void pom::Model::CreateIndexBuffers(const Device& device, const VmaAllocator allocator, CommandPool& cmdPool)
+void pom::Model::CreateIndexBuffers(const Context& context, CommandPool& cmdPool)
 {
 	for (Mesh& mesh : meshes)
 	{
@@ -305,6 +308,6 @@ void pom::Model::CreateIndexBuffers(const Device& device, const VmaAllocator all
 			.SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
 			.HostAccess(false)
 			.InitialData(mesh.indices.data(), 0, bufferSize)
-			.Allocate(device, allocator, cmdPool, mesh.indexBuffer);
+			.Allocate(context, cmdPool, mesh.indexBuffer);
 	}
 }

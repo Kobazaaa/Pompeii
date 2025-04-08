@@ -1,9 +1,16 @@
 #ifndef PHYSICAL_DEVICE_H
 #define PHYSICAL_DEVICE_H
 
-#include <optional>
+// -- Vulkan Includes
 #include <vulkan/vulkan.h>
-#include "Instance.h"
+
+// -- Standard Library --
+#include <optional>
+#include <vector>
+
+// -- Forward Declarations --
+namespace pom { struct Context; }
+
 
 namespace pom
 {
@@ -24,7 +31,8 @@ namespace pom
 
 		bool IsComplete() const
 		{
-			return graphicsFamily.has_value() && presentFamily.has_value();
+			return graphicsFamily.has_value()
+				&& presentFamily.has_value();
 		}
 	};
 
@@ -45,7 +53,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		const VkPhysicalDevice&			GetPhysicalDevice()										const;
+		const VkPhysicalDevice&			GetHandle()												const;
 
 		VkPhysicalDeviceProperties		GetProperties()											const;
 		VkFormatProperties				GetFormatProperties(VkFormat format)					const;
@@ -91,7 +99,7 @@ namespace pom
 		//    Selector
 		//--------------------------------------------------
 		PhysicalDeviceSelector& AddExtension(const char* ext);
-		PhysicalDeviceSelector& PickPhysicalDevice(const Instance& instance, PhysicalDevice& physicalDevice, VkSurfaceKHR surface);
+		PhysicalDeviceSelector& PickPhysicalDevice(Context& context, VkSurfaceKHR surface);
 
 	private:
 		uint32_t RateDeviceSuitability(PhysicalDevice& device, VkSurfaceKHR surface) const;

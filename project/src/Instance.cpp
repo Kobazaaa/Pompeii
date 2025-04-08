@@ -1,8 +1,14 @@
-#include "Instance.h"
-
+// -- Standard Library --
 #include <iostream>
 #include <stdexcept>
 
+// -- Pompeii Includes --
+#include "Instance.h"
+#include "Debugger.h"
+#include "Context.h"
+#include "ConsoleTextSettings.h"
+
+// -- GLFW Includes --
 #include "GLFW/glfw3.h"
 
 
@@ -18,7 +24,7 @@ void pom::Instance::Destroy() const { vkDestroyInstance(m_Instance, nullptr); }
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkInstance& pom::Instance::GetInstance() const { return m_Instance; }
+const VkInstance& pom::Instance::GetHandle() const { return m_Instance; }
 
 
 
@@ -46,7 +52,7 @@ pom::InstanceBuilder& pom::InstanceBuilder::SetApplicationName(const std::string
 pom::InstanceBuilder& pom::InstanceBuilder::SetEngineName(const std::string& name)		{ m_AppInfo.pEngineName = name.c_str(); return *this; }
 pom::InstanceBuilder& pom::InstanceBuilder::AddInstanceExtension(const char* extName)	{ m_vInstanceExtensions.push_back(extName); return *this; }
 
-void pom::InstanceBuilder::Build(Instance& instance)
+void pom::InstanceBuilder::Build(Context& context)
 {
 	if (Debugger::IsEnabled() && !Debugger::CheckValidationLayerSupport())
 		throw std::runtime_error("Validation Layers requested, but not available!");
@@ -73,7 +79,7 @@ void pom::InstanceBuilder::Build(Instance& instance)
 		m_CreateInfo.pNext = nullptr;
 	}
 
-	if (vkCreateInstance(&m_CreateInfo, nullptr, &instance.m_Instance) != VK_SUCCESS)
+	if (vkCreateInstance(&m_CreateInfo, nullptr, &context.instance.m_Instance) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create instance!");
 
 	if (Debugger::IsEnabled())
@@ -84,11 +90,12 @@ void pom::InstanceBuilder::Build(Instance& instance)
 		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
 		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
 
-		std::cout << "\nAvailable extensions:\n";
+		std::cout << INFO_TXT << "\nAvailable extensions:\n";
 		for (const auto& extension : availableExtensions)
 		{
 			std::cout << '\t' << extension.extensionName << '\n';
 		}
+		std::cout << "\n" << RESET_TXT;
 	}
 }
 

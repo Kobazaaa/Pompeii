@@ -1,9 +1,20 @@
 #ifndef DESCRIPTOR_POOL_H
 #define DESCRIPTOR_POOL_H
 
+// -- Vulkan Includes --
+#include <vulkan/vulkan.h>
+
+// -- Standard Library --
 #include <vector>
-#include "Device.h"
-#include "DescriptorSet.h"
+
+// -- Forward Declarations --
+namespace pom
+{
+	class DescriptorSetLayout;
+	class DescriptorSet;
+	struct Context;
+}
+
 
 namespace pom
 {
@@ -20,14 +31,14 @@ namespace pom
 		DescriptorPool& SetMaxSets(uint32_t count);
 		DescriptorPool& AddPoolSize(VkDescriptorType type, uint32_t count);
 		DescriptorPool& AddPoolSizeLayout(const DescriptorSetLayout& layout);
-		void Create(const Device& device);
-		void Destroy(const Device& device) const;
+		void Create(const Context& context);
+		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		std::vector<DescriptorSet> AllocateSets(const Device& device, const DescriptorSetLayout& layout, uint32_t count) const;
-		const VkDescriptorPool& GetPool() const;
+		std::vector<DescriptorSet> AllocateSets(const Context& context, const DescriptorSetLayout& layout, uint32_t count) const;
+		const VkDescriptorPool& GetHandle() const;
 
 	private:
 		VkDescriptorPool m_Pool{ VK_NULL_HANDLE };

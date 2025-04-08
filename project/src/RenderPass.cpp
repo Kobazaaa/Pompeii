@@ -1,5 +1,10 @@
-#include "RenderPass.h"
+// -- Standard Library --
 #include <stdexcept>
+
+// -- Pompeii Includes --
+#include "RenderPass.h"
+#include "Context.h"
+
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  RenderPass	
@@ -8,13 +13,13 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::RenderPass::Destroy(const Device& device)		const { vkDestroyRenderPass(device.GetDevice(), m_RenderPass, nullptr); }
+void pom::RenderPass::Destroy(const Context& context)		const { vkDestroyRenderPass(context.device.GetHandle(), m_RenderPass, nullptr); }
 
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkRenderPass& pom::RenderPass::GetRenderPass()	const { return m_RenderPass; }
+const VkRenderPass& pom::RenderPass::GetHandle()	const { return m_RenderPass; }
 
 
 
@@ -73,7 +78,7 @@ pom::RenderPassBuilder& pom::RenderPassBuilder::SetDstMasks(VkPipelineStageFlags
 	return *this;
 }
 
-void pom::RenderPassBuilder::Build(const Device& device, RenderPass& renderPass) const
+void pom::RenderPassBuilder::Build(const Context& context, RenderPass& renderPass) const
 {
 	VkRenderPassCreateInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -84,6 +89,6 @@ void pom::RenderPassBuilder::Build(const Device& device, RenderPass& renderPass)
 	renderPassInfo.dependencyCount = static_cast<uint32_t>(m_vSubPassDependencies.size());
 	renderPassInfo.pDependencies = m_vSubPassDependencies.data();
 
-	if (vkCreateRenderPass(device.GetDevice(), &renderPassInfo, nullptr, &renderPass.m_RenderPass) != VK_SUCCESS)
+	if (vkCreateRenderPass(context.device.GetHandle(), &renderPassInfo, nullptr, &renderPass.m_RenderPass) != VK_SUCCESS)
 		throw std::runtime_error("Failed to created Render Pass!");
 }

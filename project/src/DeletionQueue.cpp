@@ -1,12 +1,18 @@
-#include "DeletionQueue.h"
-
+// -- Standard Library --
 #include <ranges>
 
+// -- Pompeii Includes --
+#include "DeletionQueue.h"
+
+
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  DeletionQueue	
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //--------------------------------------------------
 //    Builder
 //--------------------------------------------------
-void pom::DeletionQueue::Push(std::function<void()> dtor)
+void pom::DeletionQueue::Push(const std::function<void()>& dtor)
 {
 	m_Destructors.push_back(dtor);
 }

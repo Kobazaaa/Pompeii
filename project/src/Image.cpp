@@ -1,5 +1,12 @@
-#include "Image.h"
+// -- Standard Library --
 #include <stdexcept>
+
+// -- Pompeii Includes --
+#include "Image.h"
+#include "Context.h"
+#include "CommandPool.h"
+#include "Buffer.h"
+
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Image	
@@ -9,13 +16,13 @@
 //    Constructor & Destructor
 //--------------------------------------------------
 pom::Image::Image(VkImage image) : m_Image(image){}
-void pom::Image::Destroy(const Device& device, const VmaAllocator& allocator) const
+void pom::Image::Destroy(const Context& context) const
 {
-	vkDestroyImageView(device.GetDevice(), m_ImageView, nullptr);
-	vkDestroyImage(device.GetDevice(), m_Image, nullptr);
-	vmaFreeMemory(allocator, m_ImageMemory);
+	vkDestroyImageView(context.device.GetHandle(), m_ImageView, nullptr);
+	vkDestroyImage(context.device.GetHandle(), m_Image, nullptr);
+	vmaFreeMemory(context.allocator, m_ImageMemory);
 }
-VkImageView& pom::Image::GenerateImageView(const Device& device, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType)
+VkImageView& pom::Image::GenerateImageView(const Context& context, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType)
 {
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -28,14 +35,14 @@ VkImageView& pom::Image::GenerateImageView(const Device& device, VkFormat format
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount = m_ImageInfo.arrayLayers == 0 ? 1 : m_ImageInfo.arrayLayers;
 
-	if (vkCreateImageView(device.GetDevice(), &viewInfo, nullptr, &m_ImageView) != VK_SUCCESS)
+	if (vkCreateImageView(context.device.GetHandle(), &viewInfo, nullptr, &m_ImageView) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Image View!");
 
 	return m_ImageView;
 }
 VkFormat pom::Image::FindSupportedFormat(const PhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
 {
-	for (VkFormat format : candidates)
+	for (const VkFormat format : candidates)
 	{
 		VkFormatProperties props = physicalDevice.GetFormatProperties(format);
 
@@ -50,8 +57,8 @@ VkFormat pom::Image::FindSupportedFormat(const PhysicalDevice& physicalDevice, c
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkImage& pom::Image::GetImage()		  const			{ return m_Image; }
-const VkImageView& pom::Image::GetImageView() const			{ return m_ImageView; }
+const VkImage& pom::Image::GetHandle()		  const			{ return m_Image; }
+const VkImageView& pom::Image::GetViewHandle() const			{ return m_ImageView; }
 VkFormat pom::Image::GetFormat()			  const			{ return m_ImageInfo.format; }
 VkImageLayout pom::Image::GetCurrentLayout()  const			{ return m_CurrentLayout; }
 bool pom::Image::HasStencilComponent()		  const			{ return m_ImageInfo.format == VK_FORMAT_D32_SFLOAT_S8_UINT || m_ImageInfo.format == VK_FORMAT_D24_UNORM_S8_UINT; }
@@ -126,11 +133,11 @@ pom::ImageBuilder& pom::ImageBuilder::InitialData(void* data, uint32_t offset, u
 	return *this;
 }
 
-void pom::ImageBuilder::Build(const Device& device, const VmaAllocator& allocator, CommandPool& cmdPool, Image& image) const
+void pom::ImageBuilder::Build(const Context& context, CommandPool& cmdPool, Image& image) const
 {
 	image.m_ImageInfo = m_ImageInfo;
 	image.m_CurrentLayout = m_ImageInfo.initialLayout;
-	if (vmaCreateImage(allocator, &m_ImageInfo, &m_AllocInfo, &image.m_Image, &image.m_ImageMemory, nullptr) != VK_SUCCESS)
+	if (vmaCreateImage(context.allocator, &m_ImageInfo, &m_AllocInfo, &image.m_Image, &image.m_ImageMemory, nullptr) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Image!");
 
 	if (m_UseInitialData)
@@ -141,13 +148,13 @@ void pom::ImageBuilder::Build(const Device& device, const VmaAllocator& allocato
 			.SetUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
 			.HostAccess(true)
 			.SetSize(m_InitDataSize)
-			.Allocate(device, allocator, cmdPool, stagingBuffer);
-		vmaCopyMemoryToAllocation(allocator, m_pData, stagingBuffer.GetMemory(), m_InitDataOffset, m_InitDataSize);
+			.Allocate(context, cmdPool, stagingBuffer);
+		vmaCopyMemoryToAllocation(context.allocator, m_pData, stagingBuffer.GetMemoryHandle(), m_InitDataOffset, m_InitDataSize);
 
 		cmdPool.TransitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 		cmdPool.CopyBufferToImage(stagingBuffer, image, m_InitDataWidth, m_InitDataHeight);
 		cmdPool.TransitionImageLayout(image, m_FinalLayout);
 
-		stagingBuffer.Destroy(device, allocator);
+		stagingBuffer.Destroy(context);
 	}
 }
