@@ -2,6 +2,7 @@
 #include "Buffer.h"
 #include "CommandPool.h"
 #include "Context.h"
+#include "Debugger.h"
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,12 +50,19 @@ pom::BufferAllocator::BufferAllocator()
 	m_pData = nullptr;														//? CAN CHANGE
 	m_InitDataSize = 0;														//? CAN CHANGE
 	m_InitDataOffset = 0;													//? CAN CHANGE
+	m_pName = nullptr;														//? CAN CHANGE
 }
+
 
 
 //--------------------------------------------------
 //    Allocator
 //--------------------------------------------------
+pom::BufferAllocator& pom::BufferAllocator::SetDebugName(const char* name)
+{
+	m_pName = name;
+	return *this;
+}
 pom::BufferAllocator& pom::BufferAllocator::SetSize(uint32_t size)
 {
 	m_CreateInfo.size = size;
@@ -117,5 +125,9 @@ void pom::BufferAllocator::Allocate(const Context& context, CommandPool& cmdPool
 		cmdPool.CopyBufferToBuffer(stagingBuffer, buffer, m_InitDataSize);
 
 		stagingBuffer.Destroy(context);
+	}
+	if (m_pName)
+	{
+		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(buffer.GetHandle()), VK_OBJECT_TYPE_BUFFER, m_pName);
 	}
 }

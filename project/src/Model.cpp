@@ -10,6 +10,7 @@
 #include "GraphicsPipeline.h"
 #include "Context.h"
 #include "CommandBuffer.h"
+#include "Debugger.h"
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -85,14 +86,17 @@ void pom::Mesh::Draw(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pip
 		sizeof(MeshPushConstants),
 		&pc
 	);
+	Debugger::InsertDebugLabel(cmdBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
 
 	// -- Bind Vertex Buffer --
 	VkBuffer vertexBuffers[] = { vertexBuffer.GetHandle() };
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(vCmdBuffer, 0, 1, vertexBuffers, offsets);
+	Debugger::InsertDebugLabel(cmdBuffer, "Bind Vertex Buffer", glm::vec4(0.6f, 1.f, 0.6f, 1.f));
 
 	// -- Bind Index Buffer --
 	vkCmdBindIndexBuffer(vCmdBuffer, indexBuffer.GetHandle(), 0, VK_INDEX_TYPE_UINT32);
+	Debugger::InsertDebugLabel(cmdBuffer, "Bind Index Buffer", glm::vec4(1.f, 0.4f, 1.f, 1.f));
 
 	// -- Drawing Time! --
 	vkCmdDrawIndexed(vCmdBuffer, indexCount, 1, 0, 0, 0);
@@ -132,11 +136,14 @@ void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool,
 	CreateIndexBuffers(context, cmdPool);
 
 	// -- Build Image --
+	uint32_t index = 0;
 	for (Texture& tex : textures)
 	{
 		images.emplace_back();
 		ImageBuilder builder{};
-		builder.SetWidth(tex.GetExtent().x)
+		builder
+			.SetDebugName(std::ranges::find_if(pathToIdx, [&](auto& keyVal) { return keyVal.second == index; })->first.c_str())
+			.SetWidth(tex.GetExtent().x)
 			.SetHeight(tex.GetExtent().y)
 			.SetFormat(VK_FORMAT_R8G8B8A8_SRGB)
 			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
@@ -145,6 +152,7 @@ void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool,
 			.InitialData(tex.GetPixels(), 0, tex.GetExtent().x, tex.GetExtent().y, tex.GetMemorySize(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 			.Build(context, cmdPool, images.back());
 		images.back().GenerateImageView(context, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+		++index;
 	}
 
 	// -- Destroy Host Data --
@@ -289,6 +297,7 @@ void pom::Model::CreateVertexBuffers(const Context& context, CommandPool& cmdPoo
 
 		const uint32_t bufferSize = static_cast<uint32_t>(mesh.vertices.size()) * sizeof(mesh.vertices[0]);
 		alloc
+			.SetDebugName("Vertex Buffer")
 			.SetSize(bufferSize)
 			.SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
 			.HostAccess(false)
@@ -304,6 +313,7 @@ void pom::Model::CreateIndexBuffers(const Context& context, CommandPool& cmdPool
 
 		const uint32_t bufferSize = static_cast<uint32_t>(mesh.indices.size()) * sizeof(mesh.indices[0]);
 		alloc
+			.SetDebugName("Index Buffer")
 			.SetSize(bufferSize)
 			.SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
 			.HostAccess(false)

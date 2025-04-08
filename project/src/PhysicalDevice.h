@@ -67,7 +67,7 @@ namespace pom
 		bool AreExtensionsSupported(const std::vector<const char*>& extensions)					const;
 
 	private:
-		friend class pom::PhysicalDeviceSelector;
+		friend class PhysicalDeviceSelector;
 
 		SwapChainSupportDetails QuerySwapChainSupport(VkSurfaceKHR surface);
 		QueueFamilyIndices FindQueueFamilies(const VkSurfaceKHR surface);

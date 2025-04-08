@@ -35,7 +35,7 @@ namespace pom
 	private:
 		VmaAllocation m_Memory;
 		VkBuffer m_Buffer;
-		
+
 		friend class BufferAllocator;
 	};
 
@@ -53,6 +53,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Allocator
 		//--------------------------------------------------
+		BufferAllocator& SetDebugName(const char* name);
 		BufferAllocator& SetSize(uint32_t size);
 		BufferAllocator& SetUsage(VkBufferUsageFlags usage);
 		BufferAllocator& SetMemUsage(VmaMemoryUsage usage);
@@ -67,6 +68,8 @@ namespace pom
 		void* m_pData;
 		uint32_t m_InitDataSize;
 		uint32_t m_InitDataOffset;
+
+		const char* m_pName{};
 
 		VkBufferCreateInfo m_CreateInfo{};
 		VmaAllocationCreateInfo m_AllocCreateInfo{};

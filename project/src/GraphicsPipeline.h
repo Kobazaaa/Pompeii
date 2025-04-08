@@ -115,6 +115,9 @@ namespace pom
 		//    Builder
 		//--------------------------------------------------
 
+		// Debug Info
+		GraphicsPipelineBuilder& SetDebugName(const char* name);
+
 		// Shader Info
 		GraphicsPipelineBuilder& AddShader(const ShaderModule& shader, VkShaderStageFlagBits stage);
 		GraphicsPipelineBuilder& SetShaderSpecialization(uint32_t constID, uint32_t offset, uint32_t size, const void* data);
@@ -166,6 +169,7 @@ namespace pom
 
 		VkPipelineLayout	m_PipelineLayout;
 		VkRenderPass		m_RenderPass;
+		const char*			m_pName{};
 
 		std::vector<VkDynamicState> m_vDynamicStates;
 		std::vector<VkPipelineShaderStageCreateInfo> m_vShaderInfo;

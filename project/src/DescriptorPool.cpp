@@ -4,6 +4,7 @@
 // -- Pompeii Includes --
 #include "DescriptorPool.h"
 #include "Context.h"
+#include "Debugger.h"
 #include "DescriptorSet.h"
 
 
@@ -14,6 +15,11 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
+pom::DescriptorPool& pom::DescriptorPool::SetDebugName(const char* name)
+{
+	m_pName = name;
+	return *this;
+}
 pom::DescriptorPool& pom::DescriptorPool::SetMaxSets(uint32_t count)
 {
 	m_MaxSets = count;
@@ -44,6 +50,13 @@ void pom::DescriptorPool::Create(const Context& context)
 
 	if (vkCreateDescriptorPool(context.device.GetHandle(), &poolInfo, nullptr, &m_Pool) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Descriptor Pool!");
+
+	if (m_pName)
+	{
+		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(m_Pool), VK_OBJECT_TYPE_DESCRIPTOR_POOL, m_pName);
+	}
+
+	m_pName = nullptr;
 }
 void pom::DescriptorPool::Destroy(const Context& context) const
 {
@@ -54,7 +67,7 @@ void pom::DescriptorPool::Destroy(const Context& context) const
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-std::vector<pom::DescriptorSet> pom::DescriptorPool::AllocateSets(const Context& context, const DescriptorSetLayout& layout, uint32_t count) const
+std::vector<pom::DescriptorSet> pom::DescriptorPool::AllocateSets(const Context& context, const DescriptorSetLayout& layout, uint32_t count, const char* name) const
 {
 	std::vector<pom::DescriptorSet> results;
 	std::vector<VkDescriptorSet> sets;
@@ -75,6 +88,13 @@ std::vector<pom::DescriptorSet> pom::DescriptorPool::AllocateSets(const Context&
 	{
 		results[index].m_DescriptorSet = sets[index];
 		results[index].m_Layout = layout;
+
+		if (name)
+		{
+			std::string str{ name };
+			str += std::to_string(index);
+			Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(sets[index]), VK_OBJECT_TYPE_DESCRIPTOR_SET, str);
+		}
 	}
 
 	return results;

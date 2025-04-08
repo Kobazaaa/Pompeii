@@ -6,6 +6,7 @@
 #include "Context.h"
 #include "CommandPool.h"
 #include "Buffer.h"
+#include "Debugger.h"
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,6 +96,7 @@ pom::ImageBuilder::ImageBuilder()
 	m_AllocInfo.usage = VMA_MEMORY_USAGE_AUTO;						// CAN'T CHANGE
 	m_AllocInfo.requiredFlags = 0;									//? CAN CHANGE
 
+	m_pName = nullptr;												//? CAN CHANGE
 	m_UseInitialData = false;										//? CAN CHANGE
 	m_pData = nullptr;												//? CAN CHANGE
 	m_InitDataSize = 0;												//? CAN CHANGE
@@ -108,6 +110,7 @@ pom::ImageBuilder::ImageBuilder()
 //--------------------------------------------------
 //    Builder
 //--------------------------------------------------
+pom::ImageBuilder& pom::ImageBuilder::SetDebugName(const char* name)						{ m_pName = name; return *this; }
 pom::ImageBuilder& pom::ImageBuilder::SetWidth(uint32_t width)								{ m_ImageInfo.extent.width = width; return *this; }
 pom::ImageBuilder& pom::ImageBuilder::SetHeight(uint32_t height)							{ m_ImageInfo.extent.height = height; return *this; }
 pom::ImageBuilder& pom::ImageBuilder::SetDepth(uint32_t depth)								{ m_ImageInfo.extent.depth = depth; return *this; }
@@ -156,5 +159,10 @@ void pom::ImageBuilder::Build(const Context& context, CommandPool& cmdPool, Imag
 		cmdPool.TransitionImageLayout(image, m_FinalLayout);
 
 		stagingBuffer.Destroy(context);
+	}
+
+	if (m_pName)
+	{
+		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(image.GetHandle()), VK_OBJECT_TYPE_IMAGE, m_pName);
 	}
 }

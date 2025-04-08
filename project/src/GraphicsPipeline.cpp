@@ -4,6 +4,7 @@
 // -- Pompeii Includes --
 #include "GraphicsPipeline.h"
 #include "Context.h"
+#include "Debugger.h"
 #include "Shader.h"
 #include "DescriptorSet.h"
 #include "RenderPass.h"
@@ -172,12 +173,20 @@ pom::GraphicsPipelineBuilder::GraphicsPipelineBuilder()
 
 	m_PipelineLayout = VK_NULL_HANDLE;															//! REQUIRED CHANGE										
 	m_RenderPass = VK_NULL_HANDLE;																//! REQUIRED CHANGE
+	m_pName = nullptr;																			//? CAN CHANGE
 }
 
 
 //--------------------------------------------------
 //    Builder
 //--------------------------------------------------
+// Debug Info
+pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetDebugName(const char* name)
+{
+	m_pName = name;
+	return *this;
+}
+
 // Shader Info
 pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::AddShader(const ShaderModule& shader, VkShaderStageFlagBits stage)
 {
@@ -305,4 +314,9 @@ void pom::GraphicsPipelineBuilder::Build(const Context& context, GraphicsPipelin
 
 	if (vkCreateGraphicsPipelines(context.device.GetHandle(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline.m_Pipeline) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Graphics Pipeline!");
+
+	if (m_pName)
+	{
+		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(pipeline.GetHandle()), VK_OBJECT_TYPE_PIPELINE, m_pName);
+	}
 }

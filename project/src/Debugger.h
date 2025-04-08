@@ -8,8 +8,15 @@
 #include <string>
 #include <vector>
 
+// -- Math Includes --
+#include "glm/vec4.hpp"
+
 // -- Forward Declarations --
-namespace pom { struct Context; }
+namespace pom
+{
+	class CommandBuffer;
+	struct Context;
+}
 
 
 namespace pom
@@ -44,6 +51,9 @@ namespace pom
 		static void Destroy();
 
 		static void SetDebugObjectName(uint64_t objectHandle, VkObjectType objectType, const std::string& name);
+		static void BeginDebugLabel(CommandBuffer & cmdBuffer, const std::string& name, const glm::vec4& color);
+		static void InsertDebugLabel(CommandBuffer& cmdBuffer, const std::string& name, const glm::vec4& color);
+		static void EndDebugLabel(CommandBuffer& cmdBuffer);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators

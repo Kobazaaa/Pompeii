@@ -28,6 +28,7 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		DescriptorPool() = default;
+		DescriptorPool& SetDebugName(const char* name);
 		DescriptorPool& SetMaxSets(uint32_t count);
 		DescriptorPool& AddPoolSize(VkDescriptorType type, uint32_t count);
 		DescriptorPool& AddPoolSizeLayout(const DescriptorSetLayout& layout);
@@ -37,13 +38,14 @@ namespace pom
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		std::vector<DescriptorSet> AllocateSets(const Context& context, const DescriptorSetLayout& layout, uint32_t count) const;
+		std::vector<DescriptorSet> AllocateSets(const Context& context, const DescriptorSetLayout& layout, uint32_t count, const char* name = nullptr) const;
 		const VkDescriptorPool& GetHandle() const;
 
 	private:
 		VkDescriptorPool m_Pool{ VK_NULL_HANDLE };
 		std::vector<VkDescriptorPoolSize> m_vPoolSizes{};
 		uint32_t m_MaxSets;
+		const char* m_pName{};
 	};
 }
 

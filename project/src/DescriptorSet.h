@@ -58,6 +58,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Builder
 		//--------------------------------------------------
+		DescriptorSetLayoutBuilder& SetDebugName(const char* name);
 		DescriptorSetLayoutBuilder& NewLayoutBinding();
 		//! REQUIRED
 		DescriptorSetLayoutBuilder& SetType(VkDescriptorType type);
@@ -69,6 +70,7 @@ namespace pom
 		void Build(const Context& context, DescriptorSetLayout& descriptorSetLayout);
 
 	private:
+		const char* m_pName{ };
 		std::vector<VkDescriptorSetLayoutBinding> m_vLayoutBindings;
 	};
 

@@ -159,6 +159,9 @@ void pom::Renderer::InitializeVulkan()
 #if _DEBUG
 		Debugger::Setup(m_Context);
 		m_Context.deletionQueue.Push([&] { Debugger::Destroy(); });
+
+		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(m_Context.physicalDevice.GetHandle()),
+			VK_OBJECT_TYPE_PHYSICAL_DEVICE, m_Context.physicalDevice.GetProperties().deviceName);
 #endif
 	}
 
@@ -175,7 +178,8 @@ void pom::Renderer::InitializeVulkan()
 
 	// -- Create Command Pool - Requirements - [Device - Physical Device]
 	{
-		m_CommandPool.Create(m_Context)
+		m_CommandPool
+			.Create(m_Context)
 			.AllocateCmdBuffers(m_MaxFramesInFlight);
 
 		m_Context.deletionQueue.Push([&] { m_CommandPool.Destroy(); });
@@ -185,7 +189,8 @@ void pom::Renderer::InitializeVulkan()
 	{
 		SwapChainBuilder builder;
 
-		builder.SetDesiredImageCount(2)
+		builder
+			.SetDesiredImageCount(m_MaxFramesInFlight)
 			.SetImageArrayLayers(1)
 			.SetImageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
 			.Build(m_Context, *m_pWindow, m_SwapChain, m_CommandPool);
@@ -196,7 +201,6 @@ void pom::Renderer::InitializeVulkan()
 	// -- Load Models - Requirements - []
 	{
 		LoadModels();
-		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(m_Model.images.front().GetHandle()), VK_OBJECT_TYPE_IMAGE, "I AM OUTSTANDING LOOK AT ME");
 	}
 
 	// -- Create Render Pass - Requirements - [Device - SwapChain - Depth Buffer]
@@ -238,6 +242,7 @@ void pom::Renderer::InitializeVulkan()
 
 		// -- Uniform Buffer Descriptor --
 		builder
+			.SetDebugName("Uniform Buffer DS Layout")
 			.NewLayoutBinding()
 				.SetType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 				.SetShaderStages(VK_SHADER_STAGE_VERTEX_BIT)
@@ -246,6 +251,7 @@ void pom::Renderer::InitializeVulkan()
 
 		// -- Texture Array Descriptor --
 		builder
+			.SetDebugName("Texture Array DS Layout")
 			.NewLayoutBinding()
 				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -282,6 +288,7 @@ void pom::Renderer::InitializeVulkan()
 		GraphicsPipelineBuilder builder{};
 		uint32_t arraySize = static_cast<uint32_t>(m_Model.images.size());
 		builder
+			.SetDebugName("Graphics Pipeline (Default)")
 			.SetPipelineLayout(m_PipelineLayout)
 			.SetRenderPass(m_RenderPass)
 			.AddDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
@@ -343,6 +350,7 @@ void pom::Renderer::InitializeVulkan()
 		{
 			BufferAllocator bufferAlloc{};
 			bufferAlloc
+				.SetDebugName("Uniform Buffer (Matrices)")
 				.SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
 				.SetSize(sizeof(UniformBufferObject))
 				.HostAccess(true)
@@ -354,6 +362,7 @@ void pom::Renderer::InitializeVulkan()
 	// -- Create Descriptor Pool - Requirements - [Device]
 	{
 		m_DescriptorPool
+			.SetDebugName("Descriptor Pool (Default)")
 			.SetMaxSets(30)
 			.AddPoolSizeLayout(m_UniformDSL)
 			.AddPoolSizeLayout(m_TextureDSL)
@@ -363,8 +372,8 @@ void pom::Renderer::InitializeVulkan()
 
 	// -- Allocate Descriptor Sets - Requirements - [Device - Descriptor Pool - Descriptor Set Layout - UBO]
 	{
-		m_vUniformDS = m_DescriptorPool.AllocateSets(m_Context, m_UniformDSL, m_MaxFramesInFlight);
-		m_vTextureDS = m_DescriptorPool.AllocateSets(m_Context, m_TextureDSL, 1);
+		m_vUniformDS = m_DescriptorPool.AllocateSets(m_Context, m_UniformDSL, m_MaxFramesInFlight, "Uniform Buffer DS");
+		m_vTextureDS = m_DescriptorPool.AllocateSets(m_Context, m_TextureDSL, 1, "Texture Array DS");
 
 		// -- Write UBO --
 		DescriptorSetWriter writer{};
@@ -464,9 +473,11 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		renderPassInfo.pClearValues = clearValues.data();
 
+		Debugger::BeginDebugLabel(commandBuffer, "Render Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
 		vkCmdBeginRenderPass(vCmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		{
 			vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline.GetHandle());
+			Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 
 			VkViewport viewport{};
 			viewport.x = 0.0f;
@@ -476,17 +487,23 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
 			vkCmdSetViewport(vCmdBuffer, 0, 1, &viewport);
+			Debugger::InsertDebugLabel(commandBuffer, "Bind Viewport", glm::vec4(0.2f, 1.f, 0.2f, 1.f));
 
 			VkRect2D scissor{};
 			scissor.offset = { 0, 0 };
 			scissor.extent = m_SwapChain.GetExtent();
 			vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
+			Debugger::InsertDebugLabel(commandBuffer, "Bind Scissor", glm::vec4(1.f, 1.f, 0.2f, 1.f));
 
 			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vUniformDS[m_CurrentFrame].GetHandle(), 0, nullptr);
+			Debugger::InsertDebugLabel(commandBuffer, "Bind Uniform Buffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
 			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 1, 1, &m_vTextureDS[0].GetHandle(), 0, nullptr);
+			Debugger::InsertDebugLabel(commandBuffer, "Bind Textures", glm::vec4(0.f, 1.f, 1.f, 1.f));
+
 			m_Model.Draw(commandBuffer, m_PipelineLayout);
 		}
 		vkCmdEndRenderPass(vCmdBuffer);
+		Debugger::EndDebugLabel(commandBuffer);
 	}
 	commandBuffer.End();
 }

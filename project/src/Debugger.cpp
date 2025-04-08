@@ -5,6 +5,7 @@
 
 // -- Pompeii Includes --
 #include "Debugger.h"
+#include "CommandBuffer.h"
 #include "Context.h"
 #include "ConsoleTextSettings.h"
 
@@ -34,6 +35,9 @@ void pom::Debugger::Destroy()
 
 void pom::Debugger::SetDebugObjectName(uint64_t objectHandle, VkObjectType objectType, const std::string& name)
 {
+	if (!m_IsEnabled)
+		return;
+
 	VkDebugUtilsObjectNameInfoEXT nameInfo{};
 	nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
 	nameInfo.objectType = objectType;
@@ -41,6 +45,42 @@ void pom::Debugger::SetDebugObjectName(uint64_t objectHandle, VkObjectType objec
 	nameInfo.pObjectName = name.c_str();
 
 	m_DeviceDebugUtils.setDebugUtilsObjectNameEXT(m_DeviceDebugUtils.device, &nameInfo);
+}
+void pom::Debugger::BeginDebugLabel(CommandBuffer& cmdBuffer, const std::string& name, const glm::vec4& color)
+{
+	if (!m_IsEnabled)
+		return;
+
+	VkDebugUtilsLabelEXT labelInfo{};
+	labelInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+	labelInfo.pLabelName = name.c_str();
+	labelInfo.color[0] = color.x;
+	labelInfo.color[1] = color.y;
+	labelInfo.color[2] = color.z;
+	labelInfo.color[3] = color.w;
+
+	m_DeviceDebugUtils.cmdBeginDebugUtilsLabelEXT(cmdBuffer.GetHandle(), &labelInfo);
+}
+void pom::Debugger::InsertDebugLabel(CommandBuffer& cmdBuffer, const std::string& name, const glm::vec4& color)
+{
+	if (!m_IsEnabled)
+		return;
+
+	VkDebugUtilsLabelEXT labelInfo{};
+	labelInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+	labelInfo.pLabelName = name.c_str();
+	labelInfo.color[0] = color.x;
+	labelInfo.color[1] = color.y;
+	labelInfo.color[2] = color.z;
+	labelInfo.color[3] = color.w;
+
+	m_DeviceDebugUtils.cmdInsertDebugUtilsLabelEXT(cmdBuffer.GetHandle(), &labelInfo);
+}
+void pom::Debugger::EndDebugLabel(CommandBuffer& cmdBuffer)
+{
+	if (!m_IsEnabled)
+		return;
+	m_DeviceDebugUtils.cmdEndDebugUtilsLabelEXT(cmdBuffer.GetHandle());
 }
 
 
@@ -181,6 +221,6 @@ void pom::Debugger::SetupDeviceDebugUtils(const Context& context)
 	m_DeviceDebugUtils.cmdEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>
 														(vkGetDeviceProcAddr(context.device.GetHandle(), "vkCmdEndDebugUtilsLabelEXT"));
 	m_DeviceDebugUtils.cmdInsertDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdInsertDebugUtilsLabelEXT>
-														(vkGetDeviceProcAddr(context.device.GetHandle(), "InsertDebugUtilsLabelEXT"));
+														(vkGetDeviceProcAddr(context.device.GetHandle(), "vkCmdInsertDebugUtilsLabelEXT"));
 }
 

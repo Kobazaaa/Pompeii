@@ -5,6 +5,7 @@
 #include "DescriptorSet.h"
 #include "Buffer.h"
 #include "Context.h"
+#include "Debugger.h"
 #include "Image.h"
 #include "Sampler.h"
 
@@ -32,6 +33,11 @@ const std::vector<VkDescriptorSetLayoutBinding>& pom::DescriptorSetLayout::GetBi
 //--------------------------------------------------
 //    Builder
 //--------------------------------------------------
+pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetDebugName(const char* name)
+{
+	m_pName = name;
+	return *this;
+}
 pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::NewLayoutBinding()
 {
 	m_vLayoutBindings.emplace_back();
@@ -56,6 +62,12 @@ void pom::DescriptorSetLayoutBuilder::Build(const Context& context, DescriptorSe
 	if (vkCreateDescriptorSetLayout(context.device.GetHandle(), &layoutInfo, nullptr, &descriptorSetLayout.m_Layout) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Descriptor Set Layout!");
 
+	if (m_pName)
+	{
+		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(descriptorSetLayout.GetHandle()), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, m_pName);
+	}
+
+	m_pName = nullptr;
 	m_vLayoutBindings.clear();
 }
 

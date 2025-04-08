@@ -74,6 +74,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Builder
 		//--------------------------------------------------
+		ImageBuilder& SetDebugName(const char* name);						
 		//! REQUIRED
 		ImageBuilder& SetWidth(uint32_t width);						
 		//! REQUIRED
@@ -101,6 +102,8 @@ namespace pom
 		uint32_t m_InitDataHeight;
 		uint32_t m_InitDataOffset;
 		VkImageLayout m_FinalLayout;
+
+		const char* m_pName{};
 
 		VkImageCreateInfo m_ImageInfo{};
 		VmaAllocationCreateInfo m_AllocInfo{};

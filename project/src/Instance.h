@@ -60,9 +60,9 @@ namespace pom
 	private:
 		void GetRequiredExtensions();
 
-		VkApplicationInfo		m_AppInfo{};
-		VkInstanceCreateInfo	m_CreateInfo{};
-		std::vector<const char*> m_vInstanceExtensions{};
+		VkApplicationInfo			m_AppInfo{};
+		VkInstanceCreateInfo		m_CreateInfo{};
+		std::vector<const char*>	m_vInstanceExtensions{};
 	};
 }
 
