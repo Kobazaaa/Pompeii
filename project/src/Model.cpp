@@ -111,8 +111,8 @@ void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool,
 			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
 			.SetUsageFlags(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-			.InitialData(tex.GetPixels(), 0, tex.GetExtent().x, tex.GetExtent().y, tex.GetMemorySize(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-			.Build(context, cmdPool, images.back());
+			.InitialData(tex.GetPixels(), 0, tex.GetExtent().x, tex.GetExtent().y, tex.GetMemorySize(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, cmdPool)
+			.Build(context, images.back());
 		images.back().CreateView(context, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
 		++index;
 	}
@@ -292,8 +292,8 @@ void pom::Model::CreateVertexBuffer(const Context& context, CommandPool& cmdPool
 		.SetSize(bufferSize)
 		.SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
 		.HostAccess(false)
-		.InitialData(vertices.data(), 0, bufferSize)
-		.Allocate(context, cmdPool, vertexBuffer);
+		.InitialData(vertices.data(), 0, bufferSize, cmdPool)
+		.Allocate(context, vertexBuffer);
 }
 void pom::Model::CreateIndexBuffer(const Context& context, CommandPool& cmdPool)
 {
@@ -304,6 +304,6 @@ void pom::Model::CreateIndexBuffer(const Context& context, CommandPool& cmdPool)
 		.SetSize(bufferSize)
 		.SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
 		.HostAccess(false)
-		.InitialData(indices.data(), 0, bufferSize)
-		.Allocate(context, cmdPool, indexBuffer);
+		.InitialData(indices.data(), 0, bufferSize, cmdPool)
+		.Allocate(context, indexBuffer);
 }

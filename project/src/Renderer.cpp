@@ -356,7 +356,7 @@ void pom::Renderer::InitializeVulkan()
 				.SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
 				.SetSize(sizeof(UniformBufferObject))
 				.HostAccess(true)
-				.Allocate(m_Context, m_CommandPool, m_vUniformBuffers[i]);
+				.Allocate(m_Context, m_vUniformBuffers[i]);
 		}
 		m_Context.deletionQueue.Push([&] { for (auto& ubo : m_vUniformBuffers) ubo.Destroy(m_Context); });
 	}

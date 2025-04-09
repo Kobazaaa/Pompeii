@@ -51,6 +51,7 @@ pom::BufferAllocator::BufferAllocator()
 	m_InitDataSize = 0;														//? CAN CHANGE
 	m_InitDataOffset = 0;													//? CAN CHANGE
 	m_pName = nullptr;														//? CAN CHANGE
+	m_pCmdPool = nullptr;													//? CAN CHANGE
 }
 
 
@@ -97,17 +98,18 @@ pom::BufferAllocator& pom::BufferAllocator::HostAccess(bool access)
 
 	return *this;
 }
-pom::BufferAllocator& pom::BufferAllocator::InitialData(void* data, uint32_t offset, uint32_t size)
+pom::BufferAllocator& pom::BufferAllocator::InitialData(void* data, uint32_t offset, uint32_t size, CommandPool& cmdPool)
 {
 	m_UseInitialData = true;
 	m_pData = data;
 	m_InitDataOffset = offset;
 	m_InitDataSize = size;
 	m_CreateInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	m_pCmdPool = &cmdPool;
 	return *this;
 }
 
-void pom::BufferAllocator::Allocate(const Context& context, CommandPool& cmdPool, Buffer& buffer) const
+void pom::BufferAllocator::Allocate(const Context& context, Buffer& buffer) const
 {
 	vmaCreateBuffer(context.allocator, &m_CreateInfo, &m_AllocCreateInfo, &buffer.m_Buffer, &buffer.m_Memory, nullptr);
 
@@ -119,10 +121,10 @@ void pom::BufferAllocator::Allocate(const Context& context, CommandPool& cmdPool
 			.SetUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
 			.HostAccess(true)
 			.SetSize(m_InitDataSize)
-			.Allocate(context, cmdPool, stagingBuffer);
+			.Allocate(context, stagingBuffer);
 		vmaCopyMemoryToAllocation(context.allocator, m_pData, stagingBuffer.m_Memory, m_InitDataOffset, m_InitDataSize);
 
-		cmdPool.CopyBufferToBuffer(stagingBuffer, buffer, m_InitDataSize);
+		m_pCmdPool->CopyBufferToBuffer(stagingBuffer, buffer, m_InitDataSize);
 
 		stagingBuffer.Destroy(context);
 	}

@@ -105,6 +105,7 @@ pom::ImageBuilder::ImageBuilder()
 	m_InitDataWidth = 0;											//? CAN CHANGE
 	m_InitDataOffset = 0;											//? CAN CHANGE
 	m_FinalLayout = VK_IMAGE_LAYOUT_UNDEFINED;						//? CAN CHANGE
+	m_pCmdPool = nullptr;											//? CAN CHANGE
 }
 
 
@@ -124,7 +125,9 @@ pom::ImageBuilder& pom::ImageBuilder::SetArrayLayers(uint32_t layers)						{ m_I
 pom::ImageBuilder& pom::ImageBuilder::SetSampleCount(VkSampleCountFlagBits sampleCount)		{ m_ImageInfo.samples = sampleCount; return *this; }
 pom::ImageBuilder& pom::ImageBuilder::SetSharingMode(VkSharingMode sharingMode)				{ m_ImageInfo.sharingMode = sharingMode; return *this; }
 pom::ImageBuilder& pom::ImageBuilder::SetImageType(VkImageType type)						{ m_ImageInfo.imageType = type; return *this; }
-pom::ImageBuilder& pom::ImageBuilder::InitialData(void* data, uint32_t offset, uint32_t width, uint32_t height, uint32_t dataSize, VkImageLayout finalLayout)
+pom::ImageBuilder& pom::ImageBuilder::InitialData(void* data, uint32_t offset, uint32_t
+													width, uint32_t height, uint32_t dataSize,
+													VkImageLayout finalLayout, CommandPool& cmdPool)
 {
 	m_UseInitialData = true;
 	m_pData = data;
@@ -134,10 +137,11 @@ pom::ImageBuilder& pom::ImageBuilder::InitialData(void* data, uint32_t offset, u
 	m_InitDataWidth = width;
 	m_ImageInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	m_FinalLayout = finalLayout;
+	m_pCmdPool = &cmdPool;
 	return *this;
 }
 
-void pom::ImageBuilder::Build(const Context& context, CommandPool& cmdPool, Image& image) const
+void pom::ImageBuilder::Build(const Context& context, Image& image) const
 {
 	image.m_ImageInfo = m_ImageInfo;
 	image.m_CurrentLayout = m_ImageInfo.initialLayout;
@@ -152,12 +156,12 @@ void pom::ImageBuilder::Build(const Context& context, CommandPool& cmdPool, Imag
 			.SetUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
 			.HostAccess(true)
 			.SetSize(m_InitDataSize)
-			.Allocate(context, cmdPool, stagingBuffer);
+			.Allocate(context, stagingBuffer);
 		vmaCopyMemoryToAllocation(context.allocator, m_pData, stagingBuffer.GetMemoryHandle(), m_InitDataOffset, m_InitDataSize);
 
-		cmdPool.TransitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		cmdPool.CopyBufferToImage(stagingBuffer, image, m_InitDataWidth, m_InitDataHeight);
-		cmdPool.TransitionImageLayout(image, m_FinalLayout);
+		m_pCmdPool->TransitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		m_pCmdPool->CopyBufferToImage(stagingBuffer, image, m_InitDataWidth, m_InitDataHeight);
+		m_pCmdPool->TransitionImageLayout(image, m_FinalLayout);
 
 		stagingBuffer.Destroy(context);
 	}

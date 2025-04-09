@@ -59,15 +59,16 @@ namespace pom
 		BufferAllocator& SetMemUsage(VmaMemoryUsage usage);
 		BufferAllocator& SetSharingMode(VkSharingMode sharingMode);
 		BufferAllocator& HostAccess(bool access);
-		BufferAllocator& InitialData(void* data, uint32_t offset, uint32_t size);
+		BufferAllocator& InitialData(void* data, uint32_t offset, uint32_t size, CommandPool& cmdPool);
 
-		void Allocate(const Context& context, CommandPool& cmdPool, Buffer& buffer) const;
+		void Allocate(const Context& context, Buffer& buffer) const;
 
 	private:
 		bool m_UseInitialData;
 		void* m_pData;
 		uint32_t m_InitDataSize;
 		uint32_t m_InitDataOffset;
+		CommandPool* m_pCmdPool;
 
 		const char* m_pName{};
 
