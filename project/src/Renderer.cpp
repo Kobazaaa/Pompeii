@@ -146,6 +146,7 @@ void pom::Renderer::InitializeVulkan()
 	{
 		VkPhysicalDeviceFeatures desiredFeatures{};
 		desiredFeatures.samplerAnisotropy = VK_TRUE;
+		desiredFeatures.fillModeNonSolid = VK_TRUE;
 
 		DeviceBuilder deviceBuilder{};
 
@@ -412,7 +413,7 @@ void pom::Renderer::RecreateSwapChain()
 	while (size.x == 0 || size.y == 0)
 	{
 		size = m_pWindow->GetSize();
-		m_pWindow->WaitEvents();
+		Window::WaitEvents();
 	}
 
 	m_Context.device.WaitIdle();

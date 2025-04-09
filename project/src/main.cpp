@@ -68,6 +68,8 @@ int main()
 			if (isPressed && !wasPressed)
 				pWindow->ToggleFullScreen();
 			wasPressed = isPressed;
+			if (pWindow->IsFullScreen() && glfwGetKey(pWindow->GetHandle(), GLFW_KEY_ESCAPE) == GLFW_PRESS)
+				pWindow->ToggleFullScreen();
 
 			glfwPollEvents();
 			pCamera->Update();
