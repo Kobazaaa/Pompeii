@@ -150,6 +150,16 @@ namespace pom
 		// If not set, enabled by default with VK_COMPARE_OP_LESS
 		GraphicsPipelineBuilder& SetDepthTest(VkBool32 depthRead, VkBool32 depthWrite, VkCompareOp compareOp);
 
+		// Blend Info
+		// Off by default
+		GraphicsPipelineBuilder& EnableBlend();
+		// If not set, RGBA assumed by default
+		GraphicsPipelineBuilder& SetColorWriteMask(VkColorComponentFlags colorComponents);
+		// If not set, ONE, ZERO, ADD assumed by default
+		GraphicsPipelineBuilder& SetColorBlend(VkBlendFactor src, VkBlendFactor dst, VkBlendOp op);
+		// If not set, ONE, ZERO, ADD assumed by default
+		GraphicsPipelineBuilder& SetAlphaBlend(VkBlendFactor src, VkBlendFactor dst, VkBlendOp op);
+
 		// Dynamic States
 		GraphicsPipelineBuilder& AddDynamicState(VkDynamicState dynamicState);
 
@@ -158,7 +168,7 @@ namespace pom
 		//! REQUIRED
 		GraphicsPipelineBuilder& SetRenderPass(const RenderPass& renderPass);
 
-		void Build(const Context& context, GraphicsPipeline& pipeline) const;
+		void Build(const Context& context, GraphicsPipeline& pipeline);
 
 	private:
 		// wtf vulkan

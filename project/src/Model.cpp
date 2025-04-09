@@ -147,10 +147,11 @@ void pom::Model::Destroy(const Context& context) const
 		image.Destroy(context);
 }
 
+
 //--------------------------------------------------
 //    Commands
 //--------------------------------------------------
-void pom::Model::Draw(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pipelineLayout) const
+void pom::Model::Bind(CommandBuffer& cmdBuffer) const
 {
 	// -- Get Vulkan Command Buffer --
 	const VkCommandBuffer& vCmdBuffer = cmdBuffer.GetHandle();
@@ -164,12 +165,22 @@ void pom::Model::Draw(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pi
 	// -- Bind Index Buffer --
 	vkCmdBindIndexBuffer(vCmdBuffer, indexBuffer.GetHandle(), 0, VK_INDEX_TYPE_UINT32);
 	Debugger::InsertDebugLabel(cmdBuffer, "Bind Index Buffer", glm::vec4(1.f, 0.4f, 1.f, 1.f));
+}
+
+void pom::Model::DrawOpaque(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pipelineLayout) const
+{
+	// -- Get Vulkan Command Buffer --
+	const VkCommandBuffer& vCmdBuffer = cmdBuffer.GetHandle();
 
 	// -- Draw Meshes --
 	for (const Mesh& mesh : opaqueMeshes)
 	{
 		// -- Bind Push Constants --
-		MeshPushConstants pc { mesh.material.diffuseIdx };
+		MeshPushConstants pc
+		{
+			.diffuseIdx = mesh.material.diffuseIdx,
+			.opacityIdx = std::numeric_limits<uint32_t>::max(),
+		};
 		vkCmdPushConstants(
 			vCmdBuffer,
 			pipelineLayout.GetHandle(),
@@ -182,7 +193,36 @@ void pom::Model::Draw(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pi
 
 		// -- Drawing Time! --
 		vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
-		Debugger::InsertDebugLabel(cmdBuffer, "Draw Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
+		Debugger::InsertDebugLabel(cmdBuffer, "Draw Opaque Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
+	}
+}
+void pom::Model::DrawTransparent(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pipelineLayout) const
+{
+	// -- Get Vulkan Command Buffer --
+	const VkCommandBuffer& vCmdBuffer = cmdBuffer.GetHandle();
+
+	// -- Draw Meshes --
+	for (const Mesh& mesh : transparentMeshes)
+	{
+		// -- Bind Push Constants --
+		MeshPushConstants pc
+		{
+			.diffuseIdx = mesh.material.diffuseIdx,
+			.opacityIdx = mesh.material.opacityIdx,
+		};
+		vkCmdPushConstants(
+			vCmdBuffer,
+			pipelineLayout.GetHandle(),
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+			0,
+			sizeof(MeshPushConstants),
+			&pc
+		);
+		Debugger::InsertDebugLabel(cmdBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
+
+		// -- Drawing Time! --
+		vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
+		Debugger::InsertDebugLabel(cmdBuffer, "Draw Transparent Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
 	}
 }
 
@@ -278,6 +318,7 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 	{
 		transparentMeshes.push_back(opaqueMeshes.back());
 		opaqueMeshes.pop_back();
+
 		for (uint32_t mIdx{}; mIdx < count; ++mIdx)
 		{
 			aiString texturePath;

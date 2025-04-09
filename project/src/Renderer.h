@@ -78,7 +78,6 @@ namespace pom
 		SwapChain					m_SwapChain				{ };
 		std::vector<FrameBuffer>	m_vFrameBuffers			{ };
 		uint32_t					m_MaxFramesInFlight		{ 2 };
-		glm::vec4					m_ClearColor			{ 1.f, 0.f, 1.f, 1.f };
 
 		// -- Model --
 		Sampler						m_TextureSampler		{ };
@@ -88,6 +87,7 @@ namespace pom
 		RenderPass					m_RenderPass			{ };
 		GraphicsPipelineLayout		m_PipelineLayout		{ };
 		GraphicsPipeline			m_GraphicsPipeline		{ };
+		GraphicsPipeline			m_TransPipeline			{ };
 
 		// -- Descriptors
 		std::vector<Buffer>			m_vUniformBuffers		{ };

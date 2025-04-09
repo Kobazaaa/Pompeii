@@ -275,7 +275,6 @@ void pom::Renderer::InitializeVulkan()
 			.AddLayout(m_UniformDSL)
 			.AddLayout(m_TextureDSL)
 			.Build(m_Context, m_PipelineLayout);
-
 		m_Context.deletionQueue.Push([&] {m_PipelineLayout.Destroy(m_Context); });
 	}
 
@@ -310,6 +309,30 @@ void pom::Renderer::InitializeVulkan()
 			.Build(m_Context, m_GraphicsPipeline);
 		m_Context.deletionQueue.Push([&] { m_GraphicsPipeline.Destroy(m_Context); });
 
+		builder = {};
+
+		builder
+			.SetDebugName("Graphics Pipeline (Transparent)")
+			.SetPipelineLayout(m_PipelineLayout)
+			.SetRenderPass(m_RenderPass)
+			.AddDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
+			.AddDynamicState(VK_DYNAMIC_STATE_SCISSOR)
+			.AddShader(vertShader, VK_SHADER_STAGE_VERTEX_BIT)
+			.AddShader(fragShader, VK_SHADER_STAGE_FRAGMENT_BIT)
+				.SetShaderSpecialization(0, 0, sizeof(uint32_t), &arraySize)
+			.SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+			.SetCullMode(VK_CULL_MODE_NONE)
+			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
+			.SetPolygonMode(VK_POLYGON_MODE_FILL)
+			.SetSampleCount(VK_SAMPLE_COUNT_1_BIT)
+			.SetDepthTest(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS)
+			.SetVertexBindingDesc(Vertex::GetBindingDescription())
+			.SetVertexAttributeDesc(Vertex::GetAttributeDescriptions())
+			.EnableBlend()
+				.SetColorBlend(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD)
+				.SetAlphaBlend(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD)
+			.Build(m_Context, m_TransPipeline);
+		m_Context.deletionQueue.Push([&] { m_TransPipeline.Destroy(m_Context); });
 
 		fragShader.Destroy(m_Context);
 		vertShader.Destroy(m_Context);
@@ -480,9 +503,7 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 		Debugger::BeginDebugLabel(commandBuffer, "Render Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
 		vkCmdBeginRenderPass(vCmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		{
-			vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline.GetHandle());
-			Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
-
+			// -- Set Dynamic Viewport --
 			VkViewport viewport{};
 			viewport.x = 0.0f;
 			viewport.y = 0.0f;
@@ -493,18 +514,32 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 			vkCmdSetViewport(vCmdBuffer, 0, 1, &viewport);
 			Debugger::InsertDebugLabel(commandBuffer, "Bind Viewport", glm::vec4(0.2f, 1.f, 0.2f, 1.f));
 
+			// -- Set Dynamic Scissors --
 			VkRect2D scissor{};
 			scissor.offset = { 0, 0 };
 			scissor.extent = m_SwapChain.GetExtent();
 			vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
 			Debugger::InsertDebugLabel(commandBuffer, "Bind Scissor", glm::vec4(1.f, 1.f, 0.2f, 1.f));
 
+			// -- Bind Descriptor Sets --
 			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vUniformDS[m_CurrentFrame].GetHandle(), 0, nullptr);
 			Debugger::InsertDebugLabel(commandBuffer, "Bind Uniform Buffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
 			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 1, 1, &m_vTextureDS[0].GetHandle(), 0, nullptr);
 			Debugger::InsertDebugLabel(commandBuffer, "Bind Textures", glm::vec4(0.f, 1.f, 1.f, 1.f));
 
-			m_Model.Draw(commandBuffer, m_PipelineLayout);
+			// -- Bind Model Data --
+			m_Model.Bind(commandBuffer);
+
+			// -- Draw Opaque --
+			vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline.GetHandle());
+			Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Default)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
+			m_Model.DrawOpaque(commandBuffer, m_PipelineLayout);
+
+			// -- Draw Transparent --
+			vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_TransPipeline.GetHandle());
+			Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Transparent)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
+			m_Model.DrawTransparent(commandBuffer, m_PipelineLayout);
+
 		}
 		vkCmdEndRenderPass(vCmdBuffer);
 		Debugger::EndDebugLabel(commandBuffer);

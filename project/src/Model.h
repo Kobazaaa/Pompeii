@@ -41,6 +41,7 @@ namespace pom
 	struct MeshPushConstants
 	{
 		uint32_t diffuseIdx;
+		uint32_t opacityIdx;
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -91,7 +92,9 @@ namespace pom
 		//--------------------------------------------------
 		//    Commands
 		//--------------------------------------------------
-		void Draw(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pipelineLayout) const;
+		void Bind(CommandBuffer& cmdBuffer) const;
+		void DrawOpaque(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pipelineLayout) const;
+		void DrawTransparent(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pipelineLayout) const;
 
 
 		//--------------------------------------------------

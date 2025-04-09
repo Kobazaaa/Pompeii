@@ -149,18 +149,24 @@ pom::GraphicsPipelineBuilder::GraphicsPipelineBuilder()
 	m_DepthStencilInfo.back = {};																// CAN'T CHANGE
 
 	m_ColorBlendAttachmentState = {};
-	m_ColorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |						// CAN'T CHANGE
+	m_ColorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |						//? CAN CHANGE
 												 VK_COLOR_COMPONENT_G_BIT |
 												 VK_COLOR_COMPONENT_B_BIT |
 												 VK_COLOR_COMPONENT_A_BIT;
-	m_ColorBlendAttachmentState.blendEnable = VK_FALSE;											// CAN'T CHANGE
+	m_ColorBlendAttachmentState.blendEnable = VK_FALSE;											//? CAN CHANGE
+	m_ColorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;						//? CAN CHANGE
+	m_ColorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;						//? CAN CHANGE
+	m_ColorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;									//? CAN CHANGE
+	m_ColorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;						//? CAN CHANGE
+	m_ColorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;						//? CAN CHANGE
+	m_ColorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;									//? CAN CHANGE
 
 	m_ColorBlendCreateInfo = {};
 	m_ColorBlendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;	// CAN'T CHANGE
 	m_ColorBlendCreateInfo.logicOpEnable = VK_FALSE;											// CAN'T CHANGE							
 	m_ColorBlendCreateInfo.logicOp = VK_LOGIC_OP_COPY;											// CAN'T CHANGE
 	m_ColorBlendCreateInfo.attachmentCount = 1;													// CAN'T CHANGE
-	m_ColorBlendCreateInfo.pAttachments = &m_ColorBlendAttachmentState;							// CAN'T CHANGE
+	m_ColorBlendCreateInfo.pAttachments = &m_ColorBlendAttachmentState;							//? CAN CHANGE
 	m_ColorBlendCreateInfo.blendConstants[0] = 0.0f;											// CAN'T CHANGE
 	m_ColorBlendCreateInfo.blendConstants[1] = 0.0f;											// CAN'T CHANGE
 	m_ColorBlendCreateInfo.blendConstants[2] = 0.0f;											// CAN'T CHANGE
@@ -277,6 +283,32 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetDepthTest(VkBool3
 	return *this;
 }
 
+// Blend Info
+pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::EnableBlend()
+{
+	m_ColorBlendAttachmentState.blendEnable = VK_TRUE;
+	return *this;
+}
+pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetColorWriteMask(VkColorComponentFlags colorComponents)
+{
+	m_ColorBlendAttachmentState.colorWriteMask = colorComponents;
+	return *this;
+}
+pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetColorBlend(VkBlendFactor src, VkBlendFactor dst, VkBlendOp op)
+{
+	m_ColorBlendAttachmentState.srcColorBlendFactor = src;
+	m_ColorBlendAttachmentState.dstColorBlendFactor = dst;
+	m_ColorBlendAttachmentState.colorBlendOp = op;
+	return *this;
+}
+pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetAlphaBlend(VkBlendFactor src, VkBlendFactor dst, VkBlendOp op)
+{
+	m_ColorBlendAttachmentState.srcAlphaBlendFactor = src;
+	m_ColorBlendAttachmentState.dstAlphaBlendFactor = dst;
+	m_ColorBlendAttachmentState.alphaBlendOp = op;
+	return *this;
+}
+
 // Dynamic States Info
 pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::AddDynamicState(VkDynamicState dynamicState)
 {
@@ -299,8 +331,9 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetRenderPass(const 
 }
 
 // Build
-void pom::GraphicsPipelineBuilder::Build(const Context& context, GraphicsPipeline& pipeline) const
+void pom::GraphicsPipelineBuilder::Build(const Context& context, GraphicsPipeline& pipeline)
 {
+	m_ColorBlendCreateInfo.pAttachments = &m_ColorBlendAttachmentState;
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineInfo.stageCount = static_cast<uint32_t>(m_vShaderInfo.size());
