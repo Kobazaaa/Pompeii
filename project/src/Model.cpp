@@ -64,45 +64,6 @@ bool pom::Vertex::operator==(const Vertex& other) const
 }
 
 
-//--------------------------------------------------
-//    Commands
-//--------------------------------------------------
-void pom::Mesh::Destroy(const Context& context) const
-{
-	indexBuffer.Destroy(context);
-	vertexBuffer.Destroy(context);
-}
-void pom::Mesh::Draw(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pipelineLayout) const
-{
-	// -- Get Vulkan Command Buffer --
-	const VkCommandBuffer& vCmdBuffer = cmdBuffer.GetHandle();
-
-	// -- Bind Push Constants --
-	vkCmdPushConstants(
-		vCmdBuffer,
-		pipelineLayout.GetHandle(),
-		VK_SHADER_STAGE_FRAGMENT_BIT,
-		0,
-		sizeof(MeshPushConstants),
-		&pc
-	);
-	Debugger::InsertDebugLabel(cmdBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
-
-	// -- Bind Vertex Buffer --
-	VkBuffer vertexBuffers[] = { vertexBuffer.GetHandle() };
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(vCmdBuffer, 0, 1, vertexBuffers, offsets);
-	Debugger::InsertDebugLabel(cmdBuffer, "Bind Vertex Buffer", glm::vec4(0.6f, 1.f, 0.6f, 1.f));
-
-	// -- Bind Index Buffer --
-	vkCmdBindIndexBuffer(vCmdBuffer, indexBuffer.GetHandle(), 0, VK_INDEX_TYPE_UINT32);
-	Debugger::InsertDebugLabel(cmdBuffer, "Bind Index Buffer", glm::vec4(1.f, 0.4f, 1.f, 1.f));
-
-	// -- Drawing Time! --
-	vkCmdDrawIndexed(vCmdBuffer, indexCount, 1, 0, 0, 0);
-}
-
-
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Model	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -133,8 +94,8 @@ void pom::Model::LoadModel(const std::string& path)
 }
 void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool, bool keepHostData)
 {
-	CreateVertexBuffers(context, cmdPool);
-	CreateIndexBuffers(context, cmdPool);
+	CreateVertexBuffer(context, cmdPool);
+	CreateIndexBuffer(context, cmdPool);
 
 	// -- Build Image --
 	uint32_t index = 0;
@@ -159,29 +120,31 @@ void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool,
 	// -- Destroy Host Data --
 	if (!keepHostData)
 	{
+		// - Free Textures --
 		for (Texture& tex : textures)
 			tex.FreePixels();
+
+		// -- Clear Vectors --
 		textures.clear();
-
-		for (Mesh& mesh : meshes)
-		{
-			mesh.indices.clear();
-			mesh.vertices.clear();
-		}
-
+		indices.clear();
+		vertices.clear();
 		pathToIdx.clear();
 	}
 
 }
 void pom::Model::Destroy(const Context& context) const
 {
+	// -- Free Buffers --
+	indexBuffer.Destroy(context);
+	vertexBuffer.Destroy(context);
+
+	// -- Free Textures --
 	for (const Texture& tex : textures)
 		tex.FreePixels();
+
+	// -- Destroy Images --
 	for (const Image& image : images)
 		image.Destroy(context);
-
-	for (int index{ static_cast<int>(meshes.size()) - 1 }; index >= 0; --index)
-		meshes[index].Destroy(context);
 }
 
 //--------------------------------------------------
@@ -189,8 +152,38 @@ void pom::Model::Destroy(const Context& context) const
 //--------------------------------------------------
 void pom::Model::Draw(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pipelineLayout) const
 {
+	// -- Get Vulkan Command Buffer --
+	const VkCommandBuffer& vCmdBuffer = cmdBuffer.GetHandle();
+
+	// -- Bind Vertex Buffer --
+	VkBuffer vertexBuffers[] = { vertexBuffer.GetHandle() };
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(vCmdBuffer, 0, 1, vertexBuffers, offsets);
+	Debugger::InsertDebugLabel(cmdBuffer, "Bind Vertex Buffer", glm::vec4(0.6f, 1.f, 0.6f, 1.f));
+
+	// -- Bind Index Buffer --
+	vkCmdBindIndexBuffer(vCmdBuffer, indexBuffer.GetHandle(), 0, VK_INDEX_TYPE_UINT32);
+	Debugger::InsertDebugLabel(cmdBuffer, "Bind Index Buffer", glm::vec4(1.f, 0.4f, 1.f, 1.f));
+
+	// -- Draw Meshes --
 	for (const Mesh& mesh : meshes)
-		mesh.Draw(cmdBuffer, pipelineLayout);
+	{
+		// -- Bind Push Constants --
+		MeshPushConstants pc { mesh.material.diffuseIdx };
+		vkCmdPushConstants(
+			vCmdBuffer,
+			pipelineLayout.GetHandle(),
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+			0,
+			sizeof(MeshPushConstants),
+			&pc
+		);
+		Debugger::InsertDebugLabel(cmdBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
+
+		// -- Drawing Time! --
+		vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
+		Debugger::InsertDebugLabel(cmdBuffer, "Draw Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
+	}
 }
 
 
@@ -214,8 +207,10 @@ void pom::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene, const g
 void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const glm::mat4& transform)
 {
 	meshes.emplace_back();
+	meshes.back().name = pMesh->mName.C_Str();
 
 	// -- Process Vertices --
+	meshes.back().vertexOffset = static_cast<uint32_t>(vertices.size());
 	for (uint32_t vIdx{}; vIdx < pMesh->mNumVertices; ++vIdx)
 	{
 		Vertex vertex;
@@ -238,18 +233,18 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 
 		vertex.color = glm::vec3(1.f, 1.f, 1.f);
 
-		meshes.back().vertices.push_back(vertex);
+		vertices.push_back(vertex);
 	}
-	meshes.back().vertexCount = static_cast<uint32_t>(meshes.back().vertices.size());
 
 	// -- Process Indices --
+	meshes.back().indexOffset = static_cast<uint32_t>(indices.size());
 	for (uint32_t fIdx{}; fIdx < pMesh->mNumFaces; ++fIdx)
 	{
 		aiFace face = pMesh->mFaces[fIdx];
 		for (uint32_t iIdx{}; iIdx < face.mNumIndices; ++iIdx)
-			meshes.back().indices.push_back(face.mIndices[iIdx]);
+			indices.push_back(face.mIndices[iIdx]);
 	}
-	meshes.back().indexCount = static_cast<uint32_t>(meshes.back().indices.size());
+	meshes.back().indexCount = static_cast<uint32_t>(indices.size()) - meshes.back().indexOffset;
 
 	// -- Process Materials --
 	const aiMaterial* material = pScene->mMaterials[pMesh->mMaterialIndex];
@@ -267,15 +262,13 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 		auto insertResult = pathToIdx.insert({ss.str(), idx});
 		if (insertResult.second)
 		{
-			meshes.back().material.textureIdx = idx;
-			meshes.back().pc = { idx };
+			meshes.back().material.diffuseIdx = idx;
 			textures.emplace_back();
 			textures.back().LoadFromFile(ss.str());
 		}
 		else
 		{
-			meshes.back().material.textureIdx = insertResult.first->second;
-			meshes.back().pc = { insertResult.first->second };
+			meshes.back().material.diffuseIdx = insertResult.first->second;
 		}
 	}
 }
@@ -290,35 +283,27 @@ glm::mat4 pom::Model::ConvertAssimpMatrix(const aiMatrix4x4& mat)
 	);
 }
 
-void pom::Model::CreateVertexBuffers(const Context& context, CommandPool& cmdPool)
+void pom::Model::CreateVertexBuffer(const Context& context, CommandPool& cmdPool)
 {
-	for (Mesh& mesh : meshes)
-	{
-		BufferAllocator alloc{};
-
-		const uint32_t bufferSize = static_cast<uint32_t>(mesh.vertices.size()) * sizeof(mesh.vertices[0]);
-		alloc
-			.SetDebugName("Vertex Buffer")
-			.SetSize(bufferSize)
-			.SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
-			.HostAccess(false)
-			.InitialData(mesh.vertices.data(), 0, bufferSize)
-			.Allocate(context, cmdPool, mesh.vertexBuffer);
-	}
+	BufferAllocator alloc{};
+	const uint32_t bufferSize = static_cast<uint32_t>(vertices.size()) * sizeof(Vertex);
+	alloc
+		.SetDebugName("Vertex Buffer")
+		.SetSize(bufferSize)
+		.SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+		.HostAccess(false)
+		.InitialData(vertices.data(), 0, bufferSize)
+		.Allocate(context, cmdPool, vertexBuffer);
 }
-void pom::Model::CreateIndexBuffers(const Context& context, CommandPool& cmdPool)
+void pom::Model::CreateIndexBuffer(const Context& context, CommandPool& cmdPool)
 {
-	for (Mesh& mesh : meshes)
-	{
-		BufferAllocator alloc{};
-
-		const uint32_t bufferSize = static_cast<uint32_t>(mesh.indices.size()) * sizeof(mesh.indices[0]);
-		alloc
-			.SetDebugName("Index Buffer")
-			.SetSize(bufferSize)
-			.SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
-			.HostAccess(false)
-			.InitialData(mesh.indices.data(), 0, bufferSize)
-			.Allocate(context, cmdPool, mesh.indexBuffer);
-	}
+	BufferAllocator alloc{};
+	const uint32_t bufferSize = static_cast<uint32_t>(indices.size()) * sizeof(uint32_t);
+	alloc
+		.SetDebugName("Index Buffer")
+		.SetSize(bufferSize)
+		.SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
+		.HostAccess(false)
+		.InitialData(indices.data(), 0, bufferSize)
+		.Allocate(context, cmdPool, indexBuffer);
 }

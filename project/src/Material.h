@@ -48,7 +48,7 @@ namespace pom
 	struct Material
 	{
 		// -- Diffuse --
-		uint32_t textureIdx;
+		uint32_t diffuseIdx;
 	};
 }
 

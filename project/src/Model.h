@@ -67,25 +67,13 @@ namespace pom
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	struct Mesh final
 	{
-		//--------------------------------------------------
-		//    Commands
-		//--------------------------------------------------
-		void Destroy(const Context& context) const;
-		void Draw(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pipelineLayout) const;
-
-		//--------------------------------------------------
-		//    Data
-		//--------------------------------------------------
-		std::vector<Vertex> vertices;
-		Buffer vertexBuffer;
-
-		std::vector<uint32_t> indices;
-		Buffer indexBuffer;
-
-		MeshPushConstants pc;
-		Material material;
+		uint32_t vertexOffset;
+		uint32_t indexOffset;
 		uint32_t indexCount;
-		uint32_t vertexCount;
+
+		Material material;
+
+		std::string name;
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -109,10 +97,19 @@ namespace pom
 		//--------------------------------------------------
 		//    Data
 		//--------------------------------------------------
-		std::vector<Mesh> meshes;
+		// -- CPU --
+		std::vector<Vertex> vertices;
+		std::vector<uint32_t> indices;
 		std::vector<Texture> textures;
-		std::vector<Image> images;
 		std::unordered_map<std::string, uint32_t> pathToIdx;
+
+		// -- GPU --
+		Buffer vertexBuffer;
+		Buffer indexBuffer;
+		std::vector<Image> images;
+
+		// -- Meshes --
+		std::vector<Mesh> meshes;
 
 	private:
 		//--------------------------------------------------
@@ -123,8 +120,8 @@ namespace pom
 
 		static glm::mat4 ConvertAssimpMatrix(const aiMatrix4x4& mat);
 
-		void CreateVertexBuffers(const Context& context, CommandPool& cmdPool);
-		void CreateIndexBuffers(const Context& context, CommandPool& cmdPool);
+		void CreateVertexBuffer(const Context& context, CommandPool& cmdPool);
+		void CreateIndexBuffer(const Context& context, CommandPool& cmdPool);
 	};
 }
 
