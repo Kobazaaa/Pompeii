@@ -76,7 +76,7 @@ int main()
 			pRenderer->Update();
 			pRenderer->Render();
 
-			std::this_thread::sleep_for(Timer::SleepDurationNanoSeconds());
+			//std::this_thread::sleep_for(Timer::SleepDurationNanoSeconds());
 		}
 	}
 	// -- Catch Failures --
