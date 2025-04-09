@@ -166,7 +166,7 @@ void pom::Model::Draw(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pi
 	Debugger::InsertDebugLabel(cmdBuffer, "Bind Index Buffer", glm::vec4(1.f, 0.4f, 1.f, 1.f));
 
 	// -- Draw Meshes --
-	for (const Mesh& mesh : meshes)
+	for (const Mesh& mesh : opaqueMeshes)
 	{
 		// -- Bind Push Constants --
 		MeshPushConstants pc { mesh.material.diffuseIdx };
@@ -206,11 +206,11 @@ void pom::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene, const g
 }
 void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const glm::mat4& transform)
 {
-	meshes.emplace_back();
-	meshes.back().name = pMesh->mName.C_Str();
+	opaqueMeshes.emplace_back();
+	opaqueMeshes.back().name = pMesh->mName.C_Str();
 
 	// -- Process Vertices --
-	meshes.back().vertexOffset = static_cast<uint32_t>(vertices.size());
+	opaqueMeshes.back().vertexOffset = static_cast<uint32_t>(vertices.size());
 	for (uint32_t vIdx{}; vIdx < pMesh->mNumVertices; ++vIdx)
 	{
 		Vertex vertex;
@@ -237,14 +237,14 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 	}
 
 	// -- Process Indices --
-	meshes.back().indexOffset = static_cast<uint32_t>(indices.size());
+	opaqueMeshes.back().indexOffset = static_cast<uint32_t>(indices.size());
 	for (uint32_t fIdx{}; fIdx < pMesh->mNumFaces; ++fIdx)
 	{
 		aiFace face = pMesh->mFaces[fIdx];
 		for (uint32_t iIdx{}; iIdx < face.mNumIndices; ++iIdx)
 			indices.push_back(face.mIndices[iIdx]);
 	}
-	meshes.back().indexCount = static_cast<uint32_t>(indices.size()) - meshes.back().indexOffset;
+	opaqueMeshes.back().indexCount = static_cast<uint32_t>(indices.size()) - opaqueMeshes.back().indexOffset;
 
 	// -- Process Materials --
 	const aiMaterial* material = pScene->mMaterials[pMesh->mMaterialIndex];
@@ -262,13 +262,41 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 		auto insertResult = pathToIdx.insert({ss.str(), idx});
 		if (insertResult.second)
 		{
-			meshes.back().material.diffuseIdx = idx;
+			opaqueMeshes.back().material.diffuseIdx = idx;
 			textures.emplace_back();
 			textures.back().LoadFromFile(ss.str());
 		}
 		else
 		{
-			meshes.back().material.diffuseIdx = insertResult.first->second;
+			opaqueMeshes.back().material.diffuseIdx = insertResult.first->second;
+		}
+	}
+
+	// -- Transparency --
+	count = material->GetTextureCount(aiTextureType_OPACITY);
+	if (count > 0)
+	{
+		transparentMeshes.push_back(opaqueMeshes.back());
+		opaqueMeshes.pop_back();
+		for (uint32_t mIdx{}; mIdx < count; ++mIdx)
+		{
+			aiString texturePath;
+			material->GetTexture(aiTextureType_OPACITY, mIdx, &texturePath);
+			std::stringstream ss;
+			ss << "textures/" << texturePath.C_Str();
+
+			uint32_t idx = static_cast<uint32_t>(textures.size());
+			auto insertResult = pathToIdx.insert({ ss.str(), idx });
+			if (insertResult.second)
+			{
+				transparentMeshes.back().material.opacityIdx = idx;
+				textures.emplace_back();
+				textures.back().LoadFromFile(ss.str());
+			}
+			else
+			{
+				transparentMeshes.back().material.opacityIdx = insertResult.first->second;
+			}
 		}
 	}
 }

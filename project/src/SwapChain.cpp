@@ -181,6 +181,13 @@ void pom::SwapChain::Recreate(Context& context, const Window& window, CommandPoo
 //    Accessors & Mutators
 //--------------------------------------------------
 pom::Image& pom::SwapChain::GetDepthImage()						{ return m_DepthImage; }
+const pom::Image& pom::SwapChain::GetImage(uint32_t idx) const
+{
+	if (idx < 0 || idx > GetImageCount())
+		throw std::out_of_range("Swapchain Image Index out of range!");
+	return m_vSwapChainImages[idx];
+}
+
 std::vector<pom::Image>& pom::SwapChain::GetImages()			{ return m_vSwapChainImages; }
 VkSwapchainKHR& pom::SwapChain::GetHandle()						{ return m_SwapChain; }
 uint32_t pom::SwapChain::GetImageCount()			const		{ return static_cast<uint32_t>(m_vSwapChainImages.size()); }

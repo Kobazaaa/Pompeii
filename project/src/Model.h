@@ -109,7 +109,8 @@ namespace pom
 		std::vector<Image> images;
 
 		// -- Meshes --
-		std::vector<Mesh> meshes;
+		std::vector<Mesh> opaqueMeshes;
+		std::vector<Mesh> transparentMeshes;
 
 	private:
 		//--------------------------------------------------

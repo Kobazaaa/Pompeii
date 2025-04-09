@@ -49,6 +49,9 @@ namespace pom
 	{
 		// -- Diffuse --
 		uint32_t diffuseIdx;
+
+		// -- Opacity --
+		uint32_t opacityIdx;
 	};
 }
 

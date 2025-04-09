@@ -141,6 +141,11 @@ namespace pom
 		// If not set, default of VK_FRONT_FACE_CLOCKWISE assumed
 		GraphicsPipelineBuilder& SetFrontFace(VkFrontFace front);
 
+		// Multi Sampling Info
+		// If not set, sample count set to VK_SAMPLE_COUNT_1_BIT
+		GraphicsPipelineBuilder& SetSampleCount(VkSampleCountFlagBits samples);
+
+
 		// Depth Stencil Info
 		// If not set, enabled by default with VK_COMPARE_OP_LESS
 		GraphicsPipelineBuilder& SetDepthTest(VkBool32 depthRead, VkBool32 depthWrite, VkCompareOp compareOp);

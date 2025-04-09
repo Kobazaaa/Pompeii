@@ -134,7 +134,7 @@ pom::GraphicsPipelineBuilder::GraphicsPipelineBuilder()
 	m_MultiSamplingInfo = {};
 	m_MultiSamplingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;		// CAN'T CHANGE
 	m_MultiSamplingInfo.sampleShadingEnable = VK_FALSE;											// CAN'T CHANGE
-	m_MultiSamplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;							// CAN'T CHANGE
+	m_MultiSamplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;							//? CAN CHANGE
 
 	m_DepthStencilInfo = {};
 	m_DepthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;		// CAN'T CHANGE
@@ -258,6 +258,13 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetPolygonMode(VkPol
 pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetFrontFace(VkFrontFace front)
 {
 	m_RasterizerInfo.frontFace = front;
+	return *this;
+}
+
+// Multi Sampling Info
+pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetSampleCount(VkSampleCountFlagBits samples)
+{
+	m_MultiSamplingInfo.rasterizationSamples = samples;
 	return *this;
 }
 

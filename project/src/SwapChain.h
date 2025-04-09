@@ -78,6 +78,7 @@ namespace pom
 		VkExtent2D GetExtent() const;
 
 		Image& GetDepthImage();
+		const Image& GetImage(uint32_t idx) const;
 
 	private:
 		VkSwapchainKHR				m_SwapChain{ VK_NULL_HANDLE };

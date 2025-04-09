@@ -303,6 +303,7 @@ void pom::Renderer::InitializeVulkan()
 			.SetCullMode(VK_CULL_MODE_BACK_BIT)
 			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
 			.SetPolygonMode(VK_POLYGON_MODE_FILL)
+			.SetSampleCount(VK_SAMPLE_COUNT_1_BIT)
 			.SetDepthTest(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS)
 			.SetVertexBindingDesc(Vertex::GetBindingDescription())
 			.SetVertexAttributeDesc(Vertex::GetAttributeDescriptions())
@@ -470,7 +471,7 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 		renderPassInfo.renderArea.extent = m_SwapChain.GetExtent();
 
 		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+		clearValues[0].color = { {0.53f, 0.81f, 0.92f, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
