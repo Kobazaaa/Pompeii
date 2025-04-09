@@ -34,7 +34,8 @@ namespace pom
 		//--------------------------------------------------
 		//    Helpers
 		//--------------------------------------------------
-		VkImageView& GenerateImageView(const Context& context, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType);
+		VkImageView& CreateView(const Context& context, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType,
+				uint32_t baseMip = 0, uint32_t mipCount = 1, uint32_t baseLayer = 0, uint32_t layerCount = 1);
 		static VkFormat FindSupportedFormat(const PhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
 		//--------------------------------------------------

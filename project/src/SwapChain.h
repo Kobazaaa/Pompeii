@@ -64,7 +64,7 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		SwapChain() = default;
-		void Destroy(Context& context) const;
+		void Destroy(const Context& context) const;
 		void Recreate(Context& context, const Window& window, CommandPool& cmdPool);
 
 		//--------------------------------------------------

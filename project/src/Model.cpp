@@ -152,7 +152,7 @@ void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool,
 			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 			.InitialData(tex.GetPixels(), 0, tex.GetExtent().x, tex.GetExtent().y, tex.GetMemorySize(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 			.Build(context, cmdPool, images.back());
-		images.back().GenerateImageView(context, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+		images.back().CreateView(context, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
 		++index;
 	}
 
@@ -228,8 +228,8 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 
 		if (pMesh->HasNormals())
 			vertex.normal = glm::vec3(pMesh->mNormals[vIdx].x,
-									  pMesh->mNormals[vIdx].z,
-									  pMesh->mNormals[vIdx].y);
+									  pMesh->mNormals[vIdx].y,
+									  pMesh->mNormals[vIdx].z);
 
 		if (pMesh->mTextureCoords[0])
 			vertex.texCoord = glm::vec2(pMesh->mTextureCoords[0][vIdx].x, pMesh->mTextureCoords[0][vIdx].y);

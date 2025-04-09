@@ -23,7 +23,8 @@ void pom::Image::Destroy(const Context& context) const
 	vkDestroyImage(context.device.GetHandle(), m_Image, nullptr);
 	vmaFreeMemory(context.allocator, m_ImageMemory);
 }
-VkImageView& pom::Image::GenerateImageView(const Context& context, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType)
+VkImageView& pom::Image::CreateView(const Context& context, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType,
+									uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)
 {
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -31,10 +32,10 @@ VkImageView& pom::Image::GenerateImageView(const Context& context, VkFormat form
 	viewInfo.viewType = viewType;
 	viewInfo.format = format;
 	viewInfo.subresourceRange.aspectMask = aspectFlags;
-	viewInfo.subresourceRange.baseMipLevel = 0;
-	viewInfo.subresourceRange.levelCount = m_ImageInfo.mipLevels == 0 ? 1 : m_ImageInfo.mipLevels;
-	viewInfo.subresourceRange.baseArrayLayer = 0;
-	viewInfo.subresourceRange.layerCount = m_ImageInfo.arrayLayers == 0 ? 1 : m_ImageInfo.arrayLayers;
+	viewInfo.subresourceRange.baseMipLevel = m_ImageInfo.mipLevels == 0 ? 0 : baseMip;
+	viewInfo.subresourceRange.levelCount = m_ImageInfo.mipLevels == 0 ? 1 : mipCount;
+	viewInfo.subresourceRange.baseArrayLayer = m_ImageInfo.arrayLayers == 0 ? 0 : baseLayer;
+	viewInfo.subresourceRange.layerCount = m_ImageInfo.arrayLayers == 0 ? 1 : layerCount;
 
 	if (vkCreateImageView(context.device.GetHandle(), &viewInfo, nullptr, &m_ImageView) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Image View!");

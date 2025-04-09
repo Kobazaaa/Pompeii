@@ -7,6 +7,7 @@
 #include "Context.h"
 #include "Window.h"
 #include "CommandPool.h"
+#include "Debugger.h"
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -84,20 +85,26 @@ void pom::SwapChainBuilder::Build(Context& context, const Window& window, SwapCh
 	swapChain.m_SwapChainExtent = extent;
 
 	for (size_t index = 0; index < swapChain.GetImageCount(); ++index)
-		swapChain.m_vSwapChainImages[index].GenerateImageView(context, swapChain.GetFormat(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+	{
+		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(swapChain.m_vSwapChainImages[index].GetHandle()), VK_OBJECT_TYPE_IMAGE,
+			"Swapchain_Image_" + std::to_string(index));
+		swapChain.m_vSwapChainImages[index].CreateView(context, swapChain.GetFormat(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+	}
 
 	// Create Depth Resources
 	VkFormat format = Image::FindSupportedFormat(context.physicalDevice, { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
 		VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	ImageBuilder imageBuilder{};
-	imageBuilder.SetWidth(extent.width)
+	imageBuilder
+		.SetDebugName("Depth Buffer")
+		.SetWidth(extent.width)
 		.SetHeight(extent.height)
 		.SetTiling(VK_IMAGE_TILING_OPTIMAL)
 		.SetFormat(format)
 		.SetUsageFlags(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
 		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 		.Build(context, cmdPool, swapChain.m_DepthImage);
-	swapChain.m_DepthImage.GenerateImageView(context, format, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
+	swapChain.m_DepthImage.CreateView(context, format, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
 	cmdPool.TransitionImageLayout(swapChain.m_DepthImage, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
@@ -155,7 +162,7 @@ VkPresentModeKHR pom::SwapChainBuilder::ChooseSwapPresentMode(const std::vector<
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::SwapChain::Destroy(Context& context) const
+void pom::SwapChain::Destroy(const Context& context) const
 {
 	m_DepthImage.Destroy(context);
 
@@ -175,7 +182,7 @@ void pom::SwapChain::Recreate(Context& context, const Window& window, CommandPoo
 //--------------------------------------------------
 pom::Image& pom::SwapChain::GetDepthImage()						{ return m_DepthImage; }
 std::vector<pom::Image>& pom::SwapChain::GetImages()			{ return m_vSwapChainImages; }
-VkSwapchainKHR& pom::SwapChain::GetHandle()					{ return m_SwapChain; }
+VkSwapchainKHR& pom::SwapChain::GetHandle()						{ return m_SwapChain; }
 uint32_t pom::SwapChain::GetImageCount()			const		{ return static_cast<uint32_t>(m_vSwapChainImages.size()); }
 VkFormat pom::SwapChain::GetFormat()				const		{ return m_SwapChainImageFormat; }
 VkExtent2D pom::SwapChain::GetExtent()				const		{ return m_SwapChainExtent; }
