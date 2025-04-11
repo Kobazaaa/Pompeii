@@ -13,7 +13,7 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::CommandBuffer::Allocate(VkCommandPool pool, VkCommandBuffer buffer)
+void pom::CommandBuffer::Initialize(VkCommandPool pool, VkCommandBuffer buffer)
 {
 	m_PoolOwner = pool;
 	m_CmdBuffer = buffer;

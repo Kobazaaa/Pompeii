@@ -54,6 +54,7 @@ namespace pom
 		//--------------------------------------------------
 		InstanceBuilder& SetApplicationName(const std::string& name);
 		InstanceBuilder& SetEngineName(const std::string& name);
+		InstanceBuilder& SetAPIVersion(uint32_t apiVersion);
 		InstanceBuilder& AddInstanceExtension(const char* extName);
 		void Build(Context& context);
 

@@ -27,7 +27,7 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		CommandBuffer() = default;
-		void Allocate(VkCommandPool pool, VkCommandBuffer buffer);
+		void Initialize(VkCommandPool pool, VkCommandBuffer buffer);
 
 
 		//--------------------------------------------------

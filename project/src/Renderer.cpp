@@ -121,8 +121,9 @@ void pom::Renderer::InitializeVulkan()
 		InstanceBuilder builder;
 
 		builder
-			.SetApplicationName("Vulkan Refactored")
-			.SetEngineName("No Engine")
+			.SetApplicationName("Pompeii")
+			.SetEngineName("PompeiiEngine")
+			.SetAPIVersion(VK_API_VERSION_1_3)
 			.Build(m_Context);
 
 		m_Context.deletionQueue.Push([&] { m_Context.instance.Destroy(); });
@@ -144,14 +145,37 @@ void pom::Renderer::InitializeVulkan()
 
 	// -- Create Device - Requirements - [Physical Device - Instance]
 	{
-		VkPhysicalDeviceFeatures desiredFeatures{};
-		desiredFeatures.samplerAnisotropy = VK_TRUE;
-		desiredFeatures.fillModeNonSolid = VK_TRUE;
+		// -- Vulkan API Core Features --
+		VkPhysicalDeviceFeatures vulkanCoreFeatures{};
+		vulkanCoreFeatures.samplerAnisotropy = VK_TRUE;
+		vulkanCoreFeatures.fillModeNonSolid = VK_TRUE;
+
+		// -- Vulkan API 1.1 Features --
+		VkPhysicalDeviceVulkan11Features vulkan11Features{};
+		vulkan11Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+		vulkan11Features.pNext = nullptr;  // End of Chain
+
+		// -- Vulkan API 1.2 Features --
+		VkPhysicalDeviceVulkan12Features vulkan12Features{};
+		vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+		vulkan12Features.pNext = &vulkan11Features;  // Chain Vulkan API 1.1 Features
+
+		// -- Vulkan API 1.3 Features --
+		VkPhysicalDeviceVulkan13Features vulkan13Features{};
+		vulkan13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+		vulkan13Features.synchronization2 = VK_TRUE;
+		vulkan13Features.pNext = &vulkan12Features; // Chain Vulkan API 1.2 Features
+
+		// -- Chaining Time --
+		VkPhysicalDeviceFeatures2 features2{};
+		features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		features2.features = vulkanCoreFeatures; // Core Features
+		features2.pNext = &vulkan13Features; // Chain Vulkan 1.3 features
 
 		DeviceBuilder deviceBuilder{};
 
 		deviceBuilder
-			.SetFeatures(desiredFeatures)
+			.SetFeatures(features2)
 			.Build(m_Context);
 
 		m_Context.deletionQueue.Push([&] { m_Context.device.Destroy(); });

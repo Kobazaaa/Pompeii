@@ -42,7 +42,7 @@ void pom::Device::WaitIdle() const { vkDeviceWaitIdle(m_Device); }
 //--------------------------------------------------
 //    Builder
 //--------------------------------------------------
-pom::DeviceBuilder& pom::DeviceBuilder::SetFeatures(const VkPhysicalDeviceFeatures& features)
+pom::DeviceBuilder& pom::DeviceBuilder::SetFeatures(const VkPhysicalDeviceFeatures2& features)
 {
 	m_DesiredFeatures = features;
 	return *this;
@@ -68,9 +68,10 @@ void pom::DeviceBuilder::Build(Context& context) const
 
 	VkDeviceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	createInfo.pNext = &m_DesiredFeatures;
 	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
-	createInfo.pEnabledFeatures = &m_DesiredFeatures;
+	createInfo.pEnabledFeatures = nullptr;
 	createInfo.enabledExtensionCount = context.physicalDevice.GetExtensionsCount();
 	createInfo.ppEnabledExtensionNames = context.physicalDevice.GetExtensions().data();
 

@@ -23,8 +23,7 @@ void pom::Image::Destroy(const Context& context) const
 	vkDestroyImage(context.device.GetHandle(), m_Image, nullptr);
 	vmaFreeMemory(context.allocator, m_ImageMemory);
 }
-VkImageView& pom::Image::CreateView(const Context& context, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType,
-									uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)
+VkImageView& pom::Image::CreateView(const Context& context, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType)
 {
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -32,10 +31,10 @@ VkImageView& pom::Image::CreateView(const Context& context, VkFormat format, VkI
 	viewInfo.viewType = viewType;
 	viewInfo.format = format;
 	viewInfo.subresourceRange.aspectMask = aspectFlags;
-	viewInfo.subresourceRange.baseMipLevel = m_ImageInfo.mipLevels == 0 ? 0 : baseMip;
-	viewInfo.subresourceRange.levelCount = m_ImageInfo.mipLevels == 0 ? 1 : mipCount;
-	viewInfo.subresourceRange.baseArrayLayer = m_ImageInfo.arrayLayers == 0 ? 0 : baseLayer;
-	viewInfo.subresourceRange.layerCount = m_ImageInfo.arrayLayers == 0 ? 1 : layerCount;
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = m_ImageInfo.mipLevels == 0 ? 1 : m_ImageInfo.mipLevels;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = m_ImageInfo.arrayLayers == 0 ? 1 : m_ImageInfo.arrayLayers;
 
 	if (vkCreateImageView(context.device.GetHandle(), &viewInfo, nullptr, &m_ImageView) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Image View!");
@@ -59,12 +58,15 @@ VkFormat pom::Image::FindSupportedFormat(const PhysicalDevice& physicalDevice, c
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkImage& pom::Image::GetHandle()		  const			{ return m_Image; }
-const VkImageView& pom::Image::GetViewHandle() const			{ return m_ImageView; }
-VkFormat pom::Image::GetFormat()			  const			{ return m_ImageInfo.format; }
-VkImageLayout pom::Image::GetCurrentLayout()  const			{ return m_CurrentLayout; }
-bool pom::Image::HasStencilComponent()		  const			{ return m_ImageInfo.format == VK_FORMAT_D32_SFLOAT_S8_UINT || m_ImageInfo.format == VK_FORMAT_D24_UNORM_S8_UINT; }
-void pom::Image::SetImageLayout(VkImageLayout newLayout)	{ m_CurrentLayout = newLayout; }
+const VkImage& pom::Image::GetHandle()			const		{ return m_Image; }
+const VkImageView& pom::Image::GetViewHandle()	const		{ return m_ImageView; }
+
+uint32_t pom::Image::GetMipLevels()				const		{ return m_ImageInfo.mipLevels; }
+uint32_t pom::Image::GetLayerCount()			const		{ return m_ImageInfo.arrayLayers; }
+
+VkFormat pom::Image::GetFormat()				const		{ return m_ImageInfo.format; }
+VkImageLayout pom::Image::GetCurrentLayout()	const		{ return m_CurrentLayout; }
+bool pom::Image::HasStencilComponent()			const		{ return m_ImageInfo.format == VK_FORMAT_D32_SFLOAT_S8_UINT || m_ImageInfo.format == VK_FORMAT_D24_UNORM_S8_UINT; }
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -136,6 +138,8 @@ pom::ImageBuilder& pom::ImageBuilder::InitialData(void* data, uint32_t offset, u
 	m_InitDataHeight = height;
 	m_InitDataWidth = width;
 	m_ImageInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	if (m_ImageInfo.mipLevels > 1)
+		m_ImageInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	m_FinalLayout = finalLayout;
 	m_pCmdPool = &cmdPool;
 	return *this;

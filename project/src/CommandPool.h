@@ -15,13 +15,13 @@
 namespace pom
 {
 	class Buffer;
+	class Image;
 	struct Context;
 }
 
 
 namespace pom
 {
-	class Image;
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  CommandPool	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -48,7 +48,7 @@ namespace pom
 		//    Command Helpers
 		//--------------------------------------------------
 		void TransitionImageLayout(Image& image, VkImageLayout newLayout);
-		void CopyBufferToBuffer(const Buffer& srcBuffer, Buffer& dstBuffer, VkDeviceSize size);
+		void CopyBufferToBuffer(const Buffer& srcBuffer, const Buffer& dstBuffer, VkDeviceSize size);
 		void CopyBufferToImage(const Buffer& buffer, const Image& image, uint32_t width, uint32_t height);
 
 	private:

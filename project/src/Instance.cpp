@@ -50,6 +50,7 @@ pom::InstanceBuilder::InstanceBuilder()
 //--------------------------------------------------
 pom::InstanceBuilder& pom::InstanceBuilder::SetApplicationName(const std::string& name) { m_AppInfo.pApplicationName = name.c_str(); return *this; }
 pom::InstanceBuilder& pom::InstanceBuilder::SetEngineName(const std::string& name)		{ m_AppInfo.pEngineName = name.c_str(); return *this; }
+pom::InstanceBuilder& pom::InstanceBuilder::SetAPIVersion(uint32_t apiVersion)			{ m_AppInfo.apiVersion = apiVersion; return *this; }
 pom::InstanceBuilder& pom::InstanceBuilder::AddInstanceExtension(const char* extName)	{ m_vInstanceExtensions.push_back(extName); return *this; }
 
 void pom::InstanceBuilder::Build(Context& context)

@@ -6,6 +6,7 @@
 
 // -- Standard Library --
 #include <vector>
+#include "CommandPool.h"
 
 // -- Forward Declarations --
 namespace pom
@@ -34,19 +35,22 @@ namespace pom
 		//--------------------------------------------------
 		//    Helpers
 		//--------------------------------------------------
-		VkImageView& CreateView(const Context& context, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType,
-				uint32_t baseMip = 0, uint32_t mipCount = 1, uint32_t baseLayer = 0, uint32_t layerCount = 1);
+		VkImageView& CreateView(const Context& context, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType);
 		static VkFormat FindSupportedFormat(const PhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		const VkImage& GetHandle() const;
-		const VkImageView& GetViewHandle() const;
-		VkFormat GetFormat() const;
-		VkImageLayout GetCurrentLayout() const;
-		bool HasStencilComponent() const;
-		void SetImageLayout(VkImageLayout newLayout);
+		const VkImage&		GetHandle()				const;
+		const VkImageView&	GetViewHandle()			const;
+
+		uint32_t			GetMipLevels()			const;
+		uint32_t			GetLayerCount()			const;
+
+		VkFormat			GetFormat()				const;
+		VkImageLayout		GetCurrentLayout()		const;
+
+		bool				HasStencilComponent()	const;
 
 	private:
 		VkImage m_Image					{ VK_NULL_HANDLE };
@@ -57,6 +61,7 @@ namespace pom
 		VkImageCreateInfo m_ImageInfo	{ };
 
 		friend class ImageBuilder;
+		friend void pom::CommandPool::TransitionImageLayout(Image& image, VkImageLayout newLayout);
 	};
 
 

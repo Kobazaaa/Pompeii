@@ -102,16 +102,21 @@ void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool,
 	for (Texture& tex : textures)
 	{
 		images.emplace_back();
+
+		uint32_t texW = tex.GetExtent().x;
+		uint32_t texH = tex.GetExtent().y;
+		//uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texW, texH)))) + 1;
+
 		ImageBuilder builder{};
 		builder
 			.SetDebugName(std::ranges::find_if(pathToIdx, [&](auto& keyVal) { return keyVal.second == index; })->first.c_str())
-			.SetWidth(tex.GetExtent().x)
-			.SetHeight(tex.GetExtent().y)
+			.SetWidth(texW)
+			.SetHeight(texH)
 			.SetFormat(VK_FORMAT_R8G8B8A8_SRGB)
 			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
-			.SetUsageFlags(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+			.SetUsageFlags(VK_IMAGE_USAGE_SAMPLED_BIT)
 			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-			.InitialData(tex.GetPixels(), 0, tex.GetExtent().x, tex.GetExtent().y, tex.GetMemorySize(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, cmdPool)
+			.InitialData(tex.GetPixels(), 0, texW, texH, tex.GetMemorySize(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, cmdPool)
 			.Build(context, images.back());
 		images.back().CreateView(context, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
 		++index;

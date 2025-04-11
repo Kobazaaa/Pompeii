@@ -58,11 +58,11 @@ namespace pom
 		//--------------------------------------------------
 		//    Builder
 		//--------------------------------------------------
-		DeviceBuilder& SetFeatures(const VkPhysicalDeviceFeatures& features);
+		DeviceBuilder& SetFeatures(const VkPhysicalDeviceFeatures2& features);
 		void Build(Context& context) const;
 
 	private:
-		VkPhysicalDeviceFeatures m_DesiredFeatures{};
+		VkPhysicalDeviceFeatures2 m_DesiredFeatures{};
 	};
 }
 #endif // DEVICE_H
