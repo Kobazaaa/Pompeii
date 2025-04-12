@@ -101,6 +101,8 @@ namespace pom
 		void Build(const Context& context, Image& image) const;
 
 	private:
+
+
 		bool m_UseInitialData;
 		void* m_pData;
 		uint32_t m_InitDataSize;

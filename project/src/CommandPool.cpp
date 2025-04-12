@@ -166,7 +166,8 @@ void pom::CommandPool::CopyBufferToBuffer(const Buffer& srcBuffer, const Buffer&
 	cmd.Submit(m_Device.GetGraphicQueue(), true);
 	cmd.Free(m_Device);
 }
-void pom::CommandPool::CopyBufferToImage(const Buffer& buffer, const Image& image, uint32_t width, uint32_t height)
+void pom::CommandPool::CopyBufferToImage(const Buffer& buffer, const Image& image, VkExtent3D extent,
+										uint32_t mip, uint32_t baseLayer, uint32_t layerCount)
 {
 	auto& cmd = AllocateCmdBuffers(1);
 	cmd.Begin();
@@ -176,11 +177,11 @@ void pom::CommandPool::CopyBufferToImage(const Buffer& buffer, const Image& imag
 		region.bufferRowLength = 0;
 		region.bufferImageHeight = 0;
 		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		region.imageSubresource.mipLevel = 0;
-		region.imageSubresource.baseArrayLayer = 0;
-		region.imageSubresource.layerCount = 1;
-		region.imageOffset = { 0, 0, 0 };
-		region.imageExtent = { width, height, 1 };
+		region.imageSubresource.mipLevel = mip;
+		region.imageSubresource.baseArrayLayer = baseLayer;
+		region.imageSubresource.layerCount = layerCount;
+		region.imageOffset = { .x = 0, .y = 0, .z = 0};
+		region.imageExtent = extent;
 
 		vkCmdCopyBufferToImage(cmd.GetHandle(), buffer.GetHandle(), image.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 	}

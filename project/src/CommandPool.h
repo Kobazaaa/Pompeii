@@ -49,7 +49,8 @@ namespace pom
 		//--------------------------------------------------
 		void TransitionImageLayout(Image& image, VkImageLayout newLayout);
 		void CopyBufferToBuffer(const Buffer& srcBuffer, const Buffer& dstBuffer, VkDeviceSize size);
-		void CopyBufferToImage(const Buffer& buffer, const Image& image, uint32_t width, uint32_t height);
+		void CopyBufferToImage(const Buffer& buffer, const Image& image, VkExtent3D extent,
+								uint32_t mip, uint32_t baseLayer, uint32_t layerCount);
 
 	private:
 		VkCommandPool				m_CommandPool		{ VK_NULL_HANDLE};
