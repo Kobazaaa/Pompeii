@@ -1,5 +1,9 @@
+// -- Standard Library --
+#include <iostream>
+
 // -- Pompeii Includes --
 #include "Timer.h"
+#include "ConsoleTextSettings.h"
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -26,6 +30,22 @@ void pom::Timer::Update()
 	m_TotalTimeSeconds += m_DeltaTimeSeconds;
 }
 
+void pom::Timer::StartBenchmark()
+{
+	m_BenchmarkStart = std::chrono::high_resolution_clock::now();
+}
+float pom::Timer::EndBenchmark(bool printResults, const std::string& txt)
+{
+	m_BenchmarkEnd = std::chrono::high_resolution_clock::now();
+	const float delta = std::chrono::duration<float, std::milli>(m_BenchmarkEnd - m_BenchmarkStart).count();
+
+	if (printResults)
+	{
+		std::cout << DARK_YELLOW_TXT << txt << delta << "ms." << RESET_TXT << "\n";
+	}
+
+	return delta;
+}
 
 
 //--------------------------------------------------

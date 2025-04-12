@@ -33,6 +33,9 @@ namespace pom
 		static void Start();
 		static void Update();
 
+		static void StartBenchmark();
+		static float EndBenchmark(bool printResults, const std::string& txt = "");
+
 		//--------------------------------------------------
 		//    Accessors
 		//--------------------------------------------------
@@ -57,6 +60,9 @@ namespace pom
 
 		inline static TimePoint			m_CurrentTimePoint	{ };
 		inline static TimePoint			m_LastTimePoint		{ };
+
+		inline static TimePoint			m_BenchmarkStart	{ };
+		inline static TimePoint			m_BenchmarkEnd		{ };
 	};
 }
 

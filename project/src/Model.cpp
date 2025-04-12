@@ -11,6 +11,7 @@
 #include "Context.h"
 #include "CommandBuffer.h"
 #include "Debugger.h"
+#include "Timer.h"
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -73,8 +74,8 @@ bool pom::Vertex::operator==(const Vertex& other) const
 //--------------------------------------------------
 void pom::Model::LoadModel(const std::string& path)
 {
+	Timer::StartBenchmark();
 	Assimp::Importer importer;
-
 	const aiScene* pScene =
 		importer.ReadFile(path,
 		aiProcess_Triangulate |
@@ -83,6 +84,7 @@ void pom::Model::LoadModel(const std::string& path)
 		//aiProcess_FlipWindingOrder |
 		aiProcess_JoinIdenticalVertices |
 		aiProcess_SortByPType);
+	Timer::EndBenchmark(true, "Assimp Importer: ");
 
 	if (!pScene || pScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !pScene->mRootNode)
 	{
@@ -94,6 +96,7 @@ void pom::Model::LoadModel(const std::string& path)
 }
 void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool, bool keepHostData)
 {
+	Timer::StartBenchmark();
 	CreateVertexBuffer(context, cmdPool);
 	CreateIndexBuffer(context, cmdPool);
 
@@ -140,7 +143,7 @@ void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool,
 		vertices.clear();
 		pathToIdx.clear();
 	}
-
+	Timer::EndBenchmark(true, "Model GPU Allocations: ");
 }
 void pom::Model::Destroy(const Context& context) const
 {
@@ -314,7 +317,10 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 		{
 			opaqueMeshes.back().material.diffuseIdx = idx;
 			textures.emplace_back();
+			Timer::StartBenchmark();
 			textures.back().LoadFromFile(ss.str());
+			Timer::EndBenchmark(true, "Load CPU Texture (" + ss.str() + " - " +
+				std::to_string(textures.back().GetExtent().x) + "x" + std::to_string(textures.back().GetExtent().y) + "): ");
 		}
 		else
 		{
@@ -342,7 +348,10 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 			{
 				transparentMeshes.back().material.opacityIdx = idx;
 				textures.emplace_back();
+				Timer::StartBenchmark();
 				textures.back().LoadFromFile(ss.str());
+				Timer::EndBenchmark(true, "Load CPU Texture (" + ss.str() + " - " +
+					std::to_string(textures.back().GetExtent().x) + "x" + std::to_string(textures.back().GetExtent().y) + "): ");
 			}
 			else
 			{
