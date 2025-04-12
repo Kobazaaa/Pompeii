@@ -8,7 +8,7 @@
 #include <vector>
 
 // -- Pompeii Includes --
-#include "Device.h"
+#include "Context.h"
 #include "CommandBuffer.h"
 
 // -- Forward Declarations --
@@ -16,7 +16,6 @@ namespace pom
 {
 	class Buffer;
 	class Image;
-	struct Context;
 }
 
 
@@ -47,6 +46,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Command Helpers
 		//--------------------------------------------------
+		void GenerateMipmaps(Image& image, uint32_t texW, uint32_t texH, uint32_t mips, VkImageLayout finalLayout);
 		void TransitionImageLayout(Image& image, VkImageLayout newLayout,
 									uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount);
 		void CopyBufferToBuffer(const Buffer& srcBuffer, const Buffer& dstBuffer, VkDeviceSize size);
@@ -56,7 +56,7 @@ namespace pom
 	private:
 		VkCommandPool				m_CommandPool		{ VK_NULL_HANDLE};
 		std::vector<CommandBuffer>	m_vCommandBuffers	{ };
-		Device						m_Device			{ };
+		Context						m_Context			{ };
 	};
 }
 

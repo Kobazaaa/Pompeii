@@ -163,9 +163,9 @@ void pom::ImageBuilder::Build(const Context& context, Image& image) const
 			.Allocate(context, stagingBuffer);
 		vmaCopyMemoryToAllocation(context.allocator, m_pData, stagingBuffer.GetMemoryHandle(), m_InitDataOffset, m_InitDataSize);
 
-		m_pCmdPool->TransitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		m_pCmdPool->TransitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, m_ImageInfo.mipLevels, 0, 1);
 		m_pCmdPool->CopyBufferToImage(stagingBuffer, image, VkExtent3D{ m_InitDataWidth, m_InitDataHeight, 1 }, 0, 0, 1);
-		m_pCmdPool->TransitionImageLayout(image, m_FinalLayout);
+		m_pCmdPool->GenerateMipmaps(image, m_InitDataWidth, m_InitDataHeight, m_ImageInfo.mipLevels, m_FinalLayout);
 
 		stagingBuffer.Destroy(context);
 	}

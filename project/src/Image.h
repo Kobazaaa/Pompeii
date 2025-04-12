@@ -61,7 +61,9 @@ namespace pom
 		VkImageCreateInfo m_ImageInfo	{ };
 
 		friend class ImageBuilder;
-		friend void pom::CommandPool::TransitionImageLayout(Image& image, VkImageLayout newLayout);
+		friend void CommandPool::TransitionImageLayout(Image& image, VkImageLayout newLayout,
+													uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount);
+		friend void CommandPool::GenerateMipmaps(Image& image, uint32_t texW, uint32_t texH, uint32_t mips, VkImageLayout finalLayout);
 	};
 
 
@@ -101,8 +103,6 @@ namespace pom
 		void Build(const Context& context, Image& image) const;
 
 	private:
-
-
 		bool m_UseInitialData;
 		void* m_pData;
 		uint32_t m_InitDataSize;

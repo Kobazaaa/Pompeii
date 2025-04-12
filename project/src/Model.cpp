@@ -105,7 +105,7 @@ void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool,
 
 		uint32_t texW = tex.GetExtent().x;
 		uint32_t texH = tex.GetExtent().y;
-		//uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texW, texH)))) + 1;
+		uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texW, texH)))) + 1;
 
 		ImageBuilder builder{};
 		builder
@@ -114,11 +114,12 @@ void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool,
 			.SetHeight(texH)
 			.SetFormat(VK_FORMAT_R8G8B8A8_SRGB)
 			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
+			.SetMipLevels(mipLevels)
 			.SetUsageFlags(VK_IMAGE_USAGE_SAMPLED_BIT)
 			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 			.InitialData(tex.GetPixels(), 0, texW, texH, tex.GetMemorySize(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, cmdPool)
 			.Build(context, images.back());
-		images.back().CreateView(context, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
+		images.back().CreateView(context, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, mipLevels, 0, 1);
 		++index;
 	}
 
