@@ -111,6 +111,7 @@ void pom::SwapChainBuilder::Build(Context& context, const Window& window, SwapCh
 		.SetWidth(extent.width)
 		.SetHeight(extent.height)
 		.SetTiling(VK_IMAGE_TILING_OPTIMAL)
+		.SetSampleCount(context.physicalDevice.GetMaxSampleCount())
 		.SetFormat(format)
 		.SetUsageFlags(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
 		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)

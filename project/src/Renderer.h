@@ -78,6 +78,7 @@ namespace pom
 		SwapChain					m_SwapChain				{ };
 		std::vector<FrameBuffer>	m_vFrameBuffers			{ };
 		uint32_t					m_MaxFramesInFlight		{ 2 };
+		Image						m_MSAAImage				{ };
 
 		// -- Model --
 		Sampler						m_TextureSampler		{ };

@@ -33,16 +33,41 @@ void pom::PhysicalDevice::Initialize(VkPhysicalDevice physicalDevice, const std:
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkPhysicalDevice& pom::PhysicalDevice::GetHandle()										 const		{ return m_PhysicalDevice; }
-VkPhysicalDeviceProperties pom::PhysicalDevice::GetProperties()											 const		{ return m_Properties; }
-VkFormatProperties pom::PhysicalDevice::GetFormatProperties(VkFormat format)							 const		{ VkFormatProperties props{}; vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &props); return props; }
-VkPhysicalDeviceFeatures pom::PhysicalDevice::GetFeatures()												 const		{ return m_Features; }
-																										 
-pom::QueueFamilyIndices pom::PhysicalDevice::GetQueueFamilies()											 const		{ return m_QueueFamilyIndices; }
-pom::SwapChainSupportDetails pom::PhysicalDevice::GetSwapChainSupportDetails(const VkSurfaceKHR surface)			{ QuerySwapChainSupport(surface); return m_SwapChainSupportDetails; }
+const VkPhysicalDevice& pom::PhysicalDevice::GetHandle()						const		{ return m_PhysicalDevice; }
+VkPhysicalDeviceProperties pom::PhysicalDevice::GetProperties()					const		{ return m_Properties; }
+VkFormatProperties pom::PhysicalDevice::GetFormatProperties(VkFormat format)	const		{ VkFormatProperties props{}; vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &props); return props; }
+VkPhysicalDeviceFeatures pom::PhysicalDevice::GetFeatures()						const		{ return m_Features; }
+pom::QueueFamilyIndices pom::PhysicalDevice::GetQueueFamilies()					const		{ return m_QueueFamilyIndices; }
+VkSampleCountFlagBits pom::PhysicalDevice::GetMaxSampleCount() const
+{
+	VkPhysicalDeviceProperties properties = GetProperties();
 
-const std::vector<const char*>& pom::PhysicalDevice::GetExtensions()									 const		{ return m_vExtensions; }
-uint32_t pom::PhysicalDevice::GetExtensionsCount()														 const		{ return static_cast<uint32_t>(m_vExtensions.size()); }
+	const VkSampleCountFlags counts = properties.limits.framebufferColorSampleCounts
+									& properties.limits.framebufferDepthSampleCounts;
+
+	if (counts & VK_SAMPLE_COUNT_64_BIT)
+		return VK_SAMPLE_COUNT_64_BIT;
+	if (counts & VK_SAMPLE_COUNT_32_BIT)
+		return VK_SAMPLE_COUNT_32_BIT;
+	if (counts & VK_SAMPLE_COUNT_16_BIT)
+		return VK_SAMPLE_COUNT_16_BIT;
+	if (counts & VK_SAMPLE_COUNT_8_BIT)
+		return VK_SAMPLE_COUNT_8_BIT;
+	if (counts & VK_SAMPLE_COUNT_4_BIT)
+		return VK_SAMPLE_COUNT_4_BIT;
+	if (counts & VK_SAMPLE_COUNT_2_BIT)
+		return VK_SAMPLE_COUNT_2_BIT;
+
+	return VK_SAMPLE_COUNT_1_BIT;
+}
+pom::SwapChainSupportDetails pom::PhysicalDevice::GetSwapChainSupportDetails(const VkSurfaceKHR surface)
+{
+	QuerySwapChainSupport(surface);
+	return m_SwapChainSupportDetails;
+}
+
+const std::vector<const char*>& pom::PhysicalDevice::GetExtensions()			const		{ return m_vExtensions; }
+uint32_t pom::PhysicalDevice::GetExtensionsCount()								const		{ return static_cast<uint32_t>(m_vExtensions.size()); }
 
 bool pom::PhysicalDevice::AreExtensionsSupported(const std::vector<const char*>& extensions) const
 {

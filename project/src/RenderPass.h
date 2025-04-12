@@ -58,6 +58,7 @@ namespace pom
 		RenderPassBuilder& SetInitialLayout(VkImageLayout layout);
 		RenderPassBuilder& SetFinalLayout(VkImageLayout layout);
 		RenderPassBuilder& AddColorAttachment(uint32_t attachment);
+		RenderPassBuilder& AddResolveAttachment(uint32_t attachment);
 		RenderPassBuilder& AddDepthAttachment(uint32_t attachment);
 
 		RenderPassBuilder& NewSubpass();
@@ -75,6 +76,7 @@ namespace pom
 		std::vector<VkAttachmentDescription>	m_vAttachmentDescriptions{};
 		std::vector<VkSubpassDescription>		m_vSubPasses{};
 
+		VkAttachmentReference					m_ResolveAttachmentRef{};
 		std::vector<VkAttachmentReference>		m_vColorAttachmentRefs{};
 		std::vector<VkAttachmentReference>		m_vDepthAttachmentRefs{};
 		std::vector<VkSubpassDependency>		m_vSubPassDependencies{};

@@ -237,20 +237,28 @@ void pom::Renderer::InitializeVulkan()
 		builder
 			.NewAttachment()
 				.SetFormat(m_SwapChain.GetFormat())
-				.SetSamples(VK_SAMPLE_COUNT_1_BIT)
+				.SetSamples(m_Context.physicalDevice.GetMaxSampleCount())
 				.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE)
 				.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
 				.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-				.SetFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+				.SetFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 				.AddColorAttachment(0)
 			.NewAttachment()
 				.SetFormat(m_SwapChain.GetDepthImage().GetFormat())
-				.SetSamples(VK_SAMPLE_COUNT_1_BIT)
+				.SetSamples(m_Context.physicalDevice.GetMaxSampleCount())
 				.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE)
 				.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
 				.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
 				.SetFinalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
 				.AddDepthAttachment(1)
+			.NewAttachment()
+				.SetFormat(m_SwapChain.GetFormat())
+				.SetSamples(VK_SAMPLE_COUNT_1_BIT)
+				.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE)
+				.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
+				.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+				.SetFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+				.AddResolveAttachment(2)
 			.NewSubpass()
 				.SetBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
 			.NewDependency()
@@ -326,7 +334,7 @@ void pom::Renderer::InitializeVulkan()
 			.SetCullMode(VK_CULL_MODE_BACK_BIT)
 			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
 			.SetPolygonMode(VK_POLYGON_MODE_FILL)
-			.SetSampleCount(VK_SAMPLE_COUNT_1_BIT)
+			.SetSampleCount(m_Context.physicalDevice.GetMaxSampleCount())
 			.SetDepthTest(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS)
 			.SetVertexBindingDesc(Vertex::GetBindingDescription())
 			.SetVertexAttributeDesc(Vertex::GetAttributeDescriptions())
@@ -348,7 +356,7 @@ void pom::Renderer::InitializeVulkan()
 			.SetCullMode(VK_CULL_MODE_NONE)
 			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
 			.SetPolygonMode(VK_POLYGON_MODE_FILL)
-			.SetSampleCount(VK_SAMPLE_COUNT_1_BIT)
+			.SetSampleCount(m_Context.physicalDevice.GetMaxSampleCount())
 			.SetDepthTest(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS)
 			.SetVertexBindingDesc(Vertex::GetBindingDescription())
 			.SetVertexAttributeDesc(Vertex::GetAttributeDescriptions())
@@ -362,6 +370,25 @@ void pom::Renderer::InitializeVulkan()
 		vertShader.Destroy(m_Context);
 	}
 
+	// -- MSAA Image - Requirements - [Context]
+	{
+		ImageBuilder builder{};
+
+		builder
+			.SetDebugName("MSAA Buffer")
+			.SetWidth(m_SwapChain.GetExtent().width)
+			.SetHeight(m_SwapChain.GetExtent().height)
+			.SetFormat(m_SwapChain.GetFormat())
+			.SetMipLevels(1)
+			.SetSampleCount(m_Context.physicalDevice.GetMaxSampleCount())
+			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
+			.SetUsageFlags(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+			.Build(m_Context, m_MSAAImage);
+		m_MSAAImage.CreateView(m_Context, m_SwapChain.GetFormat(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
+		m_DeletionQueueSC.Push([&] { m_MSAAImage.Destroy(m_Context); });
+	}
+
 	// -- Create Frame Buffers - Requirements - [Device - SwapChain - RenderPass]
 	{
 		m_vFrameBuffers.clear();
@@ -370,8 +397,9 @@ void pom::Renderer::InitializeVulkan()
 			FrameBufferBuilder builder{};
 			builder
 				.SetRenderPass(m_RenderPass)
-				.AddAttachment(view)
+				.AddAttachment(m_MSAAImage.GetViewHandle())
 				.AddAttachment(m_SwapChain.GetDepthImage().GetViewHandle())
+				.AddAttachment(view)
 				.SetExtent(m_SwapChain.GetExtent().width, m_SwapChain.GetExtent().height)
 				.Build(m_Context, m_vFrameBuffers);
 		}
@@ -470,13 +498,29 @@ void pom::Renderer::RecreateSwapChain()
 	m_SwapChain.Recreate(m_Context, *m_pWindow, m_CommandPool);
 	m_DeletionQueueSC.Push([&] { m_SwapChain.Destroy(m_Context); });
 
+	ImageBuilder iBuilder{};
+	iBuilder
+		.SetDebugName("MSAA Buffer")
+		.SetWidth(m_SwapChain.GetExtent().width)
+		.SetHeight(m_SwapChain.GetExtent().height)
+		.SetFormat(m_SwapChain.GetFormat())
+		.SetMipLevels(1)
+		.SetSampleCount(m_Context.physicalDevice.GetMaxSampleCount())
+		.SetTiling(VK_IMAGE_TILING_OPTIMAL)
+		.SetUsageFlags(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		.Build(m_Context, m_MSAAImage);
+	m_MSAAImage.CreateView(m_Context, m_SwapChain.GetFormat(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
+	m_DeletionQueueSC.Push([&] { m_MSAAImage.Destroy(m_Context); });
+
 	for (const VkImageView& view : m_SwapChain.GetViewHandles())
 	{
 		FrameBufferBuilder builder{};
 		builder
 			.SetRenderPass(m_RenderPass)
-			.AddAttachment(view)
+			.AddAttachment(m_MSAAImage.GetViewHandle())
 			.AddAttachment(m_SwapChain.GetDepthImage().GetViewHandle())
+			.AddAttachment(view)
 			.SetExtent(m_SwapChain.GetExtent().width, m_SwapChain.GetExtent().height)
 			.Build(m_Context, m_vFrameBuffers);
 	}

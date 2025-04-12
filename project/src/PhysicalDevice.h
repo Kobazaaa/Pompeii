@@ -59,6 +59,7 @@ namespace pom
 		VkFormatProperties				GetFormatProperties(VkFormat format)					const;
 		VkPhysicalDeviceFeatures		GetFeatures()											const;
 		QueueFamilyIndices				GetQueueFamilies()										const;
+		VkSampleCountFlagBits 			GetMaxSampleCount()										const;
 		SwapChainSupportDetails			GetSwapChainSupportDetails(const VkSurfaceKHR surface);
 
 		const std::vector<const char*>& GetExtensions()											const;
