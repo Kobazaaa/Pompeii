@@ -149,6 +149,7 @@ void pom::Renderer::InitializeVulkan()
 		VkPhysicalDeviceFeatures vulkanCoreFeatures{};
 		vulkanCoreFeatures.samplerAnisotropy = VK_TRUE;
 		vulkanCoreFeatures.fillModeNonSolid = VK_TRUE;
+		vulkanCoreFeatures.sampleRateShading = VK_TRUE;
 
 		// -- Vulkan API 1.1 Features --
 		VkPhysicalDeviceVulkan11Features vulkan11Features{};
@@ -330,6 +331,7 @@ void pom::Renderer::InitializeVulkan()
 			.AddShader(vertShader, VK_SHADER_STAGE_VERTEX_BIT)
 			.AddShader(fragShader, VK_SHADER_STAGE_FRAGMENT_BIT)
 				.SetShaderSpecialization(0, 0, sizeof(uint32_t), &arraySize)
+			.EnableSampleShading(0.2f)
 			.SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 			.SetCullMode(VK_CULL_MODE_BACK_BIT)
 			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)

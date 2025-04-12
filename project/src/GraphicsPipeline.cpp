@@ -133,7 +133,8 @@ pom::GraphicsPipelineBuilder::GraphicsPipelineBuilder()
 
 	m_MultiSamplingInfo = {};
 	m_MultiSamplingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;		// CAN'T CHANGE
-	m_MultiSamplingInfo.sampleShadingEnable = VK_FALSE;											// CAN'T CHANGE
+	m_MultiSamplingInfo.sampleShadingEnable = VK_FALSE;											//? CAN CHANGE
+	m_MultiSamplingInfo.minSampleShading = 0.0f;												//? CAN CHANGE
 	m_MultiSamplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;							//? CAN CHANGE
 
 	m_DepthStencilInfo = {};
@@ -268,6 +269,12 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetFrontFace(VkFront
 }
 
 // Multi Sampling Info
+pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::EnableSampleShading(float minSampleShading)
+{
+	m_MultiSamplingInfo.sampleShadingEnable = VK_TRUE;
+	m_MultiSamplingInfo.minSampleShading = minSampleShading;
+	return *this;
+}
 pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetSampleCount(VkSampleCountFlagBits samples)
 {
 	m_MultiSamplingInfo.rasterizationSamples = samples;

@@ -142,6 +142,8 @@ namespace pom
 		GraphicsPipelineBuilder& SetFrontFace(VkFrontFace front);
 
 		// Multi Sampling Info
+		// If not set, disabled by default
+		GraphicsPipelineBuilder& EnableSampleShading(float minSampleShading);
 		// If not set, sample count set to VK_SAMPLE_COUNT_1_BIT
 		GraphicsPipelineBuilder& SetSampleCount(VkSampleCountFlagBits samples);
 
