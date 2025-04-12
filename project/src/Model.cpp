@@ -105,7 +105,11 @@ void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool,
 
 		uint32_t texW = tex.GetExtent().x;
 		uint32_t texH = tex.GetExtent().y;
-		const uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texW, texH)))) + 1;
+		uint32_t maxMipsLevels = 1;
+		// only generate mipmaps for big enough textures
+		if (texW >= 256 || texH >= 256)
+			maxMipsLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texW, texH)))) + 1;
+		uint32_t mipLevels = maxMipsLevels;
 
 		ImageBuilder builder{};
 		builder
