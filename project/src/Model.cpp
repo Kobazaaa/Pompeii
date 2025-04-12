@@ -105,7 +105,7 @@ void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool,
 
 		uint32_t texW = tex.GetExtent().x;
 		uint32_t texH = tex.GetExtent().y;
-		uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texW, texH)))) + 1;
+		const uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texW, texH)))) + 1;
 
 		ImageBuilder builder{};
 		builder

@@ -387,7 +387,7 @@ void pom::Renderer::InitializeVulkan()
 			.SetAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
 			.EnableAnisotropy(m_Context.physicalDevice.GetProperties().limits.maxSamplerAnisotropy)
 			.SetMipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
-			.SetMipLevels(0.f, 0.f, 0.f)
+			.SetMipLevels(0.f, 0.f, VK_LOD_CLAMP_NONE)
 			.SetBorderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
 			.Build(m_Context, m_TextureSampler);
 
