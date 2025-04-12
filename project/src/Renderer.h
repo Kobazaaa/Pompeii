@@ -106,6 +106,7 @@ namespace pom
 		//    Helpers
 		//--------------------------------------------------
 		void RecreateSwapChain();
+		void CreateFrameBuffers();
 		void LoadModels();
 		void RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex) const;
 		void UpdateUniformBuffer(uint32_t currentImage) const;

@@ -372,41 +372,9 @@ void pom::Renderer::InitializeVulkan()
 		vertShader.Destroy(m_Context);
 	}
 
-	// -- MSAA Image - Requirements - [Context]
+	// -- Create Frame Buffers & MSAA Image - Requirements - [Device - SwapChain - RenderPass]
 	{
-		ImageBuilder builder{};
-
-		builder
-			.SetDebugName("MSAA Buffer")
-			.SetWidth(m_SwapChain.GetExtent().width)
-			.SetHeight(m_SwapChain.GetExtent().height)
-			.SetFormat(m_SwapChain.GetFormat())
-			.SetMipLevels(1)
-			.SetSampleCount(m_Context.physicalDevice.GetMaxSampleCount())
-			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
-			.SetUsageFlags(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
-			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-			.Build(m_Context, m_MSAAImage);
-		m_MSAAImage.CreateView(m_Context, m_SwapChain.GetFormat(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
-		m_DeletionQueueSC.Push([&] { m_MSAAImage.Destroy(m_Context); });
-	}
-
-	// -- Create Frame Buffers - Requirements - [Device - SwapChain - RenderPass]
-	{
-		m_vFrameBuffers.clear();
-		for (const VkImageView& view : m_SwapChain.GetViewHandles())
-		{
-			FrameBufferBuilder builder{};
-			builder
-				.SetRenderPass(m_RenderPass)
-				.AddAttachment(m_MSAAImage.GetViewHandle())
-				.AddAttachment(m_SwapChain.GetDepthImage().GetViewHandle())
-				.AddAttachment(view)
-				.SetExtent(m_SwapChain.GetExtent().width, m_SwapChain.GetExtent().height)
-				.Build(m_Context, m_vFrameBuffers);
-		}
-
-		m_DeletionQueueSC.Push([&] { for (auto& framebuffer : m_vFrameBuffers) framebuffer.Destroy(m_Context); m_vFrameBuffers.clear(); });
+		CreateFrameBuffers();
 	}
 
 	// -- Create Sampler - Requirements - [Device - Physical Device]
@@ -500,6 +468,20 @@ void pom::Renderer::RecreateSwapChain()
 	m_SwapChain.Recreate(m_Context, *m_pWindow, m_CommandPool);
 	m_DeletionQueueSC.Push([&] { m_SwapChain.Destroy(m_Context); });
 
+	CreateFrameBuffers();
+
+	const CameraSettings& oldSettings = m_pCamera->GetSettings();
+	const CameraSettings settings
+	{
+		.fov			= oldSettings.fov,
+		.aspectRatio	= m_pWindow->GetAspectRatio(),
+		.nearPlane		= oldSettings.nearPlane,
+		.farPlane		= oldSettings.farPlane
+	};
+	m_pCamera->ChangeSettings(settings);
+}
+void pom::Renderer::CreateFrameBuffers()
+{
 	ImageBuilder iBuilder{};
 	iBuilder
 		.SetDebugName("MSAA Buffer")
@@ -527,17 +509,8 @@ void pom::Renderer::RecreateSwapChain()
 			.Build(m_Context, m_vFrameBuffers);
 	}
 	m_DeletionQueueSC.Push([&] { for (auto& framebuffer : m_vFrameBuffers) framebuffer.Destroy(m_Context); m_vFrameBuffers.clear(); });
-
-	const CameraSettings& oldSettings = m_pCamera->GetSettings();
-	const CameraSettings settings
-	{
-		oldSettings.fov,
-		m_pWindow->GetAspectRatio(),
-		oldSettings.nearPlane,
-		oldSettings.farPlane
-	};
-	m_pCamera->ChangeSettings(settings);
 }
+
 void pom::Renderer::LoadModels()
 {
 	// -- Load Model - Requirements - []
@@ -574,7 +547,7 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 		vkCmdBeginRenderPass(vCmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		{
 			// -- Set Dynamic Viewport --
-			VkViewport viewport{};
+			VkViewport viewport;
 			viewport.x = 0.0f;
 			viewport.y = 0.0f;
 			viewport.width = static_cast<float>(m_SwapChain.GetExtent().width);
@@ -585,8 +558,8 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 			Debugger::InsertDebugLabel(commandBuffer, "Bind Viewport", glm::vec4(0.2f, 1.f, 0.2f, 1.f));
 
 			// -- Set Dynamic Scissors --
-			VkRect2D scissor{};
-			scissor.offset = { 0, 0 };
+			VkRect2D scissor;
+			scissor.offset = { .x = 0, .y = 0};
 			scissor.extent = m_SwapChain.GetExtent();
 			vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
 			Debugger::InsertDebugLabel(commandBuffer, "Bind Scissor", glm::vec4(1.f, 1.f, 0.2f, 1.f));
@@ -618,7 +591,7 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 }
 void pom::Renderer::UpdateUniformBuffer(uint32_t currentImage) const
 {
-	UniformBufferObject ubo{};
+	UniformBufferObject ubo;
 	//ubo.model = glm::scale(glm::rotate(glm::mat4(1.0f), Timer::GetTotalTime() * glm::radians(90.f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.25, 0.25, 0.25)) ;
 	ubo.model = glm::mat4(1.f);
 	ubo.view = m_pCamera->GetViewMatrix();

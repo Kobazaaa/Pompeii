@@ -13,6 +13,7 @@
 #include "DeletionQueue.h"
 #include "Window.h"
 #include "Camera.h"
+#include "ConsoleTextSettings.h"
 #include "Timer.h"
 
 // -- Using Pompeii namespace --
@@ -59,6 +60,7 @@ int main()
 		Timer::Start();
 		bool wasPressed = false;
 		bool isPressed = false;
+		float printTime = 1.f;
 
 		while (!glfwWindowShouldClose(pWindow->GetHandle()))
 		{
@@ -75,6 +77,13 @@ int main()
 			pCamera->Update();
 			pRenderer->Update();
 			pRenderer->Render();
+
+			printTime -= Timer::GetDeltaSeconds();
+			if (printTime <= 0)
+			{
+				printTime = 1.0f;
+				std::cout << DARK_YELLOW_TXT << "dFPS: " << 1.0 / Timer::GetDeltaSeconds() << "\t(" << Timer::GetDeltaSeconds() * 1000 << "ms)\n" << RESET_TXT;
+			}
 
 			//std::this_thread::sleep_for(Timer::SleepDurationNanoSeconds());
 		}
