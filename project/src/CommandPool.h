@@ -47,7 +47,8 @@ namespace pom
 		//--------------------------------------------------
 		//    Command Helpers
 		//--------------------------------------------------
-		void TransitionImageLayout(Image& image, VkImageLayout newLayout);
+		void TransitionImageLayout(Image& image, VkImageLayout newLayout,
+									uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount);
 		void CopyBufferToBuffer(const Buffer& srcBuffer, const Buffer& dstBuffer, VkDeviceSize size);
 		void CopyBufferToImage(const Buffer& buffer, const Image& image, VkExtent3D extent,
 								uint32_t mip, uint32_t baseLayer, uint32_t layerCount);

@@ -70,7 +70,8 @@ pom::CommandBuffer& pom::CommandPool::AllocateCmdBuffers(uint32_t count, VkComma
 //--------------------------------------------------
 //    Command Helpers
 //--------------------------------------------------
-void pom::CommandPool::TransitionImageLayout(Image& image, VkImageLayout newLayout)
+void pom::CommandPool::TransitionImageLayout(Image& image, VkImageLayout newLayout,
+											uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)
 {
 	VkImageLayout oldLayout = image.GetCurrentLayout();
 	auto& cmd = AllocateCmdBuffers(1);
@@ -93,10 +94,10 @@ void pom::CommandPool::TransitionImageLayout(Image& image, VkImageLayout newLayo
 		barrier.srcAccessMask = 0;									// Gets Overwritten
 
 		barrier.subresourceRange.aspectMask = 0;					// Gets Overwritten
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = image.GetMipLevels();
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = image.GetLayerCount();
+		barrier.subresourceRange.baseMipLevel = baseMip;
+		barrier.subresourceRange.levelCount = mipCount;
+		barrier.subresourceRange.baseArrayLayer = baseLayer;
+		barrier.subresourceRange.layerCount = layerCount;
 
 		if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
 		{
