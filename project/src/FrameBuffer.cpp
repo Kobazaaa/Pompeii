@@ -52,9 +52,9 @@ pom::FrameBufferBuilder& pom::FrameBufferBuilder::SetRenderPass(const RenderPass
 	m_CreateInfo.renderPass = renderPass.GetHandle();
 	return *this;
 }
-pom::FrameBufferBuilder& pom::FrameBufferBuilder::AddAttachment(const Image& image)
+pom::FrameBufferBuilder& pom::FrameBufferBuilder::AddAttachment(const VkImageView& view)
 {
-	m_vAttachments.push_back(image.GetViewHandle());
+	m_vAttachments.push_back(view);
 	m_CreateInfo.attachmentCount = static_cast<uint32_t>(m_vAttachments.size());
 	m_CreateInfo.pAttachments = m_vAttachments.data();
 	return *this;

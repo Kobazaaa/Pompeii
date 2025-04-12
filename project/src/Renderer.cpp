@@ -365,13 +365,13 @@ void pom::Renderer::InitializeVulkan()
 	// -- Create Frame Buffers - Requirements - [Device - SwapChain - RenderPass]
 	{
 		m_vFrameBuffers.clear();
-		for (const Image& image : m_SwapChain.GetImages())
+		for (const VkImageView& view : m_SwapChain.GetViewHandles())
 		{
 			FrameBufferBuilder builder{};
 			builder
 				.SetRenderPass(m_RenderPass)
-				.AddAttachment(image)
-				.AddAttachment(m_SwapChain.GetDepthImage())
+				.AddAttachment(view)
+				.AddAttachment(m_SwapChain.GetDepthImage().GetViewHandle())
 				.SetExtent(m_SwapChain.GetExtent().width, m_SwapChain.GetExtent().height)
 				.Build(m_Context, m_vFrameBuffers);
 		}
@@ -470,13 +470,13 @@ void pom::Renderer::RecreateSwapChain()
 	m_SwapChain.Recreate(m_Context, *m_pWindow, m_CommandPool);
 	m_DeletionQueueSC.Push([&] { m_SwapChain.Destroy(m_Context); });
 
-	for (const Image& image : m_SwapChain.GetImages())
+	for (const VkImageView& view : m_SwapChain.GetViewHandles())
 	{
 		FrameBufferBuilder builder{};
 		builder
 			.SetRenderPass(m_RenderPass)
-			.AddAttachment(image)
-			.AddAttachment(m_SwapChain.GetDepthImage())
+			.AddAttachment(view)
+			.AddAttachment(m_SwapChain.GetDepthImage().GetViewHandle())
 			.SetExtent(m_SwapChain.GetExtent().width, m_SwapChain.GetExtent().height)
 			.Build(m_Context, m_vFrameBuffers);
 	}

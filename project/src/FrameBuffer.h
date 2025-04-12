@@ -59,7 +59,7 @@ namespace pom
 
 		//! REQUIRED
 		FrameBufferBuilder& SetRenderPass(const RenderPass& renderPass);
-		FrameBufferBuilder& AddAttachment(const Image& image);
+		FrameBufferBuilder& AddAttachment(const VkImageView& view);
 		//! REQUIRED
 		FrameBufferBuilder& SetExtent(uint32_t width, uint32_t height);
 

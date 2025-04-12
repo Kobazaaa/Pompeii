@@ -29,7 +29,6 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		Image() = default;
-		explicit Image(VkImage image);
 		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------

@@ -16,7 +16,6 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::Image::Image(VkImage image) : m_Image(image){}
 void pom::Image::Destroy(const Context& context) const
 {
 	vkDestroyImageView(context.device.GetHandle(), m_ImageView, nullptr);
