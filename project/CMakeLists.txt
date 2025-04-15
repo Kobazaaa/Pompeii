@@ -13,38 +13,69 @@ set(SHADER_DIR	"${CMAKE_SOURCE_DIR}/project/shaders")
 #--------------------------------------------------
 # Source files
 set(SOURCES
+	# main
 	"${SOURCE_DIR}/main.cpp"
 
-	"${SOURCE_DIR}/Window.cpp"				"${SOURCE_DIR}/Window.h"
-	"${SOURCE_DIR}/Instance.cpp"			"${SOURCE_DIR}/Instance.h"
-	"${SOURCE_DIR}/Debugger.cpp"			"${SOURCE_DIR}/Debugger.h"
-	"${SOURCE_DIR}/PhysicalDevice.cpp"		"${SOURCE_DIR}/PhysicalDevice.h"
-	"${SOURCE_DIR}/DeletionQueue.cpp"		"${SOURCE_DIR}/DeletionQueue.h"
-	"${SOURCE_DIR}/Device.cpp"				"${SOURCE_DIR}/Device.h"
-	"${SOURCE_DIR}/SwapChain.cpp"			"${SOURCE_DIR}/SwapChain.h"
-	"${SOURCE_DIR}/Image.cpp"				"${SOURCE_DIR}/Image.h"
-	"${SOURCE_DIR}/CommandBuffer.cpp"		"${SOURCE_DIR}/CommandBuffer.h"
-	"${SOURCE_DIR}/CommandPool.cpp"			"${SOURCE_DIR}/CommandPool.h"
-	"${SOURCE_DIR}/SyncManager.cpp"			"${SOURCE_DIR}/SyncManager.h"
-	"${SOURCE_DIR}/Shader.cpp"				"${SOURCE_DIR}/Shader.h"
-	"${SOURCE_DIR}/RenderPass.cpp"			"${SOURCE_DIR}/RenderPass.h"
-	"${SOURCE_DIR}/DescriptorSet.cpp"		"${SOURCE_DIR}/DescriptorSet.h"
-	"${SOURCE_DIR}/GraphicsPipeline.cpp"	"${SOURCE_DIR}/GraphicsPipeline.h"
-	"${SOURCE_DIR}/FrameBuffer.cpp"			"${SOURCE_DIR}/FrameBuffer.h"
-	"${SOURCE_DIR}/Buffer.cpp"				"${SOURCE_DIR}/Buffer.h"
-	"${SOURCE_DIR}/Sampler.cpp"				"${SOURCE_DIR}/Sampler.h"
-	"${SOURCE_DIR}/DescriptorPool.cpp"		"${SOURCE_DIR}/DescriptorPool.h"
-	"${SOURCE_DIR}/Renderer.cpp"			"${SOURCE_DIR}/Renderer.h"
-	"${SOURCE_DIR}/Model.cpp"				"${SOURCE_DIR}/Model.h"
-	"${SOURCE_DIR}/Material.cpp"			"${SOURCE_DIR}/Material.h"
-	"${SOURCE_DIR}/Camera.cpp"				"${SOURCE_DIR}/Camera.h"
-	"${SOURCE_DIR}/Timer.cpp"				"${SOURCE_DIR}/Timer.h"
-											"${SOURCE_DIR}/Context.h"
-											"${SOURCE_DIR}/ConsoleTextSettings.h"
+	# commands
+	"${SOURCE_DIR}/commands/CommandBuffer.h"				"${SOURCE_DIR}/commands/CommandBuffer.cpp"
+	"${SOURCE_DIR}/commands/CommandPool.h"					"${SOURCE_DIR}/commands/CommandPool.cpp"
+
+	# context
+	"${SOURCE_DIR}/context/Context.h"
+	"${SOURCE_DIR}/context/Instance.h"						"${SOURCE_DIR}/context/Instance.cpp"
+	"${SOURCE_DIR}/context/Device.h"						"${SOURCE_DIR}/context/Device.cpp"
+	"${SOURCE_DIR}/context/PhysicalDevice.h"				"${SOURCE_DIR}/context/PhysicalDevice.cpp"
+
+	# core
+	"${SOURCE_DIR}/core/Renderer.h"							"${SOURCE_DIR}/core/Renderer.cpp"
+	"${SOURCE_DIR}/core/Window.h"							"${SOURCE_DIR}/core/Window.cpp"
+
+	# graphics
+	 # graphics/memory
+	"${SOURCE_DIR}/graphics/memory/Buffer.h"				"${SOURCE_DIR}/graphics/memory/Buffer.cpp"
+	"${SOURCE_DIR}/graphics/memory/Image.h"					"${SOURCE_DIR}/graphics/memory/Image.cpp"
+	"${SOURCE_DIR}/graphics/memory/Sampler.h"				"${SOURCE_DIR}/graphics/memory/Sampler.cpp"
+	"${SOURCE_DIR}/graphics/memory/SyncManager.h"			"${SOURCE_DIR}/graphics/memory/SyncManager.cpp"
+	 # graphics/pipeline
+	"${SOURCE_DIR}/graphics/pipeline/DescriptorPool.h"		"${SOURCE_DIR}/graphics/pipeline/DescriptorPool.cpp"
+	"${SOURCE_DIR}/graphics/pipeline/DescriptorSet.h"		"${SOURCE_DIR}/graphics/pipeline/DescriptorSet.cpp"
+	"${SOURCE_DIR}/graphics/pipeline/FrameBuffer.h"			"${SOURCE_DIR}/graphics/pipeline/FrameBuffer.cpp"
+	"${SOURCE_DIR}/graphics/pipeline/GraphicsPipeline.h"	"${SOURCE_DIR}/graphics/pipeline/GraphicsPipeline.cpp"
+	"${SOURCE_DIR}/graphics/pipeline/RenderPass.h"			"${SOURCE_DIR}/graphics/pipeline/RenderPass.cpp"
+	"${SOURCE_DIR}/graphics/pipeline/Shader.h"				"${SOURCE_DIR}/graphics/pipeline/Shader.cpp"
+
+	# helper
+	"${SOURCE_DIR}/helper/ConsoleTextSettings.h"
+	"${SOURCE_DIR}/helper/Debugger.h"						"${SOURCE_DIR}/helper/Debugger.cpp"
+	"${SOURCE_DIR}/helper/DeletionQueue.h"					"${SOURCE_DIR}/helper/DeletionQueue.cpp"
+	"${SOURCE_DIR}/helper/Timer.h"							"${SOURCE_DIR}/helper/Timer.cpp"
+
+	# presentation
+	"${SOURCE_DIR}/presentation/SwapChain.h"				"${SOURCE_DIR}/presentation/SwapChain.cpp"
+
+	# scene
+	"${SOURCE_DIR}/scene/Model.h"							"${SOURCE_DIR}/scene/Model.cpp"
+	"${SOURCE_DIR}/scene/Material.h"						"${SOURCE_DIR}/scene/Material.cpp"
+	"${SOURCE_DIR}/scene/Camera.h"							"${SOURCE_DIR}/scene/Camera.cpp"
+
 )
 
 # Create the executable
 add_executable(${PROJECT_NAME} ${SOURCES})
+
+# Set include directories
+target_include_directories(${PROJECT_NAME} PRIVATE
+	"${SOURCE_DIR}"
+	"${SOURCE_DIR}/commands"
+	"${SOURCE_DIR}/context"
+	"${SOURCE_DIR}/core"
+	"${SOURCE_DIR}/graphics"
+	"${SOURCE_DIR}/graphics/memory"
+	"${SOURCE_DIR}/graphics/pipeline"
+	"${SOURCE_DIR}/helper"
+	"${SOURCE_DIR}/presentation"
+	"${SOURCE_DIR}/scene"
+)
 
 # Max Warning Level & Warnings as Errors
 target_compile_options(${PROJECT_NAME} PRIVATE

@@ -111,12 +111,21 @@ Sponza Scene Hallway (mipmapping):
 Pompeii/ 
 ├── cmake/			# CMake Scripts.
 ├── images/			# images for the README.md, such as screenshots.
-└── project/			# project code and assets.
-	├── models/
-	├── shaders/
-	├── src/		# source code.
-	├── textures/
-	└── CmakeLists.txt	# Build configuration project.
+├── project/			# project code and assets.
+|	├── models/
+|	├── shaders/
+|	├── src/		# source code.
+|	|    ├── commands/
+|	|    ├── context/
+|	|    ├── core/
+|	|    ├── graphics/
+|	|    |	├── memory/
+|	|    |	└── pipeline/
+|	|    ├── helper/
+|	|    ├── presentation/
+|	|    └── scene/
+|	├── textures/
+|	└── CmakeLists.txt	# Build configuration project.
 ├── .gitattributes		
 ├── .gitignore			
 ├── CMakeLists.txt		# Build configuration global.
