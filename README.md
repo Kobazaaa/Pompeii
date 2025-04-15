@@ -119,8 +119,8 @@ Pompeii/
 |	|    ├── context/
 |	|    ├── core/
 |	|    ├── graphics/
-|	|    |	├── memory/
-|	|    |	└── pipeline/
+|	|    |       ├── memory/
+|	|    |       └── pipeline/
 |	|    ├── helper/
 |	|    ├── presentation/
 |	|    └── scene/
