@@ -30,6 +30,18 @@ const VkRenderPass& pom::RenderPass::GetHandle()	const { return m_RenderPass; }
 //--------------------------------------------------
 //    Builder
 //--------------------------------------------------
+pom::RenderPassBuilder& pom::RenderPassBuilder::NewSubpass()
+{
+	m_SubPassIdx = static_cast<uint32_t>(m_vSubPasses.size());
+	m_vSubPasses.emplace_back();
+	m_vSubPasses.back().colorAttachmentCount = 0;
+	m_vSubPasses.back().pColorAttachments = nullptr;
+	m_vSubPasses.back().pDepthStencilAttachment = nullptr;
+	m_vSubPasses.back().pResolveAttachments = nullptr;
+
+	return *this;
+}
+pom::RenderPassBuilder& pom::RenderPassBuilder::SetBindPoint(VkPipelineBindPoint bindPoint) { m_vSubPasses.back().pipelineBindPoint = bindPoint; return *this; }
 
 pom::RenderPassBuilder& pom::RenderPassBuilder::NewAttachment()								{ m_vAttachmentDescriptions.emplace_back(); return *this; }
 pom::RenderPassBuilder& pom::RenderPassBuilder::SetFormat(VkFormat format)					{ m_vAttachmentDescriptions.back().format = format; return *this; }
@@ -48,27 +60,28 @@ pom::RenderPassBuilder& pom::RenderPassBuilder::SetStencilLoadStoreOp(VkAttachme
 }
 pom::RenderPassBuilder& pom::RenderPassBuilder::SetInitialLayout(VkImageLayout layout)		{ m_vAttachmentDescriptions.back().initialLayout = layout; return *this; }
 pom::RenderPassBuilder& pom::RenderPassBuilder::SetFinalLayout(VkImageLayout layout)		{ m_vAttachmentDescriptions.back().finalLayout = layout; return *this; }
-pom::RenderPassBuilder& pom::RenderPassBuilder::AddColorAttachment(uint32_t attachment)		{ m_vColorAttachmentRefs.emplace_back(attachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL); return *this; }
-pom::RenderPassBuilder& pom::RenderPassBuilder::AddResolveAttachment(uint32_t attachment)
+
+pom::RenderPassBuilder& pom::RenderPassBuilder::AddSubpassColorAttachment(uint32_t attachment)
 {
-	m_ResolveAttachmentRef = {};
-	m_ResolveAttachmentRef.attachment = attachment;
-	m_ResolveAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	if (m_vColorAttachmentRefs.size() <= m_SubPassIdx)
+		m_vColorAttachmentRefs.emplace_back();
+	m_vColorAttachmentRefs.back().emplace_back(attachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	m_vSubPasses.back().colorAttachmentCount = static_cast<uint32_t>(m_vColorAttachmentRefs.back().size());
+	m_vSubPasses.back().pColorAttachments = m_vColorAttachmentRefs.back().data();
 	return *this;
 }
-pom::RenderPassBuilder& pom::RenderPassBuilder::AddDepthAttachment(uint32_t attachment)		{ m_vDepthAttachmentRefs.emplace_back(attachment, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL); return *this; }
-
-pom::RenderPassBuilder& pom::RenderPassBuilder::NewSubpass()
+pom::RenderPassBuilder& pom::RenderPassBuilder::SetSubpassResolveAttachment(uint32_t attachment)
 {
-	m_vSubPasses.emplace_back();
-	m_vSubPasses.back().colorAttachmentCount = static_cast<uint32_t>(m_vColorAttachmentRefs.size());
-	m_vSubPasses.back().pColorAttachments = m_vColorAttachmentRefs.data();
-	m_vSubPasses.back().pDepthStencilAttachment = m_vDepthAttachmentRefs.data();
-	m_vSubPasses.back().pResolveAttachments = &m_ResolveAttachmentRef;
-
+	m_ResolveAttachmentRef.emplace_back(attachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	m_vSubPasses.back().pResolveAttachments = &m_ResolveAttachmentRef.back();
 	return *this;
 }
-pom::RenderPassBuilder& pom::RenderPassBuilder::SetBindPoint(VkPipelineBindPoint bindPoint) { m_vSubPasses.back().pipelineBindPoint = bindPoint; return *this; }
+pom::RenderPassBuilder& pom::RenderPassBuilder::SetSubpassDepthAttachment(uint32_t attachment)
+{
+	m_vDepthAttachmentRefs.emplace_back(attachment, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	m_vSubPasses.back().pDepthStencilAttachment = &m_vDepthAttachmentRefs.back();
+	return *this;
+}
 
 pom::RenderPassBuilder& pom::RenderPassBuilder::NewDependency()								{ m_vSubPassDependencies.emplace_back(); return *this; }
 pom::RenderPassBuilder& pom::RenderPassBuilder::SetSrcSubPass(uint32_t subpass)				{ m_vSubPassDependencies.back().srcSubpass = subpass; return *this; }

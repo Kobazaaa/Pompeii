@@ -50,6 +50,9 @@ namespace pom
 		//--------------------------------------------------
 		//    Builder
 		//--------------------------------------------------
+		RenderPassBuilder& NewSubpass();
+		RenderPassBuilder& SetBindPoint(VkPipelineBindPoint bindPoint);
+
 		RenderPassBuilder& NewAttachment();
 		RenderPassBuilder& SetFormat(VkFormat format);
 		RenderPassBuilder& SetSamples(VkSampleCountFlagBits samples);
@@ -57,12 +60,9 @@ namespace pom
 		RenderPassBuilder& SetStencilLoadStoreOp(VkAttachmentLoadOp loadOp, VkAttachmentStoreOp storeOp);
 		RenderPassBuilder& SetInitialLayout(VkImageLayout layout);
 		RenderPassBuilder& SetFinalLayout(VkImageLayout layout);
-		RenderPassBuilder& AddColorAttachment(uint32_t attachment);
-		RenderPassBuilder& AddResolveAttachment(uint32_t attachment);
-		RenderPassBuilder& AddDepthAttachment(uint32_t attachment);
-
-		RenderPassBuilder& NewSubpass();
-		RenderPassBuilder& SetBindPoint(VkPipelineBindPoint bindPoint);
+		RenderPassBuilder& AddSubpassColorAttachment(uint32_t attachment);
+		RenderPassBuilder& SetSubpassResolveAttachment(uint32_t attachment);
+		RenderPassBuilder& SetSubpassDepthAttachment(uint32_t attachment);
 
 		RenderPassBuilder& NewDependency();
 		RenderPassBuilder& SetSrcSubPass(uint32_t subpass);
@@ -75,11 +75,13 @@ namespace pom
 	private:
 		std::vector<VkAttachmentDescription>	m_vAttachmentDescriptions{};
 		std::vector<VkSubpassDescription>		m_vSubPasses{};
-
-		VkAttachmentReference					m_ResolveAttachmentRef{};
-		std::vector<VkAttachmentReference>		m_vColorAttachmentRefs{};
-		std::vector<VkAttachmentReference>		m_vDepthAttachmentRefs{};
 		std::vector<VkSubpassDependency>		m_vSubPassDependencies{};
+		uint32_t								m_SubPassIdx{};
+
+		std::vector<VkAttachmentReference>				m_ResolveAttachmentRef{ };
+		std::vector<VkAttachmentReference>				m_vDepthAttachmentRefs{ };
+		std::vector<std::vector<VkAttachmentReference>>	m_vColorAttachmentRefs{ };
+
 	};
 }
 
