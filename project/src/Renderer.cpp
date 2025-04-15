@@ -412,9 +412,9 @@ void pom::Renderer::InitializeVulkan()
 	{
 		m_DescriptorPool
 			.SetDebugName("Descriptor Pool (Default)")
-			.SetMaxSets(30)
-			.AddPoolSizeLayout(m_UniformDSL)
-			.AddPoolSizeLayout(m_TextureDSL)
+			.SetMaxSets(m_MaxFramesInFlight + 1)																	// Pool can have up to m_MaxFramesInFlight + 1 sets
+			.AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, m_MaxFramesInFlight)									// Pool can have up to m_MaxFramesInFlight UBO's
+			.AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_TextureDSL.GetBindings()[0].descriptorCount)	// Pool can have up to m_TextureDSL.GetBindings()[0].descriptorCount Combined Image Samplers (which is the number of textures)
 			.Create(m_Context);
 		m_Context.deletionQueue.Push([&] {m_DescriptorPool.Destroy(m_Context); });
 	}
@@ -422,7 +422,7 @@ void pom::Renderer::InitializeVulkan()
 	// -- Allocate Descriptor Sets - Requirements - [Device - Descriptor Pool - Descriptor Set Layout - UBO]
 	{
 		m_vUniformDS = m_DescriptorPool.AllocateSets(m_Context, m_UniformDSL, m_MaxFramesInFlight, "Uniform Buffer DS");
-		m_vTextureDS = m_DescriptorPool.AllocateSets(m_Context, m_TextureDSL, 1, "Texture Array DS");
+		m_TextureDS = m_DescriptorPool.AllocateSets(m_Context, m_TextureDSL, 1, "Texture Array DS").front();
 
 		// -- Write UBO --
 		DescriptorSetWriter writer{};
@@ -439,7 +439,7 @@ void pom::Renderer::InitializeVulkan()
 		{
 			writer.AddImageInfo(image, m_TextureSampler);
 		}
-		writer.WriteImages(m_vTextureDS[0], 0).Execute(m_Context);
+		writer.WriteImages(m_TextureDS, 0).Execute(m_Context);
 	}
 
 	// -- Create Sync Objects - Requirements - [Device]
@@ -567,7 +567,7 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 			// -- Bind Descriptor Sets --
 			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vUniformDS[m_CurrentFrame].GetHandle(), 0, nullptr);
 			Debugger::InsertDebugLabel(commandBuffer, "Bind Uniform Buffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
-			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 1, 1, &m_vTextureDS[0].GetHandle(), 0, nullptr);
+			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 1, 1, &m_TextureDS.GetHandle(), 0, nullptr);
 			Debugger::InsertDebugLabel(commandBuffer, "Bind Textures", glm::vec4(0.f, 1.f, 1.f, 1.f));
 
 			// -- Bind Model Data --

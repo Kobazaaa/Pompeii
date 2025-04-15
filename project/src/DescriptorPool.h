@@ -31,7 +31,6 @@ namespace pom
 		DescriptorPool& SetDebugName(const char* name);
 		DescriptorPool& SetMaxSets(uint32_t count);
 		DescriptorPool& AddPoolSize(VkDescriptorType type, uint32_t count);
-		DescriptorPool& AddPoolSizeLayout(const DescriptorSetLayout& layout);
 		void Create(const Context& context);
 		void Destroy(const Context& context) const;
 

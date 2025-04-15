@@ -30,15 +30,6 @@ pom::DescriptorPool& pom::DescriptorPool::AddPoolSize(VkDescriptorType type, uin
 	m_vPoolSizes.emplace_back(type, count);
 	return *this;
 }
-pom::DescriptorPool& pom::DescriptorPool::AddPoolSizeLayout(const DescriptorSetLayout& layout)
-{
-	for (const auto& binding : layout.GetBindings())
-	{
-		AddPoolSize(binding.descriptorType, binding.descriptorCount * m_MaxSets);
-	}
-	return *this;
-}
-
 void pom::DescriptorPool::Create(const Context& context)
 {
 	VkDescriptorPoolCreateInfo poolInfo{};

@@ -77,7 +77,7 @@ namespace pom
 		// -- SwapChain --
 		SwapChain					m_SwapChain				{ };
 		std::vector<FrameBuffer>	m_vFrameBuffers			{ };
-		uint32_t					m_MaxFramesInFlight		{ 2 };
+		uint32_t					m_MaxFramesInFlight		{ 3 };
 		Image						m_MSAAImage				{ };
 
 		// -- Model --
@@ -96,7 +96,7 @@ namespace pom
 		DescriptorSetLayout			m_TextureDSL			{ };
 		DescriptorPool				m_DescriptorPool		{ };
 		std::vector<DescriptorSet>	m_vUniformDS			{ };
-		std::vector<DescriptorSet>	m_vTextureDS			{ };
+		DescriptorSet				m_TextureDS				{ };
 
 		// -- Command --
 		CommandPool					m_CommandPool			{ };
