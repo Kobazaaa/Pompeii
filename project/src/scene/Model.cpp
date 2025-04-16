@@ -187,7 +187,7 @@ void pom::Model::DrawOpaque(CommandBuffer& cmdBuffer, const GraphicsPipelineLayo
 		MeshPushConstants pc
 		{
 			.diffuseIdx = mesh.material.diffuseIdx,
-			.opacityIdx = std::numeric_limits<uint32_t>::max(),
+			.opacityIdx = mesh.material.opacityIdx,
 		};
 		vkCmdPushConstants(
 			vCmdBuffer,

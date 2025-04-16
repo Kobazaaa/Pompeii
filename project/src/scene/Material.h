@@ -48,10 +48,10 @@ namespace pom
 	struct Material
 	{
 		// -- Diffuse --
-		uint32_t diffuseIdx;
+		uint32_t diffuseIdx{ std::numeric_limits<uint32_t>::max() };
 
 		// -- Opacity --
-		uint32_t opacityIdx;
+		uint32_t opacityIdx{ std::numeric_limits<uint32_t>::max() };
 	};
 }
 

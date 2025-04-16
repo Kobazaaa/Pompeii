@@ -24,22 +24,14 @@ layout(location = 0) out vec4 outColor;
 // -- Shader --
 void main()
 {
-	if(pushConstants.diffuseIdx >= TEXTURE_ARRAY_SIZE)
-	{
-		outColor = vec4(1.0, 0.0, 1.0, 1.0);
-		return;
-	}
+	// -- Ugly Magenta --
+	outColor = vec4(1.0, 0.0, 1.0, 1.0);
 
-	float alpha = 1.0;
-	if(pushConstants.opacityIdx != uint(-1))
-	{
-		if(pushConstants.opacityIdx >= TEXTURE_ARRAY_SIZE)
-		{
-			outColor = vec4(1.0, 0.0, 1.0, 1.0);
-			return;
-		}
-		alpha = texture(textures[pushConstants.opacityIdx], fragTexCoord).r;
-	}
+	// -- Diffuse --
+	if(pushConstants.diffuseIdx < TEXTURE_ARRAY_SIZE)
+		outColor.rgb = fragColor * texture(textures[pushConstants.diffuseIdx], fragTexCoord).rgb;
 
-	outColor = vec4(fragColor * texture(textures[pushConstants.diffuseIdx], fragTexCoord).rgb, alpha);
+	// -- Opacity --
+	if(pushConstants.opacityIdx < TEXTURE_ARRAY_SIZE)
+		outColor.a = texture(textures[pushConstants.opacityIdx], fragTexCoord).r;
 }
