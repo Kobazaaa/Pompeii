@@ -9,6 +9,7 @@
 
 // -- Math Includes --
 #include "glm/vec2.hpp"
+#include "glm/vec3.hpp"
 
 
 namespace pom
@@ -47,11 +48,15 @@ namespace pom
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	struct Material
 	{
-		// -- Diffuse --
-		uint32_t diffuseIdx{ std::numeric_limits<uint32_t>::max() };
+		// -- Textures --
+		uint32_t diffuseIdx		{ std::numeric_limits<uint32_t>::max() };
+		uint32_t opacityIdx		{ std::numeric_limits<uint32_t>::max() };
+		uint32_t specularIdx	{ std::numeric_limits<uint32_t>::max() };
+		uint32_t shininessIdx	{ std::numeric_limits<uint32_t>::max() };
+		uint32_t heightIdx		{ std::numeric_limits<uint32_t>::max() };
 
-		// -- Opacity --
-		uint32_t opacityIdx{ std::numeric_limits<uint32_t>::max() };
+		// -- Data --
+		float exp				{ 0.f };
 	};
 }
 

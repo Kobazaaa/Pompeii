@@ -40,6 +40,8 @@ void pom::Camera::Update()
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
+// -- Data --
+glm::vec3 pom::Camera::GetPosition()						const	{ return m_Position; }
 
 // -- Settings --
 void pom::Camera::ChangeSettings(const CameraSettings& settings)	{ m_Settings = settings; m_SettingsDirty = true; }

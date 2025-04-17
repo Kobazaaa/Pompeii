@@ -40,8 +40,15 @@ namespace pom
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	struct MeshPushConstants
 	{
+		// -- Textures --
 		uint32_t diffuseIdx;
 		uint32_t opacityIdx;
+		uint32_t specularIdx;
+		uint32_t shininessIdx;
+		uint32_t heightIdx;
+
+		// -- Data --
+		float exp;
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -51,6 +58,8 @@ namespace pom
 	{
 		glm::vec3 position;
 		glm::vec3 normal;
+		glm::vec3 tangent;
+		glm::vec3 bitangent;
 		glm::vec3 color;
 		glm::vec2 texCoord;
 
@@ -72,7 +81,7 @@ namespace pom
 		uint32_t indexOffset;
 		uint32_t indexCount;
 
-		Material material;
+		Material material{};
 
 		std::string name;
 	};
@@ -87,7 +96,7 @@ namespace pom
 		//--------------------------------------------------
 		void LoadModel(const std::string& path);
 		void AllocateResources(const Context& context, CommandPool& cmdPool, bool keepHostData = false);
-		void Destroy(const Context& context) const;
+		void Destroy();
 
 		//--------------------------------------------------
 		//    Commands
@@ -105,6 +114,7 @@ namespace pom
 		std::vector<uint32_t> indices;
 		std::vector<Texture> textures;
 		std::unordered_map<std::string, uint32_t> pathToIdx;
+		DeletionQueue deletionQueue{};
 
 		// -- GPU --
 		Buffer vertexBuffer;
@@ -126,6 +136,7 @@ namespace pom
 
 		void CreateVertexBuffer(const Context& context, CommandPool& cmdPool);
 		void CreateIndexBuffer(const Context& context, CommandPool& cmdPool);
+		void CreateImages(const Context& context, CommandPool& cmdPool);
 	};
 }
 

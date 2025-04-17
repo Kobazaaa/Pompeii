@@ -42,6 +42,7 @@ struct UniformBufferObject
 	alignas(16) glm::mat4 model;
 	alignas(16) glm::mat4 view;
 	alignas(16) glm::mat4 proj;
+	alignas(16) glm::vec3 cam;
 };
 
 namespace pom
@@ -91,11 +92,13 @@ namespace pom
 		GraphicsPipeline			m_TransPipeline			{ };
 
 		// -- Descriptors
-		std::vector<Buffer>			m_vUniformBuffers		{ };
-		DescriptorSetLayout			m_UniformDSL			{ };
-		DescriptorSetLayout			m_TextureDSL			{ };
 		DescriptorPool				m_DescriptorPool		{ };
+
+		DescriptorSetLayout			m_UniformDSL			{ };
 		std::vector<DescriptorSet>	m_vUniformDS			{ };
+		std::vector<Buffer>			m_vUniformBuffers		{ };
+
+		DescriptorSetLayout			m_TextureDSL			{ };
 		DescriptorSet				m_TextureDS				{ };
 
 		// -- Command --

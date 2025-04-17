@@ -9,6 +9,7 @@
 #include "Window.h"
 #include "Shader.h"
 #include "CommandBuffer.h"
+#include "Timer.h"
 
 //--------------------------------------------------
 //    Constructor & Destructor
@@ -521,7 +522,7 @@ void pom::Renderer::LoadModels()
 	// -- Create Vertex & Index Buffer - Requirements - [Device - Allocator - Buffer - Command Pool]
 	{
 		m_Model.AllocateResources(m_Context, m_CommandPool, false);
-		m_Context.deletionQueue.Push([&] {m_Model.Destroy(m_Context); });
+		m_Context.deletionQueue.Push([&] { m_Model.Destroy(); });
 	}
 }
 void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex) const
@@ -567,6 +568,7 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 			// -- Bind Descriptor Sets --
 			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vUniformDS[m_CurrentFrame].GetHandle(), 0, nullptr);
 			Debugger::InsertDebugLabel(commandBuffer, "Bind Uniform Buffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
+
 			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 1, 1, &m_TextureDS.GetHandle(), 0, nullptr);
 			Debugger::InsertDebugLabel(commandBuffer, "Bind Textures", glm::vec4(0.f, 1.f, 1.f, 1.f));
 
@@ -592,10 +594,11 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 void pom::Renderer::UpdateUniformBuffer(uint32_t currentImage) const
 {
 	UniformBufferObject ubo;
-	//ubo.model = glm::scale(glm::rotate(glm::mat4(1.0f), Timer::GetTotalTime() * glm::radians(90.f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.25, 0.25, 0.25)) ;
-	ubo.model = glm::mat4(1.f);
+	//ubo.model = glm::scale(glm::rotate(glm::mat4(1.0f), Timer::GetTotalTimeSeconds() * glm::radians(90.f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.25, 0.25, 0.25)) ;
+	ubo.model = glm::mat4(1) ;
 	ubo.view = m_pCamera->GetViewMatrix();
 	ubo.proj = m_pCamera->GetProjectionMatrix();
+	ubo.cam = m_pCamera->GetPosition();
 
 	vmaCopyMemoryToAllocation(m_Context.allocator, &ubo, m_vUniformBuffers[currentImage].GetMemoryHandle(), 0, sizeof(ubo));
 }
