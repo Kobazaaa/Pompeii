@@ -65,6 +65,7 @@ namespace pom
 		RenderPassBuilder& SetSubpassDepthAttachment(uint32_t attachment);
 
 		RenderPassBuilder& NewDependency();
+		RenderPassBuilder& AddDependencyFlag(VkDependencyFlags flags);
 		RenderPassBuilder& SetSrcSubPass(uint32_t subpass);
 		RenderPassBuilder& SetDstSubPass(uint32_t subpass);
 		RenderPassBuilder& SetSrcMasks(VkPipelineStageFlags stageFlags, VkAccessFlags accessFlags);

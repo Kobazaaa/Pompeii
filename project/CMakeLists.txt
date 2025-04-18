@@ -54,9 +54,9 @@ set(SOURCES
 	"${SOURCE_DIR}/presentation/SwapChain.h"				"${SOURCE_DIR}/presentation/SwapChain.cpp"
 
 	# scene
-	"${SOURCE_DIR}/scene/Model.h"							"${SOURCE_DIR}/scene/Model.cpp"
-	"${SOURCE_DIR}/scene/Material.h"						"${SOURCE_DIR}/scene/Material.cpp"
 	"${SOURCE_DIR}/scene/Camera.h"							"${SOURCE_DIR}/scene/Camera.cpp"
+	"${SOURCE_DIR}/scene/Material.h"						"${SOURCE_DIR}/scene/Material.cpp"
+	"${SOURCE_DIR}/scene/Model.h"							"${SOURCE_DIR}/scene/Model.cpp"
 
 )
 

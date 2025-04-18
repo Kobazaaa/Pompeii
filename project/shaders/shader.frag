@@ -16,6 +16,7 @@ layout(push_constant) uniform constants
 
 // -- Texture Array --
 layout(set = 1, binding = 0) uniform sampler2D textures[TEXTURE_ARRAY_SIZE];
+layout(set = 2, binding = 0) uniform sampler2D shadowMap;
 
 // -- Input --
 layout(location = 0) in vec3 fragColor;

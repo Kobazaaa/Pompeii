@@ -44,6 +44,13 @@ struct UniformBufferObject
 	alignas(16) glm::mat4 proj;
 	alignas(16) glm::vec3 cam;
 };
+struct LightUBO
+{
+	alignas(16) glm::mat4 model;
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 proj;
+	alignas(16) glm::vec3 cam;
+};
 
 namespace pom
 {
@@ -94,6 +101,8 @@ namespace pom
 		// -- Descriptors
 		DescriptorPool				m_DescriptorPool		{ };
 
+		DescriptorSetLayout			m_LightMapDSL			{ };
+		std::vector<DescriptorSet>	m_LightMapDS			{ };
 		DescriptorSetLayout			m_UniformDSL			{ };
 		std::vector<DescriptorSet>	m_vUniformDS			{ };
 		std::vector<Buffer>			m_vUniformBuffers		{ };
@@ -104,6 +113,17 @@ namespace pom
 		// -- Command --
 		CommandPool					m_CommandPool			{ };
 		SyncManager					m_SyncManager			{ };
+
+		// -- Shadow Pass --
+		RenderPass					m_ShadowPass{ };
+		GraphicsPipelineLayout		m_ShadowPipelineLayout{ };
+		GraphicsPipeline			m_ShadowPipeline{ };
+		std::vector<Image>			m_vShadowMaps{ };
+		Sampler						m_ShadowSampler{ };
+		std::vector<FrameBuffer>	m_vShadowFrameBuffers{ };
+		std::vector<DescriptorSet>	m_vLightDS	{ };
+		std::vector<Buffer>			m_vLightBuffers{ };
+
 
 		//--------------------------------------------------
 		//    Helpers

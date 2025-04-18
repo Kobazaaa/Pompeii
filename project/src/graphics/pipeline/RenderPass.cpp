@@ -84,6 +84,7 @@ pom::RenderPassBuilder& pom::RenderPassBuilder::SetSubpassDepthAttachment(uint32
 }
 
 pom::RenderPassBuilder& pom::RenderPassBuilder::NewDependency()								{ m_vSubPassDependencies.emplace_back(); return *this; }
+pom::RenderPassBuilder& pom::RenderPassBuilder::AddDependencyFlag(VkDependencyFlags flags)	{ m_vSubPassDependencies.back().dependencyFlags = flags; return *this; }
 pom::RenderPassBuilder& pom::RenderPassBuilder::SetSrcSubPass(uint32_t subpass)				{ m_vSubPassDependencies.back().srcSubpass = subpass; return *this; }
 pom::RenderPassBuilder& pom::RenderPassBuilder::SetDstSubPass(uint32_t subpass)				{ m_vSubPassDependencies.back().dstSubpass = subpass; return *this; }
 pom::RenderPassBuilder& pom::RenderPassBuilder::SetSrcMasks(VkPipelineStageFlags stageFlags, VkAccessFlags accessFlags)
