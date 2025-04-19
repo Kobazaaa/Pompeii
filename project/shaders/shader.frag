@@ -25,6 +25,7 @@ layout(location = 2) in vec3 fragTangent;
 layout(location = 3) in vec3 fragBitangent;
 layout(location = 4) in vec2 fragTexCoord;
 layout(location = 5) in vec3 fragViewDir;
+layout(location = 6) in vec4 fragShadowPos;
 
 // -- Output --
 layout(location = 0) out vec4 outColor;
@@ -74,4 +75,10 @@ void main()
 	// -- Opacity --
 	if(pushConstants.opacityIdx < TEXTURE_ARRAY_SIZE)
 		outColor.a = texture(textures[pushConstants.opacityIdx], fragTexCoord).r;
+
+    float shadowDepth = texture(shadowMap, fragShadowPos.xy).r;
+	if(fragShadowPos.z > shadowDepth)
+		outColor.xyz *= vec3(0.5, 0.5, 0.5);
+	else
+		outColor.xyz *= vec3(1, 1, 1);
 }

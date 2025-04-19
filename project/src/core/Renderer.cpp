@@ -34,8 +34,6 @@ void pom::Renderer::Destroy()
 //--------------------------------------------------
 void pom::Renderer::Update()
 {
-	// -- Update UBO --
-	UpdateUniformBuffer(m_CurrentFrame);
 }
 void pom::Renderer::Render()
 {
@@ -232,154 +230,39 @@ void pom::Renderer::InitializeVulkan()
 		LoadModels();
 	}
 
-	// -- Create Render Pass - Requirements - [Device - SwapChain - Depth Buffer]
+	// -- Create Descriptor Pool - Requirements - [Device]
 	{
-		RenderPassBuilder builder{};
-
-		builder
-			.NewSubpass()
-				.SetBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
-				.NewAttachment()
-					.SetFormat(m_SwapChain.GetFormat())
-					.SetSamples(m_Context.physicalDevice.GetMaxSampleCount())
-					.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE)
-					.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
-					.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-					.SetFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-					.AddSubpassColorAttachment(0)
-				.NewAttachment()
-					.SetFormat(m_SwapChain.GetDepthImage().GetFormat())
-					.SetSamples(m_Context.physicalDevice.GetMaxSampleCount())
-					.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE)
-					.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
-					.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-					.SetFinalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-					.SetSubpassDepthAttachment(1)
-				.NewAttachment()
-					.SetFormat(m_SwapChain.GetFormat())
-					.SetSamples(VK_SAMPLE_COUNT_1_BIT)
-					.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE)
-					.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
-					.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-					.SetFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
-					.SetSubpassResolveAttachment(2)
-				.NewDependency()
-					.SetSrcSubPass(VK_SUBPASS_EXTERNAL)
-					.SetDstSubPass(0)
-					.SetSrcMasks(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0)
-					.SetDstMasks(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-						VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-			.Build(m_Context, m_RenderPass);
-		m_Context.deletionQueue.Push([&] { m_RenderPass.Destroy(m_Context); });
+		m_DescriptorPool
+			.SetDebugName("Descriptor Pool (Default)")
+			.SetMaxSets(100)
+			.AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100)
+			.AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100)
+			.Create(m_Context);
+		m_Context.deletionQueue.Push([&] {m_DescriptorPool.Destroy(m_Context); });
 	}
 
-	// -- Create Descriptor Set Layout - Requirements - [Device]
+	// -- Shadow Pass --
 	{
-		DescriptorSetLayoutBuilder builder{};
+		ShadowPassCreateInfo createInfo{};
+		createInfo.extent = glm::vec2(1024, 1024);
+		createInfo.descriptorPool = &m_DescriptorPool;
+		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
 
-		// -- Uniform Buffer Descriptor --
-		builder
-			.SetDebugName("Uniform Buffer DS Layout")
-			.NewLayoutBinding()
-				.SetType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-				.SetShaderStages(VK_SHADER_STAGE_VERTEX_BIT)
-			.Build(m_Context, m_UniformDSL);
-		m_Context.deletionQueue.Push([&] { m_UniformDSL.Destroy(m_Context); });
-
-		// -- Texture Array Descriptor --
-		builder
-			.SetDebugName("Texture Array DS Layout")
-			.NewLayoutBinding()
-				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
-				.SetCount(static_cast<uint32_t>(m_Model.images.size()))
-			.Build(m_Context, m_TextureDSL);
-		m_Context.deletionQueue.Push([&] { m_TextureDSL.Destroy(m_Context); });
-
-		builder
-			.SetDebugName("LightMap")
-			.NewLayoutBinding()
-				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
-			.Build(m_Context, m_LightMapDSL);
-		m_Context.deletionQueue.Push([&] { m_LightMapDSL.Destroy(m_Context); });
+		m_ShadowPass.Initialize(m_Context, createInfo);
+		m_Context.deletionQueue.Push([&] {m_ShadowPass.Destroy(); });
 	}
 
-	// -- Create Graphics Pipeline Layout - Requirements - [Device - Descriptor Set Layout]
+	// -- Forward Pass --
 	{
-		GraphicsPipelineLayoutBuilder builder{};
+		ForwardPassCreateInfo createInfo{};
+		createInfo.shadowPass = &m_ShadowPass;
+		createInfo.descriptorPool = &m_DescriptorPool;
+		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
+		createInfo.model = &m_Model;
+		createInfo.swapChain = &m_SwapChain;
 
-		builder
-			.NewPushConstantRange()
-				.SetPCOffset(0)
-				.SetPCSize(sizeof(MeshPushConstants))
-				.SetPCStageFlags(VK_SHADER_STAGE_FRAGMENT_BIT)
-			.AddLayout(m_UniformDSL)
-			.AddLayout(m_TextureDSL)
-			.AddLayout(m_LightMapDSL)
-			.Build(m_Context, m_PipelineLayout);
-		m_Context.deletionQueue.Push([&] {m_PipelineLayout.Destroy(m_Context); });
-	}
-
-	// -- Create Graphics Pipeline - Requirements - [Pipeline Layout - Shaders - RenderPass]
-	{
-		ShaderLoader shaderLoader{};
-
-		ShaderModule vertShader;
-		ShaderModule fragShader;
-		shaderLoader.Load(m_Context, "shaders/shader.vert.spv", vertShader);
-		shaderLoader.Load(m_Context, "shaders/shader.frag.spv", fragShader);
-
-		GraphicsPipelineBuilder builder{};
-		uint32_t arraySize = static_cast<uint32_t>(m_Model.images.size());
-		builder
-			.SetDebugName("Graphics Pipeline (Default)")
-			.SetPipelineLayout(m_PipelineLayout)
-			.SetRenderPass(m_RenderPass)
-			.AddDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
-			.AddDynamicState(VK_DYNAMIC_STATE_SCISSOR)
-			.AddShader(vertShader, VK_SHADER_STAGE_VERTEX_BIT)
-			.AddShader(fragShader, VK_SHADER_STAGE_FRAGMENT_BIT)
-				.SetShaderSpecialization(0, 0, sizeof(uint32_t), &arraySize)
-			.EnableSampleShading(0.2f)
-			.SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-			.SetCullMode(VK_CULL_MODE_BACK_BIT)
-			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
-			.SetPolygonMode(VK_POLYGON_MODE_FILL)
-			.SetSampleCount(m_Context.physicalDevice.GetMaxSampleCount())
-			.SetDepthTest(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS)
-			.SetVertexBindingDesc(Vertex::GetBindingDescription())
-			.SetVertexAttributeDesc(Vertex::GetAttributeDescriptions())
-			.Build(m_Context, m_GraphicsPipeline);
-		m_Context.deletionQueue.Push([&] { m_GraphicsPipeline.Destroy(m_Context); });
-
-		builder = {};
-
-		builder
-			.SetDebugName("Graphics Pipeline (Transparent)")
-			.SetPipelineLayout(m_PipelineLayout)
-			.SetRenderPass(m_RenderPass)
-			.AddDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
-			.AddDynamicState(VK_DYNAMIC_STATE_SCISSOR)
-			.AddShader(vertShader, VK_SHADER_STAGE_VERTEX_BIT)
-			.AddShader(fragShader, VK_SHADER_STAGE_FRAGMENT_BIT)
-				.SetShaderSpecialization(0, 0, sizeof(uint32_t), &arraySize)
-			.SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-			.SetCullMode(VK_CULL_MODE_NONE)
-			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
-			.SetPolygonMode(VK_POLYGON_MODE_FILL)
-			.SetSampleCount(m_Context.physicalDevice.GetMaxSampleCount())
-			.SetDepthTest(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS)
-			.SetVertexBindingDesc(Vertex::GetBindingDescription())
-			.SetVertexAttributeDesc(Vertex::GetAttributeDescriptions())
-			.EnableBlend()
-				.SetColorBlend(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD)
-				.SetAlphaBlend(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD)
-			.Build(m_Context, m_TransPipeline);
-		m_Context.deletionQueue.Push([&] { m_TransPipeline.Destroy(m_Context); });
-
-		fragShader.Destroy(m_Context);
-		vertShader.Destroy(m_Context);
+		m_ForwardPass.Initialize(m_Context, createInfo);
+		m_Context.deletionQueue.Push([&] {m_ForwardPass.Destroy(); });
 	}
 
 	// -- Create Frame Buffers & MSAA Image - Requirements - [Device - SwapChain - RenderPass]
@@ -387,253 +270,11 @@ void pom::Renderer::InitializeVulkan()
 		CreateFrameBuffers();
 	}
 
-	// -- Create Sampler - Requirements - [Device - Physical Device]
-	{
-		SamplerBuilder builder{};
-		builder
-			.SetFilters(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
-			.SetAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
-			.EnableAnisotropy(m_Context.physicalDevice.GetProperties().limits.maxSamplerAnisotropy)
-			.SetMipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
-			.SetMipLevels(0.f, 0.f, VK_LOD_CLAMP_NONE)
-			.SetBorderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
-			.Build(m_Context, m_TextureSampler);
-
-		m_Context.deletionQueue.Push([&] { m_TextureSampler.Destroy(m_Context); });
-	}
-
-	// -- Create UBO - Requirements - [Device - Allocator - Buffer - Command Pool]
-	{
-		m_vUniformBuffers.resize(m_MaxFramesInFlight);
-		for (size_t i{}; i < m_MaxFramesInFlight; ++i)
-		{
-			BufferAllocator bufferAlloc{};
-			bufferAlloc
-				.SetDebugName("Uniform Buffer (Matrices)")
-				.SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
-				.SetSize(sizeof(UniformBufferObject))
-				.HostAccess(true)
-				.Allocate(m_Context, m_vUniformBuffers[i]);
-		}
-		m_Context.deletionQueue.Push([&] { for (auto& ubo : m_vUniformBuffers) ubo.Destroy(m_Context); });
-	}
-
-	// -- Create Descriptor Pool - Requirements - [Device]
-	{
-		m_DescriptorPool
-			.SetDebugName("Descriptor Pool (Default)")
-			.SetMaxSets(100)																	// Pool can have up to m_MaxFramesInFlight + 1 sets
-			.AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100)									// Pool can have up to m_MaxFramesInFlight UBO's
-			.AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100)	// Pool can have up to m_TextureDSL.GetBindings()[0].descriptorCount Combined Image Samplers (which is the number of textures)
-			.Create(m_Context);
-		m_Context.deletionQueue.Push([&] {m_DescriptorPool.Destroy(m_Context); });
-	}
-
-
-
-
-
-
-
-
-
-
-
-
-	// -- Shadow Pass --
-	{
-		RenderPassBuilder builder{};
-
-		builder
-			.NewSubpass()
-			.SetBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
-			.NewAttachment()
-			.SetFormat(VK_FORMAT_D32_SFLOAT)
-			.SetSamples(VK_SAMPLE_COUNT_1_BIT)
-			.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE)
-			.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
-			.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-			.SetFinalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-			.SetSubpassDepthAttachment(0)
-			.NewDependency()
-			.AddDependencyFlag(VK_DEPENDENCY_BY_REGION_BIT) // TODO try remove
-			.SetSrcSubPass(VK_SUBPASS_EXTERNAL)
-			.SetDstSubPass(0)
-			.SetSrcMasks(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT)
-			.SetDstMasks(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-			.NewDependency()
-			.AddDependencyFlag(VK_DEPENDENCY_BY_REGION_BIT) // TODO try remove
-			.SetSrcSubPass(0)
-			.SetDstSubPass(VK_SUBPASS_EXTERNAL)
-			.SetSrcMasks(VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-			.SetDstMasks(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT)
-			.Build(m_Context, m_ShadowPass);
-		m_Context.deletionQueue.Push([&] { m_ShadowPass.Destroy(m_Context); });
-	}
-
-	// -- Shadow Pipeline Layout --
-	{
-		GraphicsPipelineLayoutBuilder builder{};
-		builder
-			.AddLayout(m_UniformDSL)
-			.Build(m_Context, m_ShadowPipelineLayout);
-		m_Context.deletionQueue.Push([&] {m_ShadowPipelineLayout.Destroy(m_Context); });
-	}
-
-	// -- Shadow Pipeline --
-	{
-		ShaderLoader shaderLoader{};
-
-		ShaderModule vertShader;
-		shaderLoader.Load(m_Context, "shaders/shader.vert.spv", vertShader);
-
-		GraphicsPipelineBuilder builder{};
-		builder
-			.SetDebugName("Graphics Pipeline (Shadow)")
-			.SetPipelineLayout(m_ShadowPipelineLayout)
-			.SetRenderPass(m_ShadowPass)
-			.AddDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
-			.AddDynamicState(VK_DYNAMIC_STATE_SCISSOR)
-			.AddShader(vertShader, VK_SHADER_STAGE_VERTEX_BIT)
-			.SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-			.SetCullMode(VK_CULL_MODE_BACK_BIT)
-			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
-			.SetPolygonMode(VK_POLYGON_MODE_FILL)
-			.SetDepthTest(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS)
-			.SetVertexBindingDesc(Vertex::GetBindingDescription())
-			.SetVertexAttributeDesc(Vertex::GetAttributeDescriptions())
-			.Build(m_Context, m_ShadowPipeline);
-		m_Context.deletionQueue.Push([&] { m_ShadowPipeline.Destroy(m_Context); });
-
-		vertShader.Destroy(m_Context);
-	}
-
-	// -- Shadow Shadow Maps --
-	{
-		m_vShadowMaps.resize(m_SwapChain.GetImageCount());
-		for (Image& image : m_vShadowMaps)
-		{
-			ImageBuilder iBuilder{};
-			iBuilder
-				.SetDebugName("Shadow Map")
-				.SetWidth(1024)
-				.SetHeight(1024)
-				.SetFormat(VK_FORMAT_D32_SFLOAT)
-				.SetSampleCount(VK_SAMPLE_COUNT_1_BIT)
-				.SetTiling(VK_IMAGE_TILING_OPTIMAL)
-				.SetUsageFlags(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
-				.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-				.Build(m_Context, image);
-			image.CreateView(m_Context, VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
-			m_Context.deletionQueue.Push([&] { image.Destroy(m_Context); });
-		}
-	}
-
-	// -- Shadow Sampler --
-	{
-		SamplerBuilder builder{};
-		builder
-			.SetFilters(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
-			.SetAddressMode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
-			.SetBorderColor(VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE)
-			.EnableAnisotropy(m_Context.physicalDevice.GetProperties().limits.maxSamplerAnisotropy)
-			.Build(m_Context, m_ShadowSampler);
-		m_Context.deletionQueue.Push([&] { m_ShadowSampler.Destroy(m_Context); });
-	}
-
-	// -- Shadow FrameBuffers --
-	{
-		for (const Image& image : m_vShadowMaps)
-		{
-			FrameBufferBuilder builder{};
-			builder
-				.SetRenderPass(m_ShadowPass)
-				.AddAttachment(image.GetViewHandle())
-				.SetExtent(1024, 1024)
-				.Build(m_Context, m_vShadowFrameBuffers);
-		}
-		m_Context.deletionQueue.Push([&] { for (auto& framebuffer : m_vShadowFrameBuffers) framebuffer.Destroy(m_Context); m_vShadowFrameBuffers.clear(); });
-	}
-
-	{
-		m_vLightBuffers.resize(m_MaxFramesInFlight);
-		for (size_t i{}; i < m_MaxFramesInFlight; ++i)
-		{
-			BufferAllocator bufferAlloc{};
-			bufferAlloc
-				.SetDebugName("Uniform Buffer (Light)")
-				.SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
-				.SetSize(sizeof(UniformBufferObject))
-				.HostAccess(true)
-				.Allocate(m_Context, m_vLightBuffers[i]);
-		}
-		m_Context.deletionQueue.Push([&] { for (auto& ubo : m_vLightBuffers) ubo.Destroy(m_Context); });
-
-
-		m_vLightDS = m_DescriptorPool.AllocateSets(m_Context, m_UniformDSL, m_MaxFramesInFlight, "Light UBO");
-		// -- Write UBO --
-		DescriptorSetWriter writer{};
-		for (size_t i{}; i < m_MaxFramesInFlight; ++i)
-		{
-			writer
-				.AddBufferInfo(m_vLightBuffers[i], 0, sizeof(UniformBufferObject))
-				.WriteBuffers(m_vLightDS[i], 0)
-				.Execute(m_Context);
-		}
-
-	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	// -- Allocate Descriptor Sets - Requirements - [Device - Descriptor Pool - Descriptor Set Layout - UBO]
-	{
-		m_vUniformDS = m_DescriptorPool.AllocateSets(m_Context, m_UniformDSL, m_MaxFramesInFlight, "Uniform Buffer DS");
-		m_TextureDS = m_DescriptorPool.AllocateSets(m_Context, m_TextureDSL, 1, "Texture Array DS").front();
-		m_LightMapDS = m_DescriptorPool.AllocateSets(m_Context, m_LightMapDSL, m_MaxFramesInFlight, "Texture Array DS");
-
-		// -- Write UBO --
-		DescriptorSetWriter writer{};
-		for (size_t i{}; i < m_MaxFramesInFlight; ++i)
-		{
-			writer
-				.AddBufferInfo(m_vUniformBuffers[i], 0, sizeof(UniformBufferObject))
-				.WriteBuffers(m_vUniformDS[i], 0)
-				.Execute(m_Context);
-
-		}
-
-		// -- Write Textures --
-		for (Image& image : m_Model.images)
-		{
-			writer.AddImageInfo(image, m_TextureSampler);
-		}
-		writer.WriteImages(m_TextureDS, 0).Execute(m_Context);
-	}
-
 	// -- Create Sync Objects - Requirements - [Device]
 	{
 		m_SyncManager.Create(m_Context, m_MaxFramesInFlight);
 		m_Context.deletionQueue.Push([&] {m_SyncManager.Cleanup(m_Context); });
 	}
-
-
-
-
-
-
-
 }
 
 
@@ -688,7 +329,7 @@ void pom::Renderer::CreateFrameBuffers()
 	{
 		FrameBufferBuilder builder{};
 		builder
-			.SetRenderPass(m_RenderPass)
+			.SetRenderPass(m_ForwardPass.GetRenderPass())
 			.AddAttachment(m_MSAAImage.GetViewHandle())
 			.AddAttachment(m_SwapChain.GetDepthImage().GetViewHandle())
 			.AddAttachment(view)
@@ -702,7 +343,7 @@ void pom::Renderer::LoadModels()
 {
 	// -- Load Model - Requirements - []
 	{
-		m_Model.LoadModel("models/sponza.obj");
+		m_Model.LoadModel("models/OutdoorDiorama.obj");
 	}
 
 	// -- Create Vertex & Index Buffer - Requirements - [Device - Allocator - Buffer - Command Pool]
@@ -711,204 +352,19 @@ void pom::Renderer::LoadModels()
 		m_Context.deletionQueue.Push([&] { m_Model.Destroy(); });
 	}
 }
-void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex) const
+void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex)
 {
-	const VkCommandBuffer& vCmdBuffer = commandBuffer.GetHandle();
 	commandBuffer.Begin(0);
 	{
-		VkRenderPassBeginInfo shadowPassInfo{};
-		shadowPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		shadowPassInfo.renderPass = m_ShadowPass.GetHandle();
-		shadowPassInfo.framebuffer = m_vShadowFrameBuffers[imageIndex].GetHandle();
-		shadowPassInfo.renderArea.offset = { 0, 0 };
-		shadowPassInfo.renderArea.extent = {1024, 1024};
+		// -- Record Shadow Pass --
+		m_ShadowPass.Record(m_Context, commandBuffer, imageIndex, m_Model);
 
-		VkClearValue clearValue{};
-		clearValue.depthStencil = { 1.0f, 0 };
+		// -- Sync --
+		// -- Sync --
+		// -- Sync --
 
-		shadowPassInfo.clearValueCount = 1;
-		shadowPassInfo.pClearValues = &clearValue;
-
-		Debugger::BeginDebugLabel(commandBuffer, "Shadow Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
-		vkCmdBeginRenderPass(vCmdBuffer, &shadowPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-		{
-			// -- Set Dynamic Viewport --
-			VkViewport viewport;
-			viewport.x = 0.0f;
-			viewport.y = 0.0f;
-			viewport.width = 1024;
-			viewport.height = 1024;
-			viewport.minDepth = 0.0f;
-			viewport.maxDepth = 1.0f;
-			vkCmdSetViewport(vCmdBuffer, 0, 1, &viewport);
-			Debugger::InsertDebugLabel(commandBuffer, "Bind Viewport", glm::vec4(0.2f, 1.f, 0.2f, 1.f));
-
-			// -- Set Dynamic Scissors --
-			VkRect2D scissor;
-			scissor.offset = { .x = 0, .y = 0 };
-			scissor.extent = {1024, 1024};
-			vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
-			Debugger::InsertDebugLabel(commandBuffer, "Bind Scissor", glm::vec4(1.f, 1.f, 0.2f, 1.f));
-
-			// -- Bind Descriptor Sets --
-			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_ShadowPipelineLayout.GetHandle(), 0, 1, &m_vLightDS[m_CurrentFrame].GetHandle(), 0, nullptr);
-			Debugger::InsertDebugLabel(commandBuffer, "Bind Uniform Buffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
-
-
-			// -- Bind Model Data --
-			m_Model.Bind(commandBuffer);
-
-			// -- Draw Opaque --
-			vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_ShadowPipeline.GetHandle());
-			Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Shadow)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
-			for (const Mesh& mesh : m_Model.opaqueMeshes)
-			{
-				vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
-				Debugger::InsertDebugLabel(commandBuffer, "Draw Opaque Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
-			}
-		}
-		vkCmdEndRenderPass(vCmdBuffer);
-
-		VkImageMemoryBarrier2 barrier{};
-		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-		barrier.pNext = nullptr;
-
-		barrier.image = m_vShadowMaps[imageIndex].GetHandle();
-		barrier.oldLayout = m_vShadowMaps[imageIndex].GetCurrentLayout();
-		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.srcStageMask = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
-		barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
-
-		VkDependencyInfo dependencyInfo{};
-		dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-		dependencyInfo.dependencyFlags = 0;
-		dependencyInfo.pNext = nullptr;
-		dependencyInfo.memoryBarrierCount = 0;
-		dependencyInfo.pMemoryBarriers = nullptr;
-		dependencyInfo.bufferMemoryBarrierCount = 0;
-		dependencyInfo.pBufferMemoryBarriers = nullptr;
-		dependencyInfo.imageMemoryBarrierCount = 1;
-		dependencyInfo.pImageMemoryBarriers = &barrier;
-
-		vkCmdPipelineBarrier2(vCmdBuffer, &dependencyInfo);
-
-
-
-
-
-		VkDescriptorImageInfo imageInfo{};
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = m_vShadowMaps[imageIndex].GetViewHandle();
-		imageInfo.sampler = m_ShadowSampler.GetHandle();
-
-
-		VkWriteDescriptorSet write{};
-		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		write.dstSet = m_LightMapDS[imageIndex].GetHandle();
-		write.dstBinding = 0;
-		write.dstArrayElement = 0;
-		write.descriptorType = m_LightMapDS[imageIndex].GetLayout().GetBindings()[0].descriptorType;
-		write.descriptorCount = m_LightMapDS[imageIndex].GetLayout().GetBindings()[0].descriptorCount;
-		write.pImageInfo = &imageInfo;
-		write.pBufferInfo = nullptr;
-		write.pTexelBufferView = nullptr;
-
-
-		vkUpdateDescriptorSets(m_Context.device.GetHandle(), static_cast<uint32_t>(1), &write, 0, nullptr);
-
-		VkRenderPassBeginInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = m_RenderPass.GetHandle();
-		renderPassInfo.framebuffer = m_vFrameBuffers[imageIndex].GetHandle();
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = m_SwapChain.GetExtent();
-
-		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { {0.53f, 0.81f, 0.92f, 1.0f} };
-		clearValues[1].depthStencil = { 1.0f, 0 };
-
-		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		renderPassInfo.pClearValues = clearValues.data();
-
-		Debugger::BeginDebugLabel(commandBuffer, "Render Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
-		vkCmdBeginRenderPass(vCmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-		{
-			// -- Set Dynamic Viewport --
-			VkViewport viewport;
-			viewport.x = 0.0f;
-			viewport.y = 0.0f;
-			viewport.width = static_cast<float>(m_SwapChain.GetExtent().width);
-			viewport.height = static_cast<float>(m_SwapChain.GetExtent().height);
-			viewport.minDepth = 0.0f;
-			viewport.maxDepth = 1.0f;
-			vkCmdSetViewport(vCmdBuffer, 0, 1, &viewport);
-			Debugger::InsertDebugLabel(commandBuffer, "Bind Viewport", glm::vec4(0.2f, 1.f, 0.2f, 1.f));
-
-			// -- Set Dynamic Scissors --
-			VkRect2D scissor;
-			scissor.offset = { .x = 0, .y = 0};
-			scissor.extent = m_SwapChain.GetExtent();
-			vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
-			Debugger::InsertDebugLabel(commandBuffer, "Bind Scissor", glm::vec4(1.f, 1.f, 0.2f, 1.f));
-
-			// -- Bind Descriptor Sets --
-			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vUniformDS[m_CurrentFrame].GetHandle(), 0, nullptr);
-			Debugger::InsertDebugLabel(commandBuffer, "Bind Uniform Buffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
-
-			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 1, 1, &m_TextureDS.GetHandle(), 0, nullptr);
-			Debugger::InsertDebugLabel(commandBuffer, "Bind Textures", glm::vec4(0.f, 1.f, 1.f, 1.f));
-
-			vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 2, 1, &m_LightMapDS[m_CurrentFrame].GetHandle(), 0, nullptr);
-			Debugger::InsertDebugLabel(commandBuffer, "Bind Textures", glm::vec4(0.f, 1.f, 1.f, 1.f));
-
-			// -- Bind Model Data --
-			m_Model.Bind(commandBuffer);
-
-			// -- Draw Opaque --
-			vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline.GetHandle());
-			Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Default)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
-			m_Model.DrawOpaque(commandBuffer, m_PipelineLayout);
-
-			// -- Draw Transparent --
-			vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_TransPipeline.GetHandle());
-			Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Transparent)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
-			m_Model.DrawTransparent(commandBuffer, m_PipelineLayout);
-
-		}
-		vkCmdEndRenderPass(vCmdBuffer);
-		Debugger::EndDebugLabel(commandBuffer);
+		// -- Record Forward Pass --
+		m_ForwardPass.Record(m_Context, m_vFrameBuffers[imageIndex], m_SwapChain, commandBuffer, imageIndex, m_Model, m_pCamera);
 	}
 	commandBuffer.End();
-}
-void pom::Renderer::UpdateUniformBuffer(uint32_t currentImage) const
-{
-	UniformBufferObject ubo;
-	//ubo.model = glm::scale(glm::rotate(glm::mat4(1.0f), Timer::GetTotalTimeSeconds() * glm::radians(90.f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.25, 0.25, 0.25)) ;
-	ubo.model = glm::mat4(1) ;
-	ubo.view = m_pCamera->GetViewMatrix();
-	ubo.proj = m_pCamera->GetProjectionMatrix();
-	ubo.cam = m_pCamera->GetPosition();
-
-	vmaCopyMemoryToAllocation(m_Context.allocator, &ubo, m_vUniformBuffers[currentImage].GetMemoryHandle(), 0, sizeof(ubo));
-
-	UniformBufferObject light;
-	//ubo.model = glm::scale(glm::rotate(glm::mat4(1.0f), Timer::GetTotalTimeSeconds() * glm::radians(90.f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.25, 0.25, 0.25)) ;
-	light.model = glm::mat4(1);
-	light.view = lookAtLH(glm::vec3(-1000, 1000, -1000), glm::vec3(0), glm::vec3(0.f, 1.f, 0.f));
-	light.proj = glm::orthoLH(-2048.f, 2048.f, -2048.f, 2048.f, 0.1f, 100000.f);
-	light.cam = m_pCamera->GetPosition();
-
-	vmaCopyMemoryToAllocation(m_Context.allocator, &light, m_vLightBuffers[currentImage].GetMemoryHandle(), 0, sizeof(light));
 }

@@ -6,6 +6,7 @@
 #include "CommandPool.h"
 #include "Image.h"
 #include "Buffer.h"
+#include "Context.h"
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -15,7 +16,7 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::CommandPool& pom::CommandPool::Create(const Context& context)
+pom::CommandPool& pom::CommandPool::Create(Context& context)
 {
 	pom::QueueFamilyIndices queueFamilyIndices = context.physicalDevice.GetQueueFamilies();
 
@@ -27,12 +28,12 @@ pom::CommandPool& pom::CommandPool::Create(const Context& context)
 	if (vkCreateCommandPool(context.device.GetHandle(), &poolInfo, nullptr, &m_CommandPool) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Command Pool!");
 
-	m_Context = context;
+	m_Context = &context;
 	return *this;
 }
 void pom::CommandPool::Destroy() const
 {
-	vkDestroyCommandPool(m_Context.device.GetHandle(), m_CommandPool, nullptr);
+	vkDestroyCommandPool(m_Context->device.GetHandle(), m_CommandPool, nullptr);
 }
 
 
@@ -57,7 +58,7 @@ pom::CommandBuffer& pom::CommandPool::AllocateCmdBuffers(uint32_t count, VkComma
 	for (uint32_t index{}; index < count; ++index)
 	{
 		VkCommandBuffer cmdBuffer;
-		if (vkAllocateCommandBuffers(m_Context.device.GetHandle(), &allocInfo, &cmdBuffer) != VK_SUCCESS)
+		if (vkAllocateCommandBuffers(m_Context->device.GetHandle(), &allocInfo, &cmdBuffer) != VK_SUCCESS)
 			throw std::runtime_error("Failed to allocate command buffer!");
 
 		m_vCommandBuffers.emplace_back();
@@ -74,7 +75,7 @@ void pom::CommandPool::GenerateMipmaps(Image& image, uint32_t texW, uint32_t tex
 {
 	// -- Support --
 	VkFormat imageFormat = image.GetFormat();
-	VkFormatProperties formatProperties = m_Context.physicalDevice.GetFormatProperties(imageFormat);
+	VkFormatProperties formatProperties = m_Context->physicalDevice.GetFormatProperties(imageFormat);
 
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
 		throw std::runtime_error("texture image format does not support linear blitting!");
@@ -248,8 +249,8 @@ void pom::CommandPool::GenerateMipmaps(Image& image, uint32_t texW, uint32_t tex
 		image.m_CurrentLayout = finalLayout;
 	}
 	cmd.End();
-	cmd.Submit(m_Context.device.GetGraphicQueue(), true);
-	cmd.Free(m_Context.device);
+	cmd.Submit(m_Context->device.GetGraphicQueue(), true);
+	cmd.Free(m_Context->device);
 }
 void pom::CommandPool::TransitionImageLayout(Image& image, VkImageLayout newLayout,
 											uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)
@@ -330,8 +331,8 @@ void pom::CommandPool::TransitionImageLayout(Image& image, VkImageLayout newLayo
 		image.m_CurrentLayout = newLayout;
 	}
 	cmd.End();
-	cmd.Submit(m_Context.device.GetGraphicQueue(), true);
-	cmd.Free(m_Context.device);
+	cmd.Submit(m_Context->device.GetGraphicQueue(), true);
+	cmd.Free(m_Context->device);
 }
 void pom::CommandPool::CopyBufferToBuffer(const Buffer& srcBuffer, const Buffer& dstBuffer, VkDeviceSize size)
 {
@@ -345,8 +346,8 @@ void pom::CommandPool::CopyBufferToBuffer(const Buffer& srcBuffer, const Buffer&
 		vkCmdCopyBuffer(cmd.GetHandle(), srcBuffer.GetHandle(), dstBuffer.GetHandle(), 1, &copyRegion);
 	}
 	cmd.End();
-	cmd.Submit(m_Context.device.GetGraphicQueue(), true);
-	cmd.Free(m_Context.device);
+	cmd.Submit(m_Context->device.GetGraphicQueue(), true);
+	cmd.Free(m_Context->device);
 }
 void pom::CommandPool::CopyBufferToImage(const Buffer& buffer, const Image& image, VkExtent3D extent,
 										uint32_t mip, uint32_t baseLayer, uint32_t layerCount)
@@ -368,6 +369,6 @@ void pom::CommandPool::CopyBufferToImage(const Buffer& buffer, const Image& imag
 		vkCmdCopyBufferToImage(cmd.GetHandle(), buffer.GetHandle(), image.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 	}
 	cmd.End();
-	cmd.Submit(m_Context.device.GetGraphicQueue(), true);
-	cmd.Free(m_Context.device);
+	cmd.Submit(m_Context->device.GetGraphicQueue(), true);
+	cmd.Free(m_Context->device);
 }

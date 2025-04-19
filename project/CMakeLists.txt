@@ -36,6 +36,9 @@ set(SOURCES
 	"${SOURCE_DIR}/graphics/memory/Image.h"					"${SOURCE_DIR}/graphics/memory/Image.cpp"
 	"${SOURCE_DIR}/graphics/memory/Sampler.h"				"${SOURCE_DIR}/graphics/memory/Sampler.cpp"
 	"${SOURCE_DIR}/graphics/memory/SyncManager.h"			"${SOURCE_DIR}/graphics/memory/SyncManager.cpp"
+	 # graphics/passes
+	"${SOURCE_DIR}/graphics/passes/ForwardPass.h"			"${SOURCE_DIR}/graphics/passes/ForwardPass.cpp"
+	"${SOURCE_DIR}/graphics/passes/ShadowPass.h"			"${SOURCE_DIR}/graphics/passes/ShadowPass.cpp"
 	 # graphics/pipeline
 	"${SOURCE_DIR}/graphics/pipeline/DescriptorPool.h"		"${SOURCE_DIR}/graphics/pipeline/DescriptorPool.cpp"
 	"${SOURCE_DIR}/graphics/pipeline/DescriptorSet.h"		"${SOURCE_DIR}/graphics/pipeline/DescriptorSet.cpp"
@@ -71,6 +74,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"${SOURCE_DIR}/core"
 	"${SOURCE_DIR}/graphics"
 	"${SOURCE_DIR}/graphics/memory"
+	"${SOURCE_DIR}/graphics/passes"
 	"${SOURCE_DIR}/graphics/pipeline"
 	"${SOURCE_DIR}/helper"
 	"${SOURCE_DIR}/presentation"

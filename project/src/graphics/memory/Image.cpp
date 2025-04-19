@@ -68,7 +68,6 @@ VkFormat pom::Image::GetFormat()				const		{ return m_ImageInfo.format; }
 VkImageLayout pom::Image::GetCurrentLayout()	const		{ return m_CurrentLayout; }
 bool pom::Image::HasStencilComponent()			const		{ return m_ImageInfo.format == VK_FORMAT_D32_SFLOAT_S8_UINT || m_ImageInfo.format == VK_FORMAT_D24_UNORM_S8_UINT; }
 
-
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  ImageBuilder	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

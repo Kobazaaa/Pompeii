@@ -6,7 +6,8 @@ layout(set = 0, binding = 0) uniform UniformBufferObject
 	mat4 model;
 	mat4 view;
 	mat4 proj;
-	vec3 cam;
+	mat4 viewL;
+	mat4 projL;
 } ubo;
 
 
@@ -25,6 +26,7 @@ layout(location = 2) out vec3 fragTangent;
 layout(location = 3) out vec3 fragBitangent;
 layout(location = 4) out vec2 fragTexCoord;
 layout(location = 5) out vec3 fragViewDir;
+layout(location = 6) out vec4 fragShadowPos;
 
 // -- Shader --
 void main()
@@ -35,5 +37,9 @@ void main()
 	fragTangent = normalize(mat3(ubo.model) * inTangent);
 	fragBitangent = normalize(mat3(ubo.model) * inBitangent);
 	fragTexCoord = inTexCoord;
-	fragViewDir = normalize(vec3(ubo.model * vec4(inPosition, 1.0)) - ubo.cam);
+	fragViewDir = normalize(vec3(ubo.model * vec4(inPosition, 1.0)) - inverse(ubo.view)[3].xyz);
+
+	vec4 shadowPos = ubo.projL * ubo.viewL * ubo.model * vec4(inPosition, 1.0);
+	shadowPos.y = 1 - shadowPos.y;
+	fragShadowPos = shadowPos;
 }

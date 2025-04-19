@@ -114,7 +114,7 @@ namespace pom
 		DescriptorSetWriter& AddBufferInfo(const Buffer& buffer, uint32_t offset, uint32_t range);
 		DescriptorSetWriter& WriteBuffers(const DescriptorSet& set, uint32_t binding);
 
-		DescriptorSetWriter& AddImageInfo(const Image& image, const Sampler& sampler);
+		DescriptorSetWriter& AddImageInfo(const Image& image, VkImageLayout layout, const Sampler& sampler);
 		DescriptorSetWriter& WriteImages(const DescriptorSet& set, uint32_t binding);
 
 		void Execute(const Context& context);

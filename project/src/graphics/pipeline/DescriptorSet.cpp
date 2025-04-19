@@ -121,10 +121,10 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteBuffers(const Descripto
 	return *this;
 }
 
-pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddImageInfo(const Image& image, const Sampler& sampler)
+pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddImageInfo(const Image& image, VkImageLayout layout, const Sampler& sampler)
 {
 	VkDescriptorImageInfo imageInfo{};
-	imageInfo.imageLayout = image.GetCurrentLayout();
+	imageInfo.imageLayout = layout;
 	imageInfo.imageView = image.GetViewHandle();
 	imageInfo.sampler = sampler.GetHandle();
 	m_vImageInfos.push_back(imageInfo);

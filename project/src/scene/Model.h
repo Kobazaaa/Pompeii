@@ -19,6 +19,7 @@
 #include "Material.h"
 #include "Buffer.h"
 #include "Image.h"
+#include "DeletionQueue.h"
 
 // -- Forward Declarations --
 struct aiNode;

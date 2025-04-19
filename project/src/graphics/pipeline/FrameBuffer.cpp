@@ -20,8 +20,8 @@ void pom::FrameBuffer::Destroy(const Context& context) const { vkDestroyFramebuf
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkFramebuffer& pom::FrameBuffer::GetHandle() const { return m_Buffer; }
-
+const VkFramebuffer& pom::FrameBuffer::GetHandle()	const { return m_Buffer; }
+VkExtent2D pom::FrameBuffer::GetExtent()			const {	return m_Extent; }
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -70,6 +70,8 @@ void pom::FrameBufferBuilder::Build(const Context& context, FrameBuffer& frameBu
 {
 	if (vkCreateFramebuffer(context.device.GetHandle(), &m_CreateInfo, nullptr, &frameBuffer.m_Buffer) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Framebuffer!");
+
+	frameBuffer.m_Extent = { .width = m_CreateInfo.width, .height = m_CreateInfo.height };
 }
 
 void pom::FrameBufferBuilder::Build(const Context& context, std::vector<FrameBuffer>& frameBuffers) const

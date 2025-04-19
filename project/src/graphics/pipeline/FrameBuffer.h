@@ -34,9 +34,12 @@ namespace pom
 		//    Accessors & Mutators
 		//--------------------------------------------------
 		const VkFramebuffer& GetHandle() const;
+		VkExtent2D GetExtent() const;
 
 	private:
 		VkFramebuffer m_Buffer;
+		VkExtent2D m_Extent;
+
 		friend class FrameBufferBuilder;
 	};
 

@@ -8,12 +8,12 @@
 #include <vector>
 
 // -- Pompeii Includes --
-#include "Context.h"
 #include "CommandBuffer.h"
 
 // -- Forward Declarations --
 namespace pom
 {
+	struct Context;
 	class Buffer;
 	class Image;
 }
@@ -31,7 +31,7 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		CommandPool() = default;
-		CommandPool& Create(const Context& context);
+		CommandPool& Create(Context& context);
 		void Destroy() const;
 
 
@@ -56,7 +56,7 @@ namespace pom
 	private:
 		VkCommandPool				m_CommandPool		{ VK_NULL_HANDLE};
 		std::vector<CommandBuffer>	m_vCommandBuffers	{ };
-		Context						m_Context			{ };
+		Context*					m_Context			{ };
 	};
 }
 
