@@ -53,7 +53,7 @@ pom::GraphicsPipelineLayoutBuilder& pom::GraphicsPipelineLayoutBuilder::NewPushC
 	m_vPushConstantRanges.back().offset = 0;
 	return *this;
 }
-pom::GraphicsPipelineLayoutBuilder& pom::GraphicsPipelineLayoutBuilder::SetPCStageFlags(VkPipelineStageFlags flags) { m_vPushConstantRanges.back().stageFlags = flags; return *this; }
+pom::GraphicsPipelineLayoutBuilder& pom::GraphicsPipelineLayoutBuilder::SetPCStageFlags(VkShaderStageFlags flags) { m_vPushConstantRanges.back().stageFlags = flags; return *this; }
 pom::GraphicsPipelineLayoutBuilder& pom::GraphicsPipelineLayoutBuilder::SetPCOffset(uint32_t offset) { m_vPushConstantRanges.back().offset = offset; return *this; }
 pom::GraphicsPipelineLayoutBuilder& pom::GraphicsPipelineLayoutBuilder::SetPCSize(uint32_t size) { m_vPushConstantRanges.back().size = size; return *this; }
 

@@ -17,16 +17,6 @@
 namespace pom
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  Shader Infos	
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	struct LightData
-	{
-		glm::mat4 model;
-		glm::mat4 view;
-		glm::mat4 proj;
-	};
-
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Create Info	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	struct ShadowPassCreateInfo
@@ -55,6 +45,19 @@ namespace pom
 		//--------------------------------------------------
 		const Sampler& GetSampler() const;
 		const Image& GetMap(uint32_t idx) const;
+
+		//--------------------------------------------------
+		//    Shader Infos
+		//--------------------------------------------------
+		struct alignas(16) LightDataVS
+		{
+			glm::mat4 view;
+			glm::mat4 proj;
+		};
+		struct PCModelDataVS
+		{
+			glm::mat4 model;
+		};
 
 	private:
 		// -- Pass --

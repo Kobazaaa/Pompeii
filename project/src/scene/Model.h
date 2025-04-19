@@ -37,22 +37,6 @@ namespace pom
 namespace pom
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  Model Push Constants	
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	struct MeshPushConstants
-	{
-		// -- Textures --
-		uint32_t diffuseIdx;
-		uint32_t opacityIdx;
-		uint32_t specularIdx;
-		uint32_t shininessIdx;
-		uint32_t heightIdx;
-
-		// -- Data --
-		float exp;
-	};
-
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Vertex	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	struct Vertex
@@ -84,6 +68,7 @@ namespace pom
 
 		Material material{};
 
+		glm::mat4 matrix = glm::mat4(1);
 		std::string name;
 	};
 
@@ -103,8 +88,6 @@ namespace pom
 		//    Commands
 		//--------------------------------------------------
 		void Bind(CommandBuffer& cmdBuffer) const;
-		void DrawOpaque(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pipelineLayout) const;
-		void DrawTransparent(CommandBuffer& cmdBuffer, const GraphicsPipelineLayout& pipelineLayout) const;
 
 
 		//--------------------------------------------------

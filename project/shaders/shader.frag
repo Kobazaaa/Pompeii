@@ -6,6 +6,7 @@ layout(constant_id = 0) const uint TEXTURE_ARRAY_SIZE = 1;
 // -- Texture Array Index --
 layout(push_constant) uniform constants
 {
+	layout(offset = 64) 
 	uint diffuseIdx;
 	uint opacityIdx;
 	uint specularIdx;

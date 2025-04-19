@@ -1,15 +1,19 @@
 #version 450
 
-// -- UBO --
-layout(set = 0, binding = 0) uniform UniformBufferObject
+// -- Matrices --
+layout(set = 0, binding = 0) uniform MatrixUBO
 {
-	mat4 model;
 	mat4 view;
 	mat4 proj;
 	mat4 viewL;
 	mat4 projL;
 } ubo;
 
+// -- Model Data --
+layout(push_constant) uniform constants
+{
+	mat4 model;
+} modelData;
 
 // -- Input --
 layout(location = 0) in vec3 inPosition;
@@ -31,15 +35,15 @@ layout(location = 6) out vec4 fragShadowPos;
 // -- Shader --
 void main()
 {
-    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
+    gl_Position = ubo.proj * ubo.view * modelData.model * vec4(inPosition, 1.0);
 	fragColor = inColor;
-	fragNormal = normalize(mat3(ubo.model) * inNormal);
-	fragTangent = normalize(mat3(ubo.model) * inTangent);
-	fragBitangent = normalize(mat3(ubo.model) * inBitangent);
+	fragNormal = normalize(mat3(modelData.model) * inNormal);
+	fragTangent = normalize(mat3(modelData.model) * inTangent);
+	fragBitangent = normalize(mat3(modelData.model) * inBitangent);
 	fragTexCoord = inTexCoord;
-	fragViewDir = normalize(vec3(ubo.model * vec4(inPosition, 1.0)) - inverse(ubo.view)[3].xyz);
+	fragViewDir = normalize(vec3(modelData.model * vec4(inPosition, 1.0)) - inverse(ubo.view)[3].xyz);
 
-	vec4 shadowPos = ubo.projL * ubo.viewL * ubo.model * vec4(inPosition, 1.0);
+	vec4 shadowPos = ubo.projL * ubo.viewL * modelData.model * vec4(inPosition, 1.0);
 	shadowPos.y = 1 - shadowPos.y;
 	fragShadowPos = shadowPos;
 }

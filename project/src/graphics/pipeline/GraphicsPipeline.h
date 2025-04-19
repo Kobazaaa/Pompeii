@@ -60,7 +60,7 @@ namespace pom
 		//? Optional
 		GraphicsPipelineLayoutBuilder& NewPushConstantRange();
 		//! REQUIRED IF PC
-		GraphicsPipelineLayoutBuilder& SetPCStageFlags(VkPipelineStageFlags flags);
+		GraphicsPipelineLayoutBuilder& SetPCStageFlags(VkShaderStageFlags flags);
 		// If not called, default of 0 assumed
 		GraphicsPipelineLayoutBuilder& SetPCOffset(uint32_t offset);
 		//! REQUIRED IF PC

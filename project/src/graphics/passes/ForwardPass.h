@@ -26,18 +26,6 @@ namespace pom
 namespace pom
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  Shader Infos	
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	struct UniformBufferObject
-	{
-		alignas(16) glm::mat4 model;
-		alignas(16) glm::mat4 view;
-		alignas(16) glm::mat4 proj;
-		alignas(16) glm::mat4 viewL;
-		alignas(16) glm::mat4 projL;
-	};
-
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Create Info	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	struct ForwardPassCreateInfo
@@ -67,6 +55,35 @@ namespace pom
 		//    Accessors & Mutators
 		//--------------------------------------------------
 		const RenderPass& GetRenderPass() const;
+
+
+		//--------------------------------------------------
+		//    Shader Infos
+		//--------------------------------------------------
+		struct alignas(16) UniformBufferVS
+		{
+			glm::mat4 view;
+			glm::mat4 proj;
+			glm::mat4 viewL;
+			glm::mat4 projL;
+		};
+		struct PCModelDataVS
+		{
+			glm::mat4 model;
+		};
+
+		struct PCMaterialDataFS
+		{
+			// -- Textures --
+			uint32_t diffuseIdx;
+			uint32_t opacityIdx;
+			uint32_t specularIdx;
+			uint32_t shininessIdx;
+			uint32_t heightIdx;
+
+			// -- Data --
+			float expo;
+		};
 
 	private:
 		// -- Pass --

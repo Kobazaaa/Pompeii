@@ -1,5 +1,6 @@
 // -- Standard Library --
 #include <array>
+#include <iostream>
 
 // -- Pompeii Includes --
 #include "ForwardPass.h"
@@ -96,7 +97,11 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 		builder
 			.NewPushConstantRange()
 				.SetPCOffset(0)
-				.SetPCSize(sizeof(MeshPushConstants))
+				.SetPCSize(sizeof(PCModelDataVS))
+				.SetPCStageFlags(VK_SHADER_STAGE_VERTEX_BIT)
+			.NewPushConstantRange()
+				.SetPCOffset(sizeof(PCModelDataVS))
+				.SetPCSize(sizeof(PCMaterialDataFS))
 				.SetPCStageFlags(VK_SHADER_STAGE_FRAGMENT_BIT)
 			.AddLayout(m_UniformDSL)
 			.AddLayout(m_TextureDSL)
@@ -189,7 +194,7 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 			bufferAlloc
 				.SetDebugName("Uniform Buffer (Matrices)")
 				.SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
-				.SetSize(sizeof(UniformBufferObject))
+				.SetSize(sizeof(UniformBufferVS))
 				.HostAccess(true)
 				.Allocate(context, m_vUniformBuffers[i]);
 		}
@@ -207,7 +212,7 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 		for (size_t i{}; i < createInfo.maxFramesInFlight; ++i)
 		{
 			writer
-				.AddBufferInfo(m_vUniformBuffers[i], 0, sizeof(UniformBufferObject))
+				.AddBufferInfo(m_vUniformBuffers[i], 0, sizeof(UniformBufferVS))
 				.WriteBuffers(m_vUniformDS[i], 0)
 				.Execute(context);
 
@@ -234,16 +239,13 @@ void pom::ForwardPass::Destroy()
 
 void pom::ForwardPass::Record(const Context& context, const FrameBuffer& fb, const SwapChain& sc, CommandBuffer& commandBuffer, uint32_t imageIndex, const Model& model, Camera* pCamera)
 {
-	UniformBufferObject ubo;
-	//ubo.model = glm::scale(glm::rotate(glm::mat4(1.0f), Timer::GetTotalTimeSeconds() * glm::radians(90.f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.25, 0.25, 0.25)) ;
-	ubo.model = glm::mat4(1);
+	UniformBufferVS ubo;
 	ubo.view = pCamera->GetViewMatrix();
 	ubo.proj = pCamera->GetProjectionMatrix();
 	ubo.viewL = lookAtLH(glm::vec3(-1000, 1000, -1000), glm::vec3(0), glm::vec3(0.f, 1.f, 0.f));
 	ubo.projL = glm::orthoLH(-2048.f, 2048.f, -2048.f, 2048.f, 0.1f, 3'000.f);
 
 	vmaCopyMemoryToAllocation(context.allocator, &ubo, m_vUniformBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(ubo));
-
 
 	const VkCommandBuffer& vCmdBuffer = commandBuffer.GetHandle();
 	VkRenderPassBeginInfo renderPassInfo{};
@@ -297,12 +299,64 @@ void pom::ForwardPass::Record(const Context& context, const FrameBuffer& fb, con
 		// -- Draw Opaque --
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Default)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_OpaquePipeline.GetHandle());
-		model.DrawOpaque(commandBuffer, m_DefaultPipelineLayout);
+		for (const Mesh& mesh : model.opaqueMeshes)
+		{
+			// -- Bind Push Constants --
+			Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
+			PCModelDataVS pcvs
+			{
+				.model = mesh.matrix
+			};
+			vkCmdPushConstants(vCmdBuffer, m_DefaultPipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+			                   sizeof(PCModelDataVS), &pcvs);
+
+			PCMaterialDataFS pcfs
+			{
+				.diffuseIdx = mesh.material.diffuseIdx,
+				.opacityIdx = mesh.material.opacityIdx,
+				.specularIdx = mesh.material.specularIdx,
+				.shininessIdx = mesh.material.shininessIdx,
+				.heightIdx = mesh.material.heightIdx,
+				.expo = mesh.material.exp
+			};
+			vkCmdPushConstants(vCmdBuffer, m_DefaultPipelineLayout.GetHandle(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(PCModelDataVS),
+			                   sizeof(PCMaterialDataFS), &pcfs);
+
+			// -- Drawing Time! --
+			vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
+			Debugger::InsertDebugLabel(commandBuffer, "Draw Opaque Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
+		}
 
 		// -- Draw Transparent --
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Transparent)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_TransparentPipeline.GetHandle());
-		model.DrawTransparent(commandBuffer, m_DefaultPipelineLayout);
+		for (const Mesh& mesh : model.transparentMeshes)
+		{
+			// -- Bind Push Constants --
+			Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
+			PCModelDataVS pcvs
+			{
+				.model = mesh.matrix
+			};
+			vkCmdPushConstants(vCmdBuffer, m_DefaultPipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+				sizeof(PCModelDataVS), &pcvs);
+
+			PCMaterialDataFS pcfs
+			{
+				.diffuseIdx = mesh.material.diffuseIdx,
+				.opacityIdx = mesh.material.opacityIdx,
+				.specularIdx = mesh.material.specularIdx,
+				.shininessIdx = mesh.material.shininessIdx,
+				.heightIdx = mesh.material.heightIdx,
+				.expo = mesh.material.exp
+			};
+			vkCmdPushConstants(vCmdBuffer, m_DefaultPipelineLayout.GetHandle(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(PCModelDataVS),
+				sizeof(PCMaterialDataFS), &pcfs);
+
+			// -- Drawing Time! --
+			vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
+			Debugger::InsertDebugLabel(commandBuffer, "Draw Transparent Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
+		}
 	}
 	vkCmdEndRenderPass(vCmdBuffer);
 	Debugger::EndDebugLabel(commandBuffer);

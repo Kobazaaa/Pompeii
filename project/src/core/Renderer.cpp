@@ -343,7 +343,7 @@ void pom::Renderer::LoadModels()
 {
 	// -- Load Model - Requirements - []
 	{
-		m_Model.LoadModel("models/OutdoorDiorama.obj");
+		m_Model.LoadModel("models/sponza.obj");
 	}
 
 	// -- Create Vertex & Index Buffer - Requirements - [Device - Allocator - Buffer - Command Pool]

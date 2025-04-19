@@ -54,6 +54,10 @@ void pom::ShadowPass::Initialize(const Context& context, const ShadowPassCreateI
 	{
 		GraphicsPipelineLayoutBuilder builder{};
 		builder
+			.NewPushConstantRange()
+				.SetPCOffset(0)
+				.SetPCSize(sizeof(PCModelDataVS))
+				.SetPCStageFlags(VK_SHADER_STAGE_VERTEX_BIT)
 			.AddLayout(m_LightDataDSL)
 			.Build(context, m_ShadowPipelineLayout);
 		m_DeletionQueue.Push([&] {m_ShadowPipelineLayout.Destroy(context); });
@@ -142,7 +146,7 @@ void pom::ShadowPass::Initialize(const Context& context, const ShadowPassCreateI
 			bufferAlloc
 				.SetDebugName("Light UBO")
 				.SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
-				.SetSize(sizeof(LightData))
+				.SetSize(sizeof(LightDataVS))
 				.HostAccess(true)
 				.Allocate(context, m_vLightDataBuffers[i]);
 		}
@@ -154,7 +158,7 @@ void pom::ShadowPass::Initialize(const Context& context, const ShadowPassCreateI
 		for (size_t i{}; i < createInfo.maxFramesInFlight; ++i)
 		{
 			writer
-				.AddBufferInfo(m_vLightDataBuffers[i], 0, sizeof(LightData))
+				.AddBufferInfo(m_vLightDataBuffers[i], 0, sizeof(LightDataVS))
 				.WriteBuffers(m_vLightDataDS[i], 0)
 				.Execute(context);
 		}
@@ -168,10 +172,9 @@ void pom::ShadowPass::Destroy()
 
 void pom::ShadowPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Model& model)
 {
-	LightData light;
+	LightDataVS light;
 	glm::vec3 dir = { 0.577f, -0.577f, 0.577f };
 	dir = normalize(dir);
-	light.model = glm::mat4(1);
 	light.view = lookAtLH(-dir * 1000.f, glm::vec3(0), glm::vec3(0.f, 1.f, 0.f));
 	light.proj = glm::orthoLH(-1000.f, 1000.f, -1000.f, 1000.f, 0.1f, 1'500.f);
 	vmaCopyMemoryToAllocation(context.allocator, &light, m_vLightDataBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(light));
@@ -223,6 +226,13 @@ void pom::ShadowPass::Record(const Context& context, CommandBuffer& commandBuffe
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Shadow Pipeline", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 		for (const Mesh& mesh : model.opaqueMeshes)
 		{
+			PCModelDataVS pc
+			{
+				.model = mesh.matrix
+			};
+			vkCmdPushConstants(vCmdBuffer, m_ShadowPipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+			                   sizeof(PCModelDataVS), &pc);
+
 			vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
 			Debugger::InsertDebugLabel(commandBuffer, "Draw Opaque Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
 		}
