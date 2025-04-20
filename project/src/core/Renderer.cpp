@@ -1,6 +1,7 @@
 // -- Standard Library --
 #include <stdexcept>
 #include <array>
+#include <thread>
 
 // -- Pompeii Includes --
 #include "Renderer.h"
@@ -18,6 +19,8 @@ void pom::Renderer::Initialize(Camera* pCamera, Window* pWindow)
 {
 	m_pWindow = pWindow;
 	m_pCamera = pCamera;
+	m_pScene = new Scene();
+	m_Context.deletionQueue.Push([&] {delete m_pScene; });
 	InitializeVulkan();
 }
 
@@ -105,6 +108,10 @@ void pom::Renderer::Render()
 //--------------------------------------------------
 void pom::Renderer::InitializeVulkan()
 {
+	// -- Start Loading Scene on CPU --
+	std::thread sceneLoader{ &Scene::Load, m_pScene, "models/sponza.obj" };
+
+
 	// -- Enable Debugger - Requirements - [Debug Mode]
 	{
 #if _DEBUG
@@ -225,9 +232,11 @@ void pom::Renderer::InitializeVulkan()
 		m_DeletionQueueSC.Push([&] { m_SwapChain.Destroy(m_Context); });
 	}
 
-	// -- Load Models - Requirements - []
+	// -- Allocate Scene - Requirements - []
 	{
-		LoadModels();
+		sceneLoader.join();
+		m_pScene->Allocate(m_Context, m_CommandPool, false);
+		m_Context.deletionQueue.Push([&] { m_pScene->Destroy(); });
 	}
 
 	// -- Create Descriptor Pool - Requirements - [Device]
@@ -245,7 +254,7 @@ void pom::Renderer::InitializeVulkan()
 	{
 		ShadowPassCreateInfo createInfo{};
 		createInfo.extent = glm::vec2(1024, 1024);
-		createInfo.descriptorPool = &m_DescriptorPool;
+		createInfo.pDescriptorPool = &m_DescriptorPool;
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
 
 		m_ShadowPass.Initialize(m_Context, createInfo);
@@ -255,11 +264,11 @@ void pom::Renderer::InitializeVulkan()
 	// -- Forward Pass --
 	{
 		ForwardPassCreateInfo createInfo{};
-		createInfo.shadowPass = &m_ShadowPass;
-		createInfo.descriptorPool = &m_DescriptorPool;
+		createInfo.pShadowPass = &m_ShadowPass;
+		createInfo.pDescriptorPool = &m_DescriptorPool;
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
-		createInfo.model = &m_Model;
-		createInfo.swapChain = &m_SwapChain;
+		createInfo.pScene = m_pScene;
+		createInfo.pSwapChain = &m_SwapChain;
 
 		m_ForwardPass.Initialize(m_Context, createInfo);
 		m_Context.deletionQueue.Push([&] {m_ForwardPass.Destroy(); });
@@ -339,32 +348,19 @@ void pom::Renderer::CreateFrameBuffers()
 	m_DeletionQueueSC.Push([&] { for (auto& framebuffer : m_vFrameBuffers) framebuffer.Destroy(m_Context); m_vFrameBuffers.clear(); });
 }
 
-void pom::Renderer::LoadModels()
-{
-	// -- Load Model - Requirements - []
-	{
-		m_Model.LoadModel("models/sponza.obj");
-	}
-
-	// -- Create Vertex & Index Buffer - Requirements - [Device - Allocator - Buffer - Command Pool]
-	{
-		m_Model.AllocateResources(m_Context, m_CommandPool, false);
-		m_Context.deletionQueue.Push([&] { m_Model.Destroy(); });
-	}
-}
 void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex)
 {
 	commandBuffer.Begin(0);
 	{
 		// -- Record Shadow Pass --
-		m_ShadowPass.Record(m_Context, commandBuffer, imageIndex, m_Model);
+		m_ShadowPass.Record(m_Context, commandBuffer, imageIndex, m_pScene);
 
 		// -- Sync --
-		// -- Sync --
+		// No explicit synchronization needed, as the subpass dependencies of the Shadow Pass take care of this
 		// -- Sync --
 
 		// -- Record Forward Pass --
-		m_ForwardPass.Record(m_Context, m_vFrameBuffers[imageIndex], m_SwapChain, commandBuffer, imageIndex, m_Model, m_pCamera);
+		m_ForwardPass.Record(m_Context, m_vFrameBuffers[imageIndex], m_SwapChain, commandBuffer, imageIndex, m_pScene, m_pCamera);
 	}
 	commandBuffer.End();
 }

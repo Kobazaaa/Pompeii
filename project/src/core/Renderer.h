@@ -19,7 +19,7 @@
 #include "DescriptorPool.h"
 #include "FrameBuffer.h"
 #include "Window.h"
-#include "Model.h"
+#include "Scene.h"
 #include "SwapChain.h"
 #include "SyncManager.h"
 #include "ForwardPass.h"
@@ -69,27 +69,25 @@ namespace pom
 		uint32_t					m_MaxFramesInFlight		{ 3 };
 		Image						m_MSAAImage				{ };
 
-		// -- Model --
-		Model						m_Model					{ };
-
-		// -- Descriptors
+		// -- Pools --
 		DescriptorPool				m_DescriptorPool		{ };
-
-		// -- Command --
 		CommandPool					m_CommandPool			{ };
+
+		// -- Sync --
 		SyncManager					m_SyncManager			{ };
 
 		// -- Passes --
 		ShadowPass					m_ShadowPass			{ };
 		ForwardPass					m_ForwardPass			{ };
 
+		// -- Scene --
+		Scene*						m_pScene{ };
 
 		//--------------------------------------------------
 		//    Helpers
 		//--------------------------------------------------
 		void RecreateSwapChain();
 		void CreateFrameBuffers();
-		void LoadModels();
 		void RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex);
 
 		// -- Window --

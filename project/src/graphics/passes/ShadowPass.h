@@ -10,7 +10,7 @@
 #include "FrameBuffer.h"
 #include "GraphicsPipeline.h"
 #include "Image.h"
-#include "Model.h"
+#include "Scene.h"
 #include "RenderPass.h"
 #include "Sampler.h"
 
@@ -23,7 +23,7 @@ namespace pom
 	{
 		uint32_t maxFramesInFlight{};
 		glm::vec<2, uint32_t> extent{};
-		DescriptorPool* descriptorPool{};
+		DescriptorPool* pDescriptorPool{};
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -37,7 +37,7 @@ namespace pom
 		//--------------------------------------------------
 		void Initialize(const Context& context, const ShadowPassCreateInfo& createInfo);
 		void Destroy();
-		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Model& model);
+		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Scene* pScene);
 
 
 		//--------------------------------------------------
@@ -51,8 +51,7 @@ namespace pom
 		//--------------------------------------------------
 		struct alignas(16) LightDataVS
 		{
-			glm::mat4 view;
-			glm::mat4 proj;
+			glm::mat4 lightSpace;
 		};
 		struct PCModelDataVS
 		{

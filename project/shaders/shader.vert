@@ -5,8 +5,7 @@ layout(set = 0, binding = 0) uniform MatrixUBO
 {
 	mat4 view;
 	mat4 proj;
-	mat4 viewL;
-	mat4 projL;
+	mat4 lightSpace;
 } ubo;
 
 // -- Model Data --
@@ -43,7 +42,6 @@ void main()
 	fragTexCoord = inTexCoord;
 	fragViewDir = normalize(vec3(modelData.model * vec4(inPosition, 1.0)) - inverse(ubo.view)[3].xyz);
 
-	vec4 shadowPos = ubo.projL * ubo.viewL * modelData.model * vec4(inPosition, 1.0);
-	shadowPos.y = 1 - shadowPos.y;
+	vec4 shadowPos = ubo.lightSpace * modelData.model * vec4(inPosition, 1.0);
 	fragShadowPos = shadowPos;
 }

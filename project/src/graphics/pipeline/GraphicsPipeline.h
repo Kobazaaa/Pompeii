@@ -140,6 +140,8 @@ namespace pom
 		GraphicsPipelineBuilder& SetPolygonMode(VkPolygonMode polyMode);
 		// If not set, default of VK_FRONT_FACE_CLOCKWISE assumed
 		GraphicsPipelineBuilder& SetFrontFace(VkFrontFace front);
+		// If not set, disabled by default
+		GraphicsPipelineBuilder& EnableDepthBias(float constantFactor, float slopeFactor);
 
 		// Multi Sampling Info
 		// If not set, disabled by default

@@ -15,7 +15,7 @@ void pom::ShadowPass::Initialize(const Context& context, const ShadowPassCreateI
 			.NewSubpass()
 				.SetBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
 				.NewAttachment()
-				.SetFormat(VK_FORMAT_D16_UNORM)
+				.SetFormat(VK_FORMAT_D32_SFLOAT)
 				.SetSamples(VK_SAMPLE_COUNT_1_BIT)
 				.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE)
 				.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
@@ -80,6 +80,8 @@ void pom::ShadowPass::Initialize(const Context& context, const ShadowPassCreateI
 			.SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 			.SetCullMode(VK_CULL_MODE_BACK_BIT)
 			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
+			.SetColorWriteMask(0)
+			.EnableDepthBias(1.25f, 1.75f)
 			.SetPolygonMode(VK_POLYGON_MODE_FILL)
 			.SetDepthTest(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS)
 			.SetVertexBindingDesc(Vertex::GetBindingDescription())
@@ -100,13 +102,13 @@ void pom::ShadowPass::Initialize(const Context& context, const ShadowPassCreateI
 				.SetDebugName("Shadow Map")
 				.SetWidth(createInfo.extent.x)
 				.SetHeight(createInfo.extent.y)
-				.SetFormat(VK_FORMAT_D16_UNORM)
+				.SetFormat(VK_FORMAT_D32_SFLOAT)
 				.SetSampleCount(VK_SAMPLE_COUNT_1_BIT)
 				.SetTiling(VK_IMAGE_TILING_OPTIMAL)
 				.SetUsageFlags(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
 				.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 				.Build(context, image);
-			image.CreateView(context, VK_FORMAT_D16_UNORM, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
+			image.CreateView(context, VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
 			m_DeletionQueue.Push([&] { image.Destroy(context); });
 		}
 	}
@@ -153,7 +155,7 @@ void pom::ShadowPass::Initialize(const Context& context, const ShadowPassCreateI
 		m_DeletionQueue.Push([&] { for (auto& ubo : m_vLightDataBuffers) ubo.Destroy(context); });
 
 
-		m_vLightDataDS = createInfo.descriptorPool->AllocateSets(context, m_LightDataDSL, createInfo.maxFramesInFlight, "Light Data DS");
+		m_vLightDataDS = createInfo.pDescriptorPool->AllocateSets(context, m_LightDataDSL, createInfo.maxFramesInFlight, "Light Data DS");
 		DescriptorSetWriter writer{};
 		for (size_t i{}; i < createInfo.maxFramesInFlight; ++i)
 		{
@@ -170,13 +172,12 @@ void pom::ShadowPass::Destroy()
 	m_DeletionQueue.Flush();
 }
 
-void pom::ShadowPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Model& model)
+void pom::ShadowPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Scene* pScene)
 {
 	LightDataVS light;
-	glm::vec3 dir = { 0.577f, -0.577f, 0.577f };
+	glm::vec3 dir = { 1, -1, 1 };
 	dir = normalize(dir);
-	light.view = lookAtLH(-dir * 1000.f, glm::vec3(0), glm::vec3(0.f, 1.f, 0.f));
-	light.proj = glm::orthoLH(-1000.f, 1000.f, -1000.f, 1000.f, 0.1f, 1'500.f);
+	light.lightSpace = pScene->directionalLight.GetLightSpaceMatrix();
 	vmaCopyMemoryToAllocation(context.allocator, &light, m_vLightDataBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(light));
 
 	const VkCommandBuffer& vCmdBuffer = commandBuffer.GetHandle();
@@ -219,12 +220,12 @@ void pom::ShadowPass::Record(const Context& context, CommandBuffer& commandBuffe
 			&m_vLightDataDS[imageIndex].GetHandle(), 0, nullptr);
 
 		// -- Bind Model Data --
-		model.Bind(commandBuffer);
+		pScene->model.Bind(commandBuffer);
 
 		// -- Draw Opaque --
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_ShadowPipeline.GetHandle());
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Shadow Pipeline", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
-		for (const Mesh& mesh : model.opaqueMeshes)
+		for (const Mesh& mesh : pScene->model.opaqueMeshes)
 		{
 			PCModelDataVS pc
 			{

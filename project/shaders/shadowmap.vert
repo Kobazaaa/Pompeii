@@ -3,8 +3,7 @@
 // -- LightData --
 layout(set = 0, binding = 0) uniform LightData
 {
-	mat4 view;
-	mat4 proj;
+	mat4 lightSpace;
 } ubo;
 
 // -- Model Data --
@@ -25,5 +24,5 @@ layout(location = 5) in vec2 inTexCoord;
 // -- Shader --
 void main()
 {
-    gl_Position = ubo.proj * ubo.view * modelData.model * vec4(inPosition, 1.0);
+    gl_Position = ubo.lightSpace * modelData.model * vec4(inPosition, 1.0);
 }

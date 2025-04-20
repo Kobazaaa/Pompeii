@@ -12,6 +12,7 @@
 #include "FrameBuffer.h"
 #include "Context.h"
 #include "Camera.h"
+#include "Scene.h"
 
 void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreateInfo& createInfo)
 {
@@ -23,7 +24,7 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 			.NewSubpass()
 				.SetBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
 				.NewAttachment()
-					.SetFormat(createInfo.swapChain->GetFormat())
+					.SetFormat(createInfo.pSwapChain->GetFormat())
 					.SetSamples(context.physicalDevice.GetMaxSampleCount())
 					.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE)
 					.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
@@ -31,7 +32,7 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 					.SetFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 					.AddSubpassColorAttachment(0)
 				.NewAttachment()
-					.SetFormat(createInfo.swapChain->GetDepthImage().GetFormat())
+					.SetFormat(createInfo.pSwapChain->GetDepthImage().GetFormat())
 					.SetSamples(context.physicalDevice.GetMaxSampleCount())
 					.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE)
 					.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
@@ -39,7 +40,7 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 					.SetFinalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
 					.SetSubpassDepthAttachment(1)
 				.NewAttachment()
-					.SetFormat(createInfo.swapChain->GetFormat())
+					.SetFormat(createInfo.pSwapChain->GetFormat())
 					.SetSamples(VK_SAMPLE_COUNT_1_BIT)
 					.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE)
 					.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
@@ -75,12 +76,11 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 			.NewLayoutBinding()
 			.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 			.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
-			.SetCount(static_cast<uint32_t>(createInfo.model->images.size()))
+			.SetCount(static_cast<uint32_t>(createInfo.pScene->model.images.size()))
 			.Build(context, m_TextureDSL);
 		m_DeletionQueue.Push([&] { m_TextureDSL.Destroy(context); });
 
 		// -- Shadow Map --
-
 		builder
 			.SetDebugName("LightMap")
 			.NewLayoutBinding()
@@ -88,6 +88,15 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 			.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
 			.Build(context, m_ShadowMapDSL);
 		m_DeletionQueue.Push([&] { m_ShadowMapDSL.Destroy(context); });
+
+		// -- Light Data --
+		builder
+			.SetDebugName("Light Data")
+			.NewLayoutBinding()
+			.SetType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+			.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
+			.Build(context, m_LightDSL);
+		m_DeletionQueue.Push([&] { m_LightDSL.Destroy(context); });
 	}
 
 	// -- Pipeline Layout --
@@ -106,6 +115,7 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 			.AddLayout(m_UniformDSL)
 			.AddLayout(m_TextureDSL)
 			.AddLayout(m_ShadowMapDSL)
+			.AddLayout(m_LightDSL)
 			.Build(context, m_DefaultPipelineLayout);
 		m_DeletionQueue.Push([&] {m_DefaultPipelineLayout.Destroy(context); });
 	}
@@ -119,7 +129,7 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 		shaderLoader.Load(context, "shaders/shader.vert.spv", vertShader);
 		shaderLoader.Load(context, "shaders/shader.frag.spv", fragShader);
 
-		uint32_t arraySize = static_cast<uint32_t>(createInfo.model->images.size());
+		uint32_t arraySize = static_cast<uint32_t>(createInfo.pScene->model.images.size());
 		GraphicsPipelineBuilder builder{};
 		builder
 			.SetDebugName("Graphics Pipeline (Default)")
@@ -188,6 +198,7 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 	// -- UBO --
 	{
 		m_vUniformBuffers.resize(createInfo.maxFramesInFlight);
+		m_vLightBuffers.resize(createInfo.maxFramesInFlight);
 		for (size_t i{}; i < createInfo.maxFramesInFlight; ++i)
 		{
 			BufferAllocator bufferAlloc{};
@@ -197,15 +208,24 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 				.SetSize(sizeof(UniformBufferVS))
 				.HostAccess(true)
 				.Allocate(context, m_vUniformBuffers[i]);
+			bufferAlloc = {};
+			bufferAlloc
+				.SetDebugName("Uniform Buffer (Light)")
+				.SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+				.SetSize(sizeof(UniformBufferFS))
+				.HostAccess(true)
+				.Allocate(context, m_vLightBuffers[i]);
 		}
 		m_DeletionQueue.Push([&] { for (auto& ubo : m_vUniformBuffers) ubo.Destroy(context); });
+		m_DeletionQueue.Push([&] { for (auto& ubo : m_vLightBuffers) ubo.Destroy(context); });
 	}
 
 	// -- Buffers --
 	{
-		m_vUniformDS = createInfo.descriptorPool->AllocateSets(context, m_UniformDSL, createInfo.maxFramesInFlight, "Uniform Buffer DS");
-		m_TextureDS = createInfo.descriptorPool->AllocateSets(context, m_TextureDSL, 1, "Texture Array DS").front();
-		m_ShadowMapDS = createInfo.descriptorPool->AllocateSets(context, m_ShadowMapDSL, createInfo.maxFramesInFlight, "Shadow Map DS");
+		m_vUniformDS = createInfo.pDescriptorPool->AllocateSets(context, m_UniformDSL, createInfo.maxFramesInFlight, "Uniform Buffer DS");
+		m_TextureDS = createInfo.pDescriptorPool->AllocateSets(context, m_TextureDSL, 1, "Texture Array DS").front();
+		m_ShadowMapDS = createInfo.pDescriptorPool->AllocateSets(context, m_ShadowMapDSL, createInfo.maxFramesInFlight, "Shadow Map DS");
+		m_vLightDS = createInfo.pDescriptorPool->AllocateSets(context, m_LightDSL, createInfo.maxFramesInFlight, "Light DS");
 
 		// -- Write UBO --
 		DescriptorSetWriter writer{};
@@ -217,14 +237,19 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 				.Execute(context);
 
 			writer
-				.AddImageInfo(createInfo.shadowPass->GetMap(static_cast<uint32_t>(i)),
-					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, createInfo.shadowPass->GetSampler())
+				.AddImageInfo(createInfo.pShadowPass->GetMap(static_cast<uint32_t>(i)),
+					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, createInfo.pShadowPass->GetSampler())
 				.WriteImages(m_ShadowMapDS[i], 0)
+				.Execute(context);
+
+			writer
+				.AddBufferInfo(m_vLightBuffers[i], 0, sizeof(UniformBufferFS))
+				.WriteBuffers(m_vLightDS[i], 0)
 				.Execute(context);
 		}
 
 		// -- Write Textures --
-		for (Image& image : createInfo.model->images)
+		for (Image& image : createInfo.pScene->model.images)
 		{
 			writer.AddImageInfo(image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_Sampler);
 		}
@@ -237,15 +262,19 @@ void pom::ForwardPass::Destroy()
 	m_DeletionQueue.Flush();
 }
 
-void pom::ForwardPass::Record(const Context& context, const FrameBuffer& fb, const SwapChain& sc, CommandBuffer& commandBuffer, uint32_t imageIndex, const Model& model, Camera* pCamera)
+void pom::ForwardPass::Record(const Context& context, const FrameBuffer& fb, const SwapChain& sc, CommandBuffer& commandBuffer, uint32_t imageIndex, Scene* pScene, Camera* pCamera)
 {
 	UniformBufferVS ubo;
 	ubo.view = pCamera->GetViewMatrix();
 	ubo.proj = pCamera->GetProjectionMatrix();
-	ubo.viewL = lookAtLH(glm::vec3(-1000, 1000, -1000), glm::vec3(0), glm::vec3(0.f, 1.f, 0.f));
-	ubo.projL = glm::orthoLH(-2048.f, 2048.f, -2048.f, 2048.f, 0.1f, 3'000.f);
-
+	ubo.lightSpace = pScene->directionalLight.GetLightSpaceMatrix();
 	vmaCopyMemoryToAllocation(context.allocator, &ubo, m_vUniformBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(ubo));
+
+	UniformBufferFS ubofs;
+	ubofs.intensity = pScene->directionalLight.GetIntensity();
+	ubofs.color = pScene->directionalLight.GetColor();
+	ubofs.dir = pScene->directionalLight.GetDirection();
+	vmaCopyMemoryToAllocation(context.allocator, &ubofs, m_vLightBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(ubofs));
 
 	const VkCommandBuffer& vCmdBuffer = commandBuffer.GetHandle();
 	VkRenderPassBeginInfo renderPassInfo{};
@@ -293,13 +322,16 @@ void pom::ForwardPass::Record(const Context& context, const FrameBuffer& fb, con
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Shadow Map", glm::vec4(0.f, 1.f, 1.f, 1.f));
 		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DefaultPipelineLayout.GetHandle(), 2, 1, &m_ShadowMapDS[imageIndex].GetHandle(), 0, nullptr);
 
+		Debugger::InsertDebugLabel(commandBuffer, "Bind Light Ubo", glm::vec4(0.f, 1.f, 1.f, 1.f));
+		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DefaultPipelineLayout.GetHandle(), 3, 1, &m_vLightDS[imageIndex].GetHandle(), 0, nullptr);
+
 		// -- Bind Model Data --
-		model.Bind(commandBuffer);
+		pScene->model.Bind(commandBuffer);
 
 		// -- Draw Opaque --
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Default)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_OpaquePipeline.GetHandle());
-		for (const Mesh& mesh : model.opaqueMeshes)
+		for (const Mesh& mesh : pScene->model.opaqueMeshes)
 		{
 			// -- Bind Push Constants --
 			Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
@@ -330,7 +362,7 @@ void pom::ForwardPass::Record(const Context& context, const FrameBuffer& fb, con
 		// -- Draw Transparent --
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Transparent)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_TransparentPipeline.GetHandle());
-		for (const Mesh& mesh : model.transparentMeshes)
+		for (const Mesh& mesh : pScene->model.transparentMeshes)
 		{
 			// -- Bind Push Constants --
 			Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));

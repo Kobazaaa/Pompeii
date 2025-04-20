@@ -15,9 +15,15 @@ layout(push_constant) uniform constants
 	float expo;
 } pushConstants;
 
-// -- Texture Array --
+// -- Data --
 layout(set = 1, binding = 0) uniform sampler2D textures[TEXTURE_ARRAY_SIZE];
 layout(set = 2, binding = 0) uniform sampler2D shadowMap;
+layout(set = 3, binding = 0) uniform LightUbo
+{
+	vec3 dir;
+	vec3 color;
+	float intensity;
+} light;
 
 // -- Input --
 layout(location = 0) in vec3 fragColor;
@@ -59,27 +65,28 @@ void main()
 	}
 
 	// -- Specular - Blinn-Phong  --
-	vec3 lightDir = normalize(vec3(0.577, -0.577, 0.577));
 	vec3 viewDir = normalize(fragViewDir);
 	if(pushConstants.specularIdx < TEXTURE_ARRAY_SIZE)
 	{
 		vec3 ks = texture(textures[pushConstants.specularIdx], fragTexCoord).rgb;
-		vec3 h = -normalize(viewDir + lightDir);
+		vec3 h = -normalize(viewDir + light.dir);
 		float cosa = max(dot(h, normal), 0);
 		outColor.rgb += ks * pow(cosa, pushConstants.expo);
 	}
 
 	// -- Lambert Cosine Law --
 	//outColor.rgb *= max(dot(-lightDir, normal), 0);
-	outColor.rgb *= (dot(-lightDir, normal) + 1) * 0.5;
+	outColor.rgb *= (dot(-light.dir, normal) + 1) * 0.5;
+	outColor.rgb *= light.color * light.intensity;
 
 	// -- Opacity --
 	if(pushConstants.opacityIdx < TEXTURE_ARRAY_SIZE)
 		outColor.a = texture(textures[pushConstants.opacityIdx], fragTexCoord).r;
 
-    float shadowDepth = texture(shadowMap, fragShadowPos.xy).r;
-	if(fragShadowPos.z > shadowDepth)
-		outColor.xyz *= vec3(0.5, 0.5, 0.5);
-	else
-		outColor.xyz *= vec3(1, 1, 1);
+	vec3 projCoords = fragShadowPos.xyz / fragShadowPos.w;
+	projCoords.xy = projCoords.xy * 0.5 + 0.5;
+    float closestDepth = texture(shadowMap, projCoords.xy).r;
+    float currentDepth = projCoords.z;
+	if(currentDepth > closestDepth)
+		outColor.rgb *= 0.2;
 }

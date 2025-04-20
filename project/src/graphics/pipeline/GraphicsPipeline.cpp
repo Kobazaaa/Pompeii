@@ -16,7 +16,7 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::GraphicsPipelineLayout::Destroy(const Context& context)		const { vkDestroyPipelineLayout(context.device.GetHandle(), m_Layout, nullptr); }
+void pom::GraphicsPipelineLayout::Destroy(const Context& context)	const { vkDestroyPipelineLayout(context.device.GetHandle(), m_Layout, nullptr); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
@@ -129,7 +129,9 @@ pom::GraphicsPipelineBuilder::GraphicsPipelineBuilder()
 	m_RasterizerInfo.lineWidth = 1.0f;															// CAN'T CHANGE
 	m_RasterizerInfo.cullMode = VK_CULL_MODE_BACK_BIT;											//! REQUIRED CHANGE
 	m_RasterizerInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;										//? CAN CHANGE
-	m_RasterizerInfo.depthBiasEnable = VK_FALSE;												// CAN'T CHANGE
+	m_RasterizerInfo.depthBiasEnable = VK_FALSE;												//? CAN CHANGE
+	m_RasterizerInfo.depthBiasConstantFactor = VK_FALSE;										//? CAN CHANGE
+	m_RasterizerInfo.depthBiasSlopeFactor = VK_FALSE;											//? CAN CHANGE
 
 	m_MultiSamplingInfo = {};
 	m_MultiSamplingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;		// CAN'T CHANGE
@@ -265,6 +267,14 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetPolygonMode(VkPol
 pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetFrontFace(VkFrontFace front)
 {
 	m_RasterizerInfo.frontFace = front;
+	return *this;
+}
+
+pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::EnableDepthBias(float constantFactor, float slopeFactor)
+{
+	m_RasterizerInfo.depthBiasEnable = VK_TRUE;
+	m_RasterizerInfo.depthBiasConstantFactor = constantFactor;
+	m_RasterizerInfo.depthBiasSlopeFactor = slopeFactor;
 	return *this;
 }
 

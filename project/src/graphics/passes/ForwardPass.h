@@ -16,7 +16,7 @@ namespace pom
 {
 	class SwapChain;
 	class DescriptorPool;
-	struct Model;
+	struct Scene;
 	class ShadowPass;
 	class FrameBuffer;
 	class Camera;
@@ -31,10 +31,10 @@ namespace pom
 	struct ForwardPassCreateInfo
 	{
 		uint32_t maxFramesInFlight{};
-		Model* model{};
-		SwapChain* swapChain{};
-		DescriptorPool* descriptorPool{};
-		ShadowPass* shadowPass{};
+		Scene* pScene{};
+		SwapChain* pSwapChain{};
+		DescriptorPool* pDescriptorPool{};
+		ShadowPass* pShadowPass{};
 	};
 
 
@@ -49,7 +49,7 @@ namespace pom
 		//--------------------------------------------------
 		void Initialize(const Context& context, const ForwardPassCreateInfo& createInfo);
 		void Destroy();
-		void Record(const Context& context, const FrameBuffer& fb, const SwapChain& sc, CommandBuffer& commandBuffer, uint32_t imageIndex, const Model& model, Camera* pCamera);
+		void Record(const Context& context, const FrameBuffer& fb, const SwapChain& sc, CommandBuffer& commandBuffer, uint32_t imageIndex, Scene* pScene, Camera* pCamera);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
@@ -64,14 +64,20 @@ namespace pom
 		{
 			glm::mat4 view;
 			glm::mat4 proj;
-			glm::mat4 viewL;
-			glm::mat4 projL;
+			glm::mat4 lightSpace;
 		};
 		struct PCModelDataVS
 		{
 			glm::mat4 model;
 		};
 
+		struct alignas(16) UniformBufferFS
+		{
+			glm::vec3 dir;
+			float padding;
+			glm::vec3 color;
+			float intensity;
+		};
 		struct PCMaterialDataFS
 		{
 			// -- Textures --
@@ -101,6 +107,9 @@ namespace pom
 		DescriptorSetLayout			m_UniformDSL			{ };
 		std::vector<DescriptorSet>	m_vUniformDS			{ };
 
+		DescriptorSetLayout			m_LightDSL				{ };
+		std::vector<DescriptorSet>	m_vLightDS				{ };
+
 		DescriptorSetLayout			m_ShadowMapDSL			{ };
 		std::vector<DescriptorSet>	m_ShadowMapDS			{ };
 
@@ -109,6 +118,7 @@ namespace pom
 
 		// -- Buffers --
 		std::vector<Buffer>			m_vUniformBuffers		{ };
+		std::vector<Buffer>			m_vLightBuffers			{ };
 
 		// -- DQ --
 		DeletionQueue				m_DeletionQueue			{ };
