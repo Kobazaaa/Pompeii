@@ -58,8 +58,10 @@ set(SOURCES
 
 	# scene
 	"${SOURCE_DIR}/scene/Camera.h"							"${SOURCE_DIR}/scene/Camera.cpp"
+	"${SOURCE_DIR}/scene/DirectionalLight.h"				"${SOURCE_DIR}/scene/DirectionalLight.cpp"
 	"${SOURCE_DIR}/scene/Material.h"						"${SOURCE_DIR}/scene/Material.cpp"
 	"${SOURCE_DIR}/scene/Model.h"							"${SOURCE_DIR}/scene/Model.cpp"
+	"${SOURCE_DIR}/scene/Scene.h"							"${SOURCE_DIR}/scene/Scene.cpp"
 
 )
 
