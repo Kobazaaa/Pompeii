@@ -120,6 +120,7 @@ Pompeii/
 |	|    ├── core/
 |	|    ├── graphics/
 |	|    |       ├── memory/
+|	|    |       ├── passes/
 |	|    |       └── pipeline/
 |	|    ├── helper/
 |	|    ├── presentation/
