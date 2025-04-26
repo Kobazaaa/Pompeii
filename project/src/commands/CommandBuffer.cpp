@@ -45,30 +45,65 @@ void pom::CommandBuffer::End() const
 }
 void pom::CommandBuffer::Submit(VkQueue queue, bool waitIdle, const SemaphoreInfo& semaphoreInfo, VkFence fence) const
 {
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	// -- Submit Info --
+	VkSubmitInfo2 submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+	submitInfo.pNext = nullptr;
+	submitInfo.flags = 0;
 
-	// Wait Semaphores
+	// -- Command Buffer Submit Info --
+	VkCommandBufferSubmitInfo cmdSubmitInfo{};
+	cmdSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+	cmdSubmitInfo.pNext = nullptr;
+	cmdSubmitInfo.commandBuffer = m_CmdBuffer;
+	cmdSubmitInfo.deviceMask = 0;
+	submitInfo.commandBufferInfoCount = 1;
+	submitInfo.pCommandBufferInfos = &cmdSubmitInfo;
+
+	// -- Wait Semaphores --
+	std::vector<VkSemaphoreSubmitInfo> vWaitSemaphoreSubmitInfos;
+	vWaitSemaphoreSubmitInfos.reserve(semaphoreInfo.vSignalSemaphores.size());
 	if (!semaphoreInfo.vWaitSemaphores.empty())
 	{
-		submitInfo.waitSemaphoreCount = static_cast<uint32_t>(semaphoreInfo.vWaitSemaphores.size());
-		submitInfo.pWaitSemaphores = semaphoreInfo.vWaitSemaphores.data();
-		submitInfo.pWaitDstStageMask = semaphoreInfo.vWaitStages.data();
-	}
-	// Cmd Buffers
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &m_CmdBuffer;
+		uint32_t index = 0;
+		for (const VkSemaphore& semaphore : semaphoreInfo.vWaitSemaphores)
+		{
+			VkSemaphoreSubmitInfo semaphoreSubmitInfo{};
+			semaphoreSubmitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+			semaphoreSubmitInfo.pNext = nullptr;
+			semaphoreSubmitInfo.value = 0;
+			semaphoreSubmitInfo.semaphore = semaphore;
+			semaphoreSubmitInfo.stageMask = semaphoreInfo.vWaitStages[index];
 
-	// Signal Semaphores
+			vWaitSemaphoreSubmitInfos.emplace_back(semaphoreSubmitInfo);
+			++index;
+		}
+		submitInfo.waitSemaphoreInfoCount = static_cast<uint32_t>(vWaitSemaphoreSubmitInfos.size());
+		submitInfo.pWaitSemaphoreInfos = vWaitSemaphoreSubmitInfos.data();
+	}
+
+	// -- Signal Semaphores --
+	std::vector<VkSemaphoreSubmitInfo> vSignalSemaphoreSubmitInfos;
+	vSignalSemaphoreSubmitInfos.reserve(semaphoreInfo.vSignalSemaphores.size());
 	if (!semaphoreInfo.vSignalSemaphores.empty())
 	{
-		submitInfo.signalSemaphoreCount = static_cast<uint32_t>(semaphoreInfo.vSignalSemaphores.size());
-		submitInfo.pSignalSemaphores = semaphoreInfo.vSignalSemaphores.data();
+		for (const VkSemaphore& semaphore : semaphoreInfo.vSignalSemaphores)
+		{
+			VkSemaphoreSubmitInfo semaphoreSubmitInfo{};
+			semaphoreSubmitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+			semaphoreSubmitInfo.pNext = nullptr;
+			semaphoreSubmitInfo.value = 0;
+			semaphoreSubmitInfo.semaphore = semaphore;
+
+			vSignalSemaphoreSubmitInfos.emplace_back(semaphoreSubmitInfo);
+		}
+		submitInfo.signalSemaphoreInfoCount = static_cast<uint32_t>(vSignalSemaphoreSubmitInfos.size());
+		submitInfo.pSignalSemaphoreInfos = vSignalSemaphoreSubmitInfos.data();
 	}
 
-	if (vkQueueSubmit(queue, 1, &submitInfo, fence) != VK_SUCCESS)
+	// -- Submit yay --
+	if (vkQueueSubmit2(queue, 1, &submitInfo, fence) != VK_SUCCESS)
 		throw std::runtime_error("Failed to submit Command Buffer!");
-
 
 	if (waitIdle)
 		vkQueueWaitIdle(queue);
