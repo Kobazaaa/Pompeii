@@ -14,8 +14,7 @@
 //--------------------------------------------------
 void pom::Buffer::Destroy(const Context& context) const
 {
-	vkDestroyBuffer(context.device.GetHandle(), m_Buffer, nullptr);
-	vmaFreeMemory(context.allocator, m_Memory);
+	vmaDestroyBuffer(context.allocator, m_Buffer, m_Memory);
 }
 
 

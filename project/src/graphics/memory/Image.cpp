@@ -19,8 +19,7 @@
 void pom::Image::Destroy(const Context& context) const
 {
 	vkDestroyImageView(context.device.GetHandle(), m_ImageView, nullptr);
-	vkDestroyImage(context.device.GetHandle(), m_Image, nullptr);
-	vmaFreeMemory(context.allocator, m_ImageMemory);
+	vmaDestroyImage(context.allocator, m_Image, m_ImageMemory);
 }
 VkImageView& pom::Image::CreateView(const Context& context, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType,
 									uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)

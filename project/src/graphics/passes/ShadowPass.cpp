@@ -78,7 +78,7 @@ void pom::ShadowPass::Initialize(const Context& context, const ShadowPassCreateI
 			.AddDynamicState(VK_DYNAMIC_STATE_SCISSOR)
 			.AddShader(vertShader, VK_SHADER_STAGE_VERTEX_BIT)
 			.SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-			.SetCullMode(VK_CULL_MODE_BACK_BIT)
+			.SetCullMode(VK_CULL_MODE_FRONT_BIT)
 			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
 			.SetColorWriteMask(0)
 			.EnableDepthBias(1.25f, 1.75f)

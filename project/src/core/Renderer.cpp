@@ -151,6 +151,7 @@ void pom::Renderer::InitializeVulkan()
 
 	// -- Create Device - Requirements - [Physical Device - Instance]
 	{
+		//todo check on PhysicalDevice if features are available!
 		// -- Vulkan API Core Features --
 		VkPhysicalDeviceFeatures vulkanCoreFeatures{};
 		vulkanCoreFeatures.samplerAnisotropy = VK_TRUE;
@@ -253,7 +254,7 @@ void pom::Renderer::InitializeVulkan()
 	// -- Shadow Pass --
 	{
 		ShadowPassCreateInfo createInfo{};
-		createInfo.extent = glm::vec2(1024, 1024);
+		createInfo.extent = glm::vec2(8192, 8192);
 		createInfo.pDescriptorPool = &m_DescriptorPool;
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
 
