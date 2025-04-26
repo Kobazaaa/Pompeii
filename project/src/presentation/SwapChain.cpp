@@ -118,7 +118,7 @@ void pom::SwapChainBuilder::Build(Context& context, const Window& window, SwapCh
 		.Build(context, swapChain.m_DepthImage);
 	swapChain.m_DepthImage.CreateView(context, format, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
 	CommandBuffer& cmd = cmdPool.AllocateCmdBuffers(1);
-	cmd.Begin();
+	cmd.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 	{
 		swapChain.m_DepthImage.TransitionLayout(
 					cmd, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,

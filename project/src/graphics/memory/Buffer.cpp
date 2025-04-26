@@ -153,7 +153,7 @@ void pom::BufferAllocator::Allocate(const Context& context, Buffer& buffer) cons
 
 
 		CommandBuffer& cmd = m_pCmdPool->AllocateCmdBuffers(1);
-		cmd.Begin();
+		cmd.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 		{
 			stagingBuffer.CopyToBuffer(cmd, buffer, m_InitDataSize);
 		}

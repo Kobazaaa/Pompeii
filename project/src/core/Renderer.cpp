@@ -351,7 +351,7 @@ void pom::Renderer::CreateFrameBuffers()
 
 void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex)
 {
-	commandBuffer.Begin(0);
+	commandBuffer.Begin();
 	{
 		// -- Record Shadow Pass --
 		m_ShadowPass.Record(m_Context, commandBuffer, imageIndex, m_pScene);

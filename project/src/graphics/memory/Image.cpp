@@ -390,7 +390,7 @@ void pom::ImageBuilder::Build(const Context& context, Image& image) const
 		vmaCopyMemoryToAllocation(context.allocator, m_pData, stagingBuffer.GetMemoryHandle(), m_InitDataOffset, m_InitDataSize);
 
 		CommandBuffer& cmd = m_pCmdPool->AllocateCmdBuffers(1);
-		cmd.Begin();
+		cmd.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 		{
 			image.TransitionLayout(cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 								   0, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,

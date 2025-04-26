@@ -39,7 +39,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Commands
 		//--------------------------------------------------
-		void Begin(VkCommandBufferUsageFlags usage = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT) const;
+		void Begin(VkCommandBufferUsageFlags usage = 0) const;
 		void End() const;
 		void Submit(VkQueue queue, bool waitIdle, const SemaphoreInfo& semaphoreInfo = {}, VkFence fence = VK_NULL_HANDLE) const;
 		void Reset() const;
