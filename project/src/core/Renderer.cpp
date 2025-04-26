@@ -109,7 +109,7 @@ void pom::Renderer::Render()
 void pom::Renderer::InitializeVulkan()
 {
 	// -- Start Loading Scene on CPU --
-	std::thread sceneLoader{ &Scene::Load, m_pScene, "models/sponza.obj" };
+	std::jthread sceneLoader{ &Scene::Load, m_pScene, "models/sponza.obj" };
 
 
 	// -- Enable Debugger - Requirements - [Debug Mode]
@@ -141,45 +141,47 @@ void pom::Renderer::InitializeVulkan()
 		m_Context.deletionQueue.Push([&] { vkDestroySurfaceKHR(m_Context.instance.GetHandle(), m_pWindow->GetVulkanSurface(), nullptr); });
 	}
 
+	// -- Features --
+	// -- Vulkan API Core Features --
+	VkPhysicalDeviceFeatures vulkanCoreFeatures{};
+	vulkanCoreFeatures.samplerAnisotropy = VK_TRUE;
+	vulkanCoreFeatures.fillModeNonSolid = VK_TRUE;
+	vulkanCoreFeatures.sampleRateShading = VK_TRUE;
+
+	// -- Vulkan API 1.1 Features --
+	VkPhysicalDeviceVulkan11Features vulkan11Features{};
+	vulkan11Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+	vulkan11Features.pNext = nullptr;  // End of Chain
+
+	// -- Vulkan API 1.2 Features --
+	VkPhysicalDeviceVulkan12Features vulkan12Features{};
+	vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+	vulkan12Features.pNext = &vulkan11Features;  // Chain Vulkan API 1.1 Features
+
+	// -- Vulkan API 1.3 Features --
+	VkPhysicalDeviceVulkan13Features vulkan13Features{};
+	vulkan13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+	vulkan13Features.dynamicRendering = VK_TRUE;
+	vulkan13Features.synchronization2 = VK_TRUE;
+	vulkan13Features.pNext = &vulkan12Features; // Chain Vulkan API 1.2 Features
+
+	// -- Chaining Time --
+	VkPhysicalDeviceFeatures2 features2{};
+	features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	features2.features = vulkanCoreFeatures; // Core Features
+	features2.pNext = &vulkan13Features; // Chain Vulkan 1.3 features
+
 	// -- Select GPU - Requirements - [Window - Instance]
 	{
 		PhysicalDeviceSelector selector;
 		selector
 			.AddExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+			.CheckForFeatures(features2)
 			.PickPhysicalDevice(m_Context, m_pWindow->GetVulkanSurface());
 	}
 
 	// -- Create Device - Requirements - [Physical Device - Instance]
 	{
-		//todo check on PhysicalDevice if features are available!
-		// -- Vulkan API Core Features --
-		VkPhysicalDeviceFeatures vulkanCoreFeatures{};
-		vulkanCoreFeatures.samplerAnisotropy = VK_TRUE;
-		vulkanCoreFeatures.fillModeNonSolid = VK_TRUE;
-		vulkanCoreFeatures.sampleRateShading = VK_TRUE;
-
-		// -- Vulkan API 1.1 Features --
-		VkPhysicalDeviceVulkan11Features vulkan11Features{};
-		vulkan11Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
-		vulkan11Features.pNext = nullptr;  // End of Chain
-
-		// -- Vulkan API 1.2 Features --
-		VkPhysicalDeviceVulkan12Features vulkan12Features{};
-		vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-		vulkan12Features.pNext = &vulkan11Features;  // Chain Vulkan API 1.1 Features
-
-		// -- Vulkan API 1.3 Features --
-		VkPhysicalDeviceVulkan13Features vulkan13Features{};
-		vulkan13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-		vulkan13Features.synchronization2 = VK_TRUE;
-		vulkan13Features.pNext = &vulkan12Features; // Chain Vulkan API 1.2 Features
-
-		// -- Chaining Time --
-		VkPhysicalDeviceFeatures2 features2{};
-		features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		features2.features = vulkanCoreFeatures; // Core Features
-		features2.pNext = &vulkan13Features; // Chain Vulkan 1.3 features
-
 		DeviceBuilder deviceBuilder{};
 
 		deviceBuilder

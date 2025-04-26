@@ -27,7 +27,7 @@ void pom::PhysicalDevice::Initialize(VkPhysicalDevice physicalDevice, const std:
 	if (physicalDevice == VK_NULL_HANDLE)
 		return;
 	vkGetPhysicalDeviceProperties(m_PhysicalDevice, &m_Properties);
-	vkGetPhysicalDeviceFeatures(m_PhysicalDevice, &m_Features);
+	vkGetPhysicalDeviceFeatures2(m_PhysicalDevice, &m_Features);
 }
 
 //--------------------------------------------------
@@ -36,9 +36,9 @@ void pom::PhysicalDevice::Initialize(VkPhysicalDevice physicalDevice, const std:
 const VkPhysicalDevice& pom::PhysicalDevice::GetHandle()						const		{ return m_PhysicalDevice; }
 VkPhysicalDeviceProperties pom::PhysicalDevice::GetProperties()					const		{ return m_Properties; }
 VkFormatProperties pom::PhysicalDevice::GetFormatProperties(VkFormat format)	const		{ VkFormatProperties props{}; vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &props); return props; }
-VkPhysicalDeviceFeatures pom::PhysicalDevice::GetFeatures()						const		{ return m_Features; }
+VkPhysicalDeviceFeatures pom::PhysicalDevice::GetFeatures()						const		{ return m_Features.features; }
 pom::QueueFamilyIndices pom::PhysicalDevice::GetQueueFamilies()					const		{ return m_QueueFamilyIndices; }
-VkSampleCountFlagBits pom::PhysicalDevice::GetMaxSampleCount() const
+VkSampleCountFlagBits pom::PhysicalDevice::GetMaxSampleCount()					const
 {
 	VkPhysicalDeviceProperties properties = GetProperties();
 
@@ -84,6 +84,183 @@ bool pom::PhysicalDevice::AreExtensionsSupported(const std::vector<const char*>&
 
 	return requiredExtensions.empty();
 }
+bool pom::PhysicalDevice::AreFeaturesSupported(const VkPhysicalDeviceFeatures2& features) const
+{
+	VkPhysicalDeviceVulkan13Features requested13;
+	VkPhysicalDeviceVulkan12Features requested12;
+	VkPhysicalDeviceVulkan11Features requested11;
+	VkPhysicalDeviceFeatures requested = features.features;
+
+	VkBaseOutStructure* current = static_cast<VkBaseOutStructure*>(features.pNext);
+	while (current)
+	{
+		if (current->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES)
+			requested11 = *reinterpret_cast<VkPhysicalDeviceVulkan11Features*>(current);
+		else if (current->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
+			requested12 = *reinterpret_cast<VkPhysicalDeviceVulkan12Features*>(current);
+		else if (current->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES)
+			requested13 = *reinterpret_cast<VkPhysicalDeviceVulkan13Features*>(current);
+		current = current->pNext;
+	}
+
+	bool support = true;
+	support &= CheckFeatures(requested, m_Features.features);
+	support &= CheckFeatures(requested11, m_Features11);
+	support &= CheckFeatures(requested12, m_Features12);
+	support &= CheckFeatures(requested13, m_Features13);
+	return support;
+}
+
+#define CHECK_FEATURE(feature) \
+		if (requested.feature == VK_TRUE && available.feature == VK_FALSE) { \
+		    std::cout << WARNING_TXT << m_Properties.deviceName << " is missing feature: " << #feature << ". Looking for other suitable GPU!\n" << RESET_TXT; \
+		    return false; \
+		}
+bool pom::PhysicalDevice::CheckFeatures(const VkPhysicalDeviceFeatures& requested, const VkPhysicalDeviceFeatures& available) const
+{
+	CHECK_FEATURE(robustBufferAccess)
+	CHECK_FEATURE(fullDrawIndexUint32)
+	CHECK_FEATURE(imageCubeArray)
+	CHECK_FEATURE(independentBlend)
+	CHECK_FEATURE(geometryShader)
+	CHECK_FEATURE(tessellationShader)
+	CHECK_FEATURE(sampleRateShading)
+	CHECK_FEATURE(dualSrcBlend)
+	CHECK_FEATURE(logicOp)
+	CHECK_FEATURE(multiDrawIndirect)
+	CHECK_FEATURE(drawIndirectFirstInstance)
+	CHECK_FEATURE(depthClamp)
+	CHECK_FEATURE(depthBiasClamp)
+	CHECK_FEATURE(fillModeNonSolid)
+	CHECK_FEATURE(depthBounds)
+	CHECK_FEATURE(wideLines)
+	CHECK_FEATURE(largePoints)
+	CHECK_FEATURE(alphaToOne)
+	CHECK_FEATURE(multiViewport)
+	CHECK_FEATURE(samplerAnisotropy)
+	CHECK_FEATURE(textureCompressionETC2)
+	CHECK_FEATURE(textureCompressionASTC_LDR)
+	CHECK_FEATURE(textureCompressionBC)
+	CHECK_FEATURE(occlusionQueryPrecise)
+	CHECK_FEATURE(pipelineStatisticsQuery)
+	CHECK_FEATURE(vertexPipelineStoresAndAtomics)
+	CHECK_FEATURE(fragmentStoresAndAtomics)
+	CHECK_FEATURE(shaderTessellationAndGeometryPointSize)
+	CHECK_FEATURE(shaderImageGatherExtended)
+	CHECK_FEATURE(shaderStorageImageMultisample)
+	CHECK_FEATURE(shaderStorageImageReadWithoutFormat)
+	CHECK_FEATURE(shaderStorageImageWriteWithoutFormat)
+	CHECK_FEATURE(shaderUniformBufferArrayDynamicIndexing)
+	CHECK_FEATURE(shaderSampledImageArrayDynamicIndexing)
+	CHECK_FEATURE(shaderStorageBufferArrayDynamicIndexing)
+	CHECK_FEATURE(shaderStorageImageArrayDynamicIndexing)
+	CHECK_FEATURE(shaderClipDistance)
+	CHECK_FEATURE(shaderFloat64)
+	CHECK_FEATURE(shaderInt64)
+	CHECK_FEATURE(shaderInt16)
+	CHECK_FEATURE(shaderResourceResidency)
+	CHECK_FEATURE(shaderResourceMinLod)
+	CHECK_FEATURE(sparseBinding)
+	CHECK_FEATURE(sparseResidencyBuffer)
+	CHECK_FEATURE(sparseResidencyImage2D)
+	CHECK_FEATURE(sparseResidencyImage3D)
+	CHECK_FEATURE(sparseResidency2Samples)
+	CHECK_FEATURE(sparseResidency4Samples)
+	CHECK_FEATURE(sparseResidency8Samples)
+	CHECK_FEATURE(sparseResidency16Samples)
+	CHECK_FEATURE(sparseResidencyAliased)
+	CHECK_FEATURE(variableMultisampleRate)
+	CHECK_FEATURE(inheritedQueries)
+	return true;
+}
+bool pom::PhysicalDevice::CheckFeatures(const VkPhysicalDeviceVulkan11Features& requested, const VkPhysicalDeviceVulkan11Features& available) const
+{
+	CHECK_FEATURE(storageBuffer16BitAccess)
+	CHECK_FEATURE(uniformAndStorageBuffer16BitAccess)
+	CHECK_FEATURE(storagePushConstant16)
+	CHECK_FEATURE(storageInputOutput16)
+	CHECK_FEATURE(multiview)
+	CHECK_FEATURE(multiviewGeometryShader)
+	CHECK_FEATURE(multiviewTessellationShader)
+	CHECK_FEATURE(variablePointersStorageBuffer)
+	CHECK_FEATURE(variablePointers)
+	CHECK_FEATURE(protectedMemory)
+	CHECK_FEATURE(samplerYcbcrConversion)
+	CHECK_FEATURE(shaderDrawParameters)
+	return true;
+}
+bool pom::PhysicalDevice::CheckFeatures(const VkPhysicalDeviceVulkan12Features& requested, const VkPhysicalDeviceVulkan12Features& available) const
+{
+	CHECK_FEATURE(samplerMirrorClampToEdge)
+	CHECK_FEATURE(drawIndirectCount)
+	CHECK_FEATURE(storageBuffer8BitAccess)
+	CHECK_FEATURE(uniformAndStorageBuffer8BitAccess)
+	CHECK_FEATURE(storagePushConstant8)
+	CHECK_FEATURE(shaderBufferInt64Atomics)
+	CHECK_FEATURE(shaderSharedInt64Atomics)
+	CHECK_FEATURE(shaderFloat16)
+	CHECK_FEATURE(shaderInt8)
+	CHECK_FEATURE(descriptorIndexing)
+	CHECK_FEATURE(shaderInputAttachmentArrayDynamicIndexing)
+	CHECK_FEATURE(shaderUniformTexelBufferArrayDynamicIndexing)
+	CHECK_FEATURE(shaderStorageTexelBufferArrayDynamicIndexing)
+	CHECK_FEATURE(shaderUniformBufferArrayNonUniformIndexing)
+	CHECK_FEATURE(shaderSampledImageArrayNonUniformIndexing)
+	CHECK_FEATURE(shaderStorageBufferArrayNonUniformIndexing)
+	CHECK_FEATURE(shaderStorageImageArrayNonUniformIndexing)
+	CHECK_FEATURE(shaderInputAttachmentArrayNonUniformIndexing)
+	CHECK_FEATURE(shaderUniformTexelBufferArrayNonUniformIndexing)
+	CHECK_FEATURE(shaderStorageTexelBufferArrayNonUniformIndexing)
+	CHECK_FEATURE(descriptorBindingUniformBufferUpdateAfterBind)
+	CHECK_FEATURE(descriptorBindingSampledImageUpdateAfterBind)
+	CHECK_FEATURE(descriptorBindingStorageImageUpdateAfterBind)
+	CHECK_FEATURE(descriptorBindingStorageBufferUpdateAfterBind)
+	CHECK_FEATURE(descriptorBindingUniformTexelBufferUpdateAfterBind)
+	CHECK_FEATURE(descriptorBindingStorageTexelBufferUpdateAfterBind)
+	CHECK_FEATURE(descriptorBindingUpdateUnusedWhilePending)
+	CHECK_FEATURE(descriptorBindingPartiallyBound)
+	CHECK_FEATURE(descriptorBindingVariableDescriptorCount)
+	CHECK_FEATURE(runtimeDescriptorArray)
+	CHECK_FEATURE(samplerFilterMinmax)
+	CHECK_FEATURE(scalarBlockLayout)
+	CHECK_FEATURE(imagelessFramebuffer)
+	CHECK_FEATURE(uniformBufferStandardLayout)
+	CHECK_FEATURE(shaderSubgroupExtendedTypes)
+	CHECK_FEATURE(separateDepthStencilLayouts)
+	CHECK_FEATURE(hostQueryReset)
+	CHECK_FEATURE(timelineSemaphore)
+	CHECK_FEATURE(bufferDeviceAddress)
+	CHECK_FEATURE(bufferDeviceAddressCaptureReplay)
+	CHECK_FEATURE(bufferDeviceAddressMultiDevice)
+	CHECK_FEATURE(vulkanMemoryModel)
+	CHECK_FEATURE(vulkanMemoryModelDeviceScope)
+	CHECK_FEATURE(vulkanMemoryModelAvailabilityVisibilityChains)
+	CHECK_FEATURE(shaderOutputViewportIndex)
+	CHECK_FEATURE(shaderOutputLayer)
+	CHECK_FEATURE(subgroupBroadcastDynamicId)
+	return true;
+}
+bool pom::PhysicalDevice::CheckFeatures(const VkPhysicalDeviceVulkan13Features& requested, const VkPhysicalDeviceVulkan13Features& available) const
+{
+	CHECK_FEATURE(robustImageAccess)
+	CHECK_FEATURE(inlineUniformBlock)
+	CHECK_FEATURE(descriptorBindingInlineUniformBlockUpdateAfterBind)
+	CHECK_FEATURE(pipelineCreationCacheControl)
+	CHECK_FEATURE(privateData)
+	CHECK_FEATURE(shaderDemoteToHelperInvocation)
+	CHECK_FEATURE(shaderTerminateInvocation)
+	CHECK_FEATURE(subgroupSizeControl)
+	CHECK_FEATURE(computeFullSubgroups)
+	CHECK_FEATURE(synchronization2)
+	CHECK_FEATURE(textureCompressionASTC_HDR)
+	CHECK_FEATURE(shaderZeroInitializeWorkgroupMemory)
+	CHECK_FEATURE(dynamicRendering)
+	CHECK_FEATURE(shaderIntegerDotProduct)
+	CHECK_FEATURE(maintenance4)
+	return true;
+}
+#undef CHECK_FEATURE
+
 
 //--------------------------------------------------
 //    Queries -- PRIVATE
@@ -143,8 +320,6 @@ pom::QueueFamilyIndices pom::PhysicalDevice::FindQueueFamilies(const VkSurfaceKH
 
 
 
-
-
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Physical Device Selector	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -157,7 +332,12 @@ pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::AddExtension(const cha
 	m_vDesiredExtensions.push_back(ext);
 	return *this;
 }
-pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::PickPhysicalDevice(Context& context, VkSurfaceKHR surface)
+pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::CheckForFeatures(const VkPhysicalDeviceFeatures2& features)
+{
+	m_RequestedFeatures = features;
+	return *this;
+}
+void pom::PhysicalDeviceSelector::PickPhysicalDevice(Context& context, VkSurfaceKHR surface) const
 {
 	uint32_t deviceCount = 0;
 	vkEnumeratePhysicalDevices(context.instance.GetHandle(), &deviceCount, nullptr);
@@ -195,8 +375,6 @@ pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::PickPhysicalDevice(Con
 			<< "\tDriver Version: " << deviceProperties.driverVersion << "\n"
 			<< "\tVendorID: " << deviceProperties.vendorID << "\n\n" << RESET_TXT;
 	}
-
-	return *this;
 }
 
 uint32_t pom::PhysicalDeviceSelector::RateDeviceSuitability(PhysicalDevice& device, VkSurfaceKHR surface) const
@@ -207,6 +385,10 @@ uint32_t pom::PhysicalDeviceSelector::RateDeviceSuitability(PhysicalDevice& devi
 
 	// Check specified extensions support
 	if (!device.AreExtensionsSupported(m_vDesiredExtensions))
+		return 0;
+
+	// Check specified feature support
+	if (!device.AreFeaturesSupported(m_RequestedFeatures))
 		return 0;
 
 	// Check if the SwapChain is adequate
