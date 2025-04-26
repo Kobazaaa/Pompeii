@@ -52,6 +52,15 @@ namespace pom
 
 		bool				HasStencilComponent()	const;
 
+		//--------------------------------------------------
+		//    Commands
+		//--------------------------------------------------
+		void TransitionLayout(const CommandBuffer& cmd, VkImageLayout newLayout,
+							  VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
+							  VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage,
+							  uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount);
+		void GenerateMipMaps(const Context& context, const CommandBuffer& cmd, uint32_t texW, uint32_t texH, uint32_t mips, VkImageLayout finalLayout);
+
 	private:
 		VkImage m_Image					{ VK_NULL_HANDLE };
 		VkImageView m_ImageView			{ VK_NULL_HANDLE };
@@ -61,9 +70,6 @@ namespace pom
 		VkImageCreateInfo m_ImageInfo	{ };
 
 		friend class ImageBuilder;
-		friend void CommandPool::TransitionImageLayout(Image& image, VkImageLayout newLayout,
-													uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount);
-		friend void CommandPool::GenerateMipmaps(Image& image, uint32_t texW, uint32_t texH, uint32_t mips, VkImageLayout finalLayout);
 	};
 
 

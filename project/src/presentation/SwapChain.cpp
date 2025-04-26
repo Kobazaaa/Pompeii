@@ -117,7 +117,18 @@ void pom::SwapChainBuilder::Build(Context& context, const Window& window, SwapCh
 		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 		.Build(context, swapChain.m_DepthImage);
 	swapChain.m_DepthImage.CreateView(context, format, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
-	cmdPool.TransitionImageLayout(swapChain.m_DepthImage, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 0, 1, 0, 1);
+	CommandBuffer& cmd = cmdPool.AllocateCmdBuffers(1);
+	cmd.Begin();
+	{
+		swapChain.m_DepthImage.TransitionLayout(
+					cmd, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+					0, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+					VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+					0, 1, 0, 1);
+	}
+	cmd.End();
+	cmd.Submit(context.device.GetGraphicQueue(), true);
+	cmd.Free(context.device);
 }
 
 //--------------------------------------------------

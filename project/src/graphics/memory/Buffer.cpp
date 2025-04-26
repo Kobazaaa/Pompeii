@@ -2,6 +2,7 @@
 #include "Buffer.h"
 #include "CommandPool.h"
 #include "Context.h"
+#include "Image.h"
 #include "Debugger.h"
 
 
@@ -24,6 +25,33 @@ void pom::Buffer::Destroy(const Context& context) const
 const VkBuffer& pom::Buffer::GetHandle() const { return m_Buffer; }
 const VmaAllocation& pom::Buffer::GetMemoryHandle() const { return m_Memory; }
 
+
+//--------------------------------------------------
+//    Commands
+//--------------------------------------------------
+void pom::Buffer::CopyToBuffer(const CommandBuffer& cmd, const Buffer& dst, VkDeviceSize size) const
+{
+	VkBufferCopy copyRegion{};
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = 0;
+	copyRegion.size = size;
+	vkCmdCopyBuffer(cmd.GetHandle(), m_Buffer, dst.GetHandle(), 1, &copyRegion);
+}
+void pom::Buffer::CopyToImage(const CommandBuffer& cmd, const Image& dst, VkExtent3D extent, uint32_t mip, uint32_t baseLayer, uint32_t layerCount) const
+{
+	VkBufferImageCopy region{};
+	region.bufferOffset = 0;
+	region.bufferRowLength = 0;
+	region.bufferImageHeight = 0;
+	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	region.imageSubresource.mipLevel = mip;
+	region.imageSubresource.baseArrayLayer = baseLayer;
+	region.imageSubresource.layerCount = layerCount;
+	region.imageOffset = { .x = 0, .y = 0, .z = 0 };
+	region.imageExtent = extent;
+
+	vkCmdCopyBufferToImage(cmd.GetHandle(), m_Buffer, dst.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+}
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -123,8 +151,15 @@ void pom::BufferAllocator::Allocate(const Context& context, Buffer& buffer) cons
 			.Allocate(context, stagingBuffer);
 		vmaCopyMemoryToAllocation(context.allocator, m_pData, stagingBuffer.m_Memory, m_InitDataOffset, m_InitDataSize);
 
-		m_pCmdPool->CopyBufferToBuffer(stagingBuffer, buffer, m_InitDataSize);
 
+		CommandBuffer& cmd = m_pCmdPool->AllocateCmdBuffers(1);
+		cmd.Begin();
+		{
+			stagingBuffer.CopyToBuffer(cmd, buffer, m_InitDataSize);
+		}
+		cmd.End();
+		cmd.Submit(context.device.GetGraphicQueue(), true);
+		cmd.Free(context.device);
 		stagingBuffer.Destroy(context);
 	}
 	if (m_pName)

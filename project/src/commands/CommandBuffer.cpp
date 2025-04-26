@@ -23,7 +23,7 @@ void pom::CommandBuffer::Initialize(VkCommandPool pool, VkCommandBuffer buffer)
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-VkCommandBuffer& pom::CommandBuffer::GetHandle() { return m_CmdBuffer; }
+const VkCommandBuffer& pom::CommandBuffer::GetHandle() const { return m_CmdBuffer; }
 
 
 //--------------------------------------------------

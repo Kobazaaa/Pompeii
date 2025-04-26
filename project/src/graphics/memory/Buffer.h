@@ -7,6 +7,8 @@
 // -- Forward Declarations --
 namespace pom
 {
+	class CommandBuffer;
+	class Image;
 	class CommandPool;
 	struct Context;
 }
@@ -31,6 +33,12 @@ namespace pom
 		//--------------------------------------------------
 		const VkBuffer& GetHandle() const;
 		const VmaAllocation& GetMemoryHandle() const;
+
+		//--------------------------------------------------
+		//    Commands
+		//--------------------------------------------------
+		void CopyToBuffer(const CommandBuffer& cmd, const Buffer& dst, VkDeviceSize size) const;
+		void CopyToImage(const CommandBuffer& cmd, const Image& dst, VkExtent3D extent, uint32_t mip, uint32_t baseLayer, uint32_t layerCount) const;
 
 	private:
 		VmaAllocation m_Memory;

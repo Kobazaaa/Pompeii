@@ -67,6 +67,234 @@ VkFormat pom::Image::GetFormat()				const		{ return m_ImageInfo.format; }
 VkImageLayout pom::Image::GetCurrentLayout()	const		{ return m_CurrentLayout; }
 bool pom::Image::HasStencilComponent()			const		{ return m_ImageInfo.format == VK_FORMAT_D32_SFLOAT_S8_UINT || m_ImageInfo.format == VK_FORMAT_D24_UNORM_S8_UINT; }
 
+
+//--------------------------------------------------
+//    Commands
+//--------------------------------------------------
+void pom::Image::TransitionLayout(const CommandBuffer& cmd, VkImageLayout newLayout,
+								  VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
+								  VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage,
+								  uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)
+{
+	VkImageMemoryBarrier2 barrier{};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+	barrier.pNext = nullptr;
+
+	barrier.image = m_Image;
+	barrier.oldLayout = m_CurrentLayout;
+	barrier.newLayout = newLayout;
+
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.srcAccessMask = srcAccess;
+	barrier.srcStageMask = srcStage;
+
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstAccessMask = dstAccess;
+	barrier.dstStageMask = dstStage;
+
+	barrier.subresourceRange.aspectMask = 0;
+	if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+	{
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		if (HasStencilComponent()) barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+	}
+	else barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel = baseMip;
+	barrier.subresourceRange.levelCount = mipCount;
+	barrier.subresourceRange.baseArrayLayer = baseLayer;
+	barrier.subresourceRange.layerCount = layerCount;
+
+	VkDependencyInfo dependencyInfo{};
+	dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+	dependencyInfo.dependencyFlags = 0;
+	dependencyInfo.pNext = nullptr;
+	dependencyInfo.memoryBarrierCount = 0;
+	dependencyInfo.pMemoryBarriers = nullptr;
+	dependencyInfo.bufferMemoryBarrierCount = 0;
+	dependencyInfo.pBufferMemoryBarriers = nullptr;
+	dependencyInfo.imageMemoryBarrierCount = 1;
+	dependencyInfo.pImageMemoryBarriers = &barrier;
+
+	vkCmdPipelineBarrier2(cmd.GetHandle(), &dependencyInfo);
+
+	m_CurrentLayout = newLayout;
+}
+
+void pom::Image::GenerateMipMaps(const Context& context, const CommandBuffer& cmd, uint32_t texW, uint32_t texH, uint32_t mips, VkImageLayout finalLayout)
+{
+	// -- Support --
+	VkFormat imageFormat = GetFormat();
+	VkFormatProperties formatProperties = context.physicalDevice.GetFormatProperties(imageFormat);
+
+	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+		throw std::runtime_error("texture image format does not support linear blitting!");
+	if (!(formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+		throw std::runtime_error("texture image format does not support linear blitting!");
+
+	// -- Setup --
+	VkAccessFlags2 finalDstAccessFlags{};
+	VkPipelineStageFlags2 finalDstStageFlags{};
+	if (finalLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+	{
+		finalDstAccessFlags = VK_ACCESS_TRANSFER_WRITE_BIT;
+		finalDstStageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
+	else if (finalLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+	{
+		finalDstAccessFlags = VK_ACCESS_SHADER_READ_BIT;
+		finalDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	}
+	else if (finalLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+	{
+		finalDstAccessFlags = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		finalDstStageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	}
+
+	// -- Blit --
+	VkImageMemoryBarrier2 barrier{};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+	barrier.pNext = nullptr;
+
+	barrier.image = m_Image;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;				// Gets Overwritten
+	barrier.newLayout = VK_IMAGE_LAYOUT_UNDEFINED;				// Gets Overwritten
+
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;	// Gets Overwritten
+	barrier.dstAccessMask = 0;									// Gets Overwritten
+
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;	// Gets Overwritten
+	barrier.srcAccessMask = 0;									// Gets Overwritten
+
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel = 0;					// Gets Overwritten
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+
+	int32_t mipWidth = static_cast<int32_t>(texW);
+	int32_t mipHeight = static_cast<int32_t>(texH);
+	for (uint32_t mip{ 1 }; mip < mips; ++mip)
+	{
+		// -- Setup Barrier --
+		barrier.subresourceRange.baseMipLevel = mip - 1;
+
+		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+		barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		barrier.dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+
+		VkDependencyInfo dependencyInfo{};
+		dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+		dependencyInfo.dependencyFlags = 0;
+		dependencyInfo.pNext = nullptr;
+		dependencyInfo.memoryBarrierCount = 0;
+		dependencyInfo.pMemoryBarriers = nullptr;
+		dependencyInfo.bufferMemoryBarrierCount = 0;
+		dependencyInfo.pBufferMemoryBarriers = nullptr;
+		dependencyInfo.imageMemoryBarrierCount = 1;
+		dependencyInfo.pImageMemoryBarriers = &barrier;
+
+		vkCmdPipelineBarrier2(cmd.GetHandle(), &dependencyInfo);
+
+		// -- Blit --
+		VkImageBlit2 blit{};
+		blit.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2;
+
+		// src
+		blit.srcOffsets[0] = { .x = 0, .y = 0, .z = 0 };
+		blit.srcOffsets[1] = { .x = mipWidth, .y = mipHeight, .z = 1 };
+		blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		blit.srcSubresource.mipLevel = mip - 1;
+		blit.srcSubresource.baseArrayLayer = 0;
+		blit.srcSubresource.layerCount = 1;
+
+		// dst
+		blit.dstOffsets[0] = { .x = 0, .y = 0, .z = 0 };
+		blit.dstOffsets[1] = { .x = mipWidth > 1 ? mipWidth / 2 : 1, .y = mipHeight > 1 ? mipHeight / 2 : 1, .z = 1 };
+		blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		blit.dstSubresource.mipLevel = mip;
+		blit.dstSubresource.baseArrayLayer = 0;
+		blit.dstSubresource.layerCount = 1;
+
+		VkBlitImageInfo2 blitInfo{};
+		blitInfo.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2;
+		blitInfo.pNext = nullptr;
+
+		blitInfo.srcImage = m_Image;
+		blitInfo.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+		blitInfo.dstImage = m_Image;
+		blitInfo.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+		blitInfo.regionCount = 1;
+		blitInfo.pRegions = &blit;
+
+		blitInfo.filter = VK_FILTER_LINEAR;
+
+		vkCmdBlitImage2(cmd.GetHandle(), &blitInfo);
+
+		// -- Barrier --
+		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		barrier.srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+		barrier.newLayout = finalLayout;
+		barrier.dstAccessMask = finalDstAccessFlags;
+		barrier.dstStageMask = finalDstStageFlags;
+
+
+		dependencyInfo = {};
+		dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+		dependencyInfo.dependencyFlags = 0;
+		dependencyInfo.pNext = nullptr;
+		dependencyInfo.memoryBarrierCount = 0;
+		dependencyInfo.pMemoryBarriers = nullptr;
+		dependencyInfo.bufferMemoryBarrierCount = 0;
+		dependencyInfo.pBufferMemoryBarriers = nullptr;
+		dependencyInfo.imageMemoryBarrierCount = 1;
+		dependencyInfo.pImageMemoryBarriers = &barrier;
+
+		vkCmdPipelineBarrier2(cmd.GetHandle(), &dependencyInfo);
+
+		// -- Next Mip --
+		if (mipWidth > 1) mipWidth /= 2;
+		if (mipHeight > 1) mipHeight /= 2;
+	}
+
+	// -- Barrier --
+	barrier.subresourceRange.baseMipLevel = mips - 1;
+
+	barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	barrier.srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+	barrier.newLayout = finalLayout;
+	barrier.dstAccessMask = finalDstAccessFlags;
+	barrier.dstStageMask = finalDstStageFlags;
+
+
+	VkDependencyInfo dependencyInfo{};
+	dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+	dependencyInfo.dependencyFlags = 0;
+	dependencyInfo.pNext = nullptr;
+	dependencyInfo.memoryBarrierCount = 0;
+	dependencyInfo.pMemoryBarriers = nullptr;
+	dependencyInfo.bufferMemoryBarrierCount = 0;
+	dependencyInfo.pBufferMemoryBarriers = nullptr;
+	dependencyInfo.imageMemoryBarrierCount = 1;
+	dependencyInfo.pImageMemoryBarriers = &barrier;
+
+	vkCmdPipelineBarrier2(cmd.GetHandle(), &dependencyInfo);
+
+	m_CurrentLayout = finalLayout;
+}
+
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  ImageBuilder	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -161,10 +389,19 @@ void pom::ImageBuilder::Build(const Context& context, Image& image) const
 			.Allocate(context, stagingBuffer);
 		vmaCopyMemoryToAllocation(context.allocator, m_pData, stagingBuffer.GetMemoryHandle(), m_InitDataOffset, m_InitDataSize);
 
-		m_pCmdPool->TransitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, m_ImageInfo.mipLevels, 0, 1);
-		m_pCmdPool->CopyBufferToImage(stagingBuffer, image, VkExtent3D{ m_InitDataWidth, m_InitDataHeight, 1 }, 0, 0, 1);
-		m_pCmdPool->GenerateMipmaps(image, m_InitDataWidth, m_InitDataHeight, m_ImageInfo.mipLevels, m_FinalLayout);
-
+		CommandBuffer& cmd = m_pCmdPool->AllocateCmdBuffers(1);
+		cmd.Begin();
+		{
+			image.TransitionLayout(cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+								   0, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+								   VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+								   0, m_ImageInfo.mipLevels, 0, 1);
+			stagingBuffer.CopyToImage(cmd, image, VkExtent3D{ m_InitDataWidth, m_InitDataHeight, 1 }, 0, 0, 1);
+			image.GenerateMipMaps(context, cmd, m_InitDataWidth, m_InitDataHeight, m_ImageInfo.mipLevels, m_FinalLayout);
+		}
+		cmd.End();
+		cmd.Submit(context.device.GetGraphicQueue(), true);
+		cmd.Free(context.device);
 		stagingBuffer.Destroy(context);
 	}
 

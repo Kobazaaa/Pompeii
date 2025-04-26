@@ -33,7 +33,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		VkCommandBuffer& GetHandle();
+		const VkCommandBuffer& GetHandle() const;
 
 
 		//--------------------------------------------------
