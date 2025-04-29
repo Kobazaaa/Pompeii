@@ -181,7 +181,7 @@ pom::GraphicsPipelineBuilder::GraphicsPipelineBuilder()
 	m_DynamicStateInfo.pDynamicStates = nullptr;												//? CAN CHANGE
 
 	m_PipelineLayout = VK_NULL_HANDLE;															//! REQUIRED CHANGE										
-	m_RenderPass = VK_NULL_HANDLE;																//! REQUIRED CHANGE
+	m_RenderPass = VK_NULL_HANDLE;																//? CAN CHANGE
 	m_pName = nullptr;																			//? CAN CHANGE
 }
 
@@ -347,12 +347,19 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetRenderPass(const 
 	return *this;
 }
 
+pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetupDynamicRendering(VkPipelineRenderingCreateInfo& dynamicRenderInfo)
+{
+	m_pNext = &dynamicRenderInfo;
+	return *this;
+}
+
 // Build
 void pom::GraphicsPipelineBuilder::Build(const Context& context, GraphicsPipeline& pipeline)
 {
 	m_ColorBlendCreateInfo.pAttachments = &m_ColorBlendAttachmentState;
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineInfo.pNext = m_pNext;
 	pipelineInfo.stageCount = static_cast<uint32_t>(m_vShaderInfo.size());
 	pipelineInfo.pStages = m_vShaderInfo.data();
 	pipelineInfo.pVertexInputState = &m_VertexInputInfo;

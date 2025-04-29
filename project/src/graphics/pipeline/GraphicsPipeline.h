@@ -169,8 +169,10 @@ namespace pom
 
 		//! REQUIRED
 		GraphicsPipelineBuilder& SetPipelineLayout(const GraphicsPipelineLayout& layout);
-		//! REQUIRED
+		// If not set, it is assumed dynamic rendering is taking place
 		GraphicsPipelineBuilder& SetRenderPass(const RenderPass& renderPass);
+		// If not set, it is assumed render pass rendering is taking place
+		GraphicsPipelineBuilder& SetupDynamicRendering(VkPipelineRenderingCreateInfo& dynamicRenderInfo);
 
 		void Build(const Context& context, GraphicsPipeline& pipeline);
 
@@ -188,6 +190,7 @@ namespace pom
 
 		VkPipelineLayout	m_PipelineLayout;
 		VkRenderPass		m_RenderPass;
+		void*				m_pNext;
 		const char*			m_pName{};
 
 		std::vector<VkDynamicState> m_vDynamicStates;
