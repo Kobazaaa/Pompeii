@@ -182,6 +182,7 @@ pom::GraphicsPipelineBuilder::GraphicsPipelineBuilder()
 
 	m_PipelineLayout = VK_NULL_HANDLE;															//! REQUIRED CHANGE										
 	m_RenderPass = VK_NULL_HANDLE;																//? CAN CHANGE
+	m_pNext = nullptr;																			//? CAN CHANGE
 	m_pName = nullptr;																			//? CAN CHANGE
 }
 
