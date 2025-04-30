@@ -152,7 +152,9 @@ Pompeii/
 
 Graphics Programming Teachers at Howest University - Digital Arts & Entertainment <br>
 The Vulkan Tutorial at [vulkan-tutorial.com](https://vulkan-tutorial.com) <br>
-Sponza Scene downloaded from Morgan McGuire's [Computer Graphics Archive](https://casual-effects.com/data)
+Morgan McGuire's [Computer Graphics Archive](https://casual-effects.com/data) <br>
+Extra repository storing all the models and textures used are at [Pompeii Resources Repository](https://github.com/Kobazaaa/PompeiiResources.git)
+
 
 
 ---
