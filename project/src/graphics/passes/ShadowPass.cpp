@@ -120,7 +120,6 @@ void pom::ShadowPass::Initialize(const Context& context, const ShadowPassCreateI
 			.SetFilters(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
 			.SetAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
 			.SetBorderColor(VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE)
-			.EnableAnisotropy(context.physicalDevice.GetProperties().limits.maxSamplerAnisotropy)
 			.Build(context, m_ShadowSampler);
 		m_DeletionQueue.Push([&] { m_ShadowSampler.Destroy(context); });
 	}
