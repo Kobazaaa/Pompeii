@@ -82,7 +82,9 @@ The static Timer class allows you to easily benchmark operations and see how lon
 
 #### Resource Fetching
 
-Resources like models and textures are being fetched from another repo: Link to repository: [GitHub Repo](https://github.com/Kobazaaa/PompeiiResources.git)
+Resources like models and textures are being fetched from another repo.
+<br>
+Link to repository: [GitHub Repo](https://github.com/Kobazaaa/PompeiiResources.git)
 
 ---
 
@@ -123,7 +125,6 @@ Pompeii/
 ├── cmake/			# CMake Scripts.
 ├── images/			# images for the README.md, such as screenshots.
 ├── project/			# project code and assets.
-|	├── models/
 |	├── shaders/
 |	├── src/		# source code.
 |	|    ├── commands/
@@ -136,7 +137,6 @@ Pompeii/
 |	|    ├── helper/
 |	|    ├── presentation/
 |	|    └── scene/
-|	├── textures/
 |	└── CmakeLists.txt	# Build configuration project.
 ├── .gitattributes		
 ├── .gitignore			
