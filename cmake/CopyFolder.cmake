@@ -36,3 +36,20 @@ function(copy_folder COPY_SRC_DIR COPY_DST_DIR COPY_CMD)
     add_dependencies(${PROJECT_NAME} ${COPY_TARGET})
 
 endfunction()
+
+#--------------------------------------------------
+#    COPY REPO TO DESTINATION
+#--------------------------------------------------
+include(FetchContent)
+function(copy_repo_to_exe REPO_URL)
+
+    FetchContent_Declare(
+        repo
+        GIT_REPOSITORY ${REPO_URL}
+        GIT_TAG main
+    )
+    FetchContent_Populate(repo)
+
+    copy_folder_to_exe(${repo_SOURCE_DIR}/ copy_directory)
+
+endfunction()

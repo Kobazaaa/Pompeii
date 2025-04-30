@@ -103,5 +103,4 @@ include("../cmake/FetchAndIncludeLibraries.cmake")
 include("../cmake/CompileShaders.cmake")				# Shaders
 
 include("../cmake/CopyFolder.cmake")
-copy_folder_to_exe("${TEXTURE_DIR}" copy_directory)		# Textures
-copy_folder_to_exe("${MODEL_DIR}" copy_directory)		# Models
+copy_repo_to_exe("https://github.com/Kobazaaa/PompeiiResources.git")
