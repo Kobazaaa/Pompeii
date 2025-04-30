@@ -1,8 +1,11 @@
 ﻿# 🌋 Pompeii
 
-**Pompeii** is a Vulkan-based Graphics Renderer written in C++.
+**Pompeii** is a Vulkan-based Graphics Renderer written in C++, by Kobe Dereyne.
 Pompeii is a learning project to explore the Vulkan API
-during the Graphics Programming 2 course at Howest University - Digital Arts & Entertainment
+during the Graphics Programming 2 course at Howest University - Digital Arts & Entertainment.
+<br>
+<br>
+Link to repository: [GitHub Repo](https://github.com/Kobazaaa/Pompeii.git)
 
 ---
 
@@ -57,6 +60,10 @@ Which probably isn't always what you want, but it's what you get for now.
 
 Since MSAA only smoothens the edges of the geometry and not the interior filling, Sample Shading is also enabled.
 Sample Shading will run the fragment shader per sampler, instead of per pixel/fragment, improving image quality. This obviously comes at a performance cost.
+
+### Shadow Map
+
+I also added a simple shadow map for a directional light to expiriment a little bit with shadows already! Although it is not accurate, and quite a big shadow map texture, it was fun to try out.
 
 ### Debug Help
 
