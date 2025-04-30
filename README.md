@@ -80,6 +80,10 @@ The labels allow you to mark region within a command buffer, which in turn get v
 
 The static Timer class allows you to easily benchmark operations and see how long they take. This can help finding potentional bottlenecks in the program.
 
+#### Resource Fetching
+
+Resources like models and textures are being fetched from another repo: Link to repository: [GitHub Repo](https://github.com/Kobazaaa/PompeiiResources.git)
+
 ---
 
 ## 🎮 Controls
