@@ -16,6 +16,7 @@
 // -- Pompeii Includes --
 #include "Context.h"
 #include "CommandPool.h"
+#include "DepthPrePass.h"
 #include "DescriptorPool.h"
 #include "Window.h"
 #include "Scene.h"
@@ -75,6 +76,7 @@ namespace pom
 
 		// -- Passes --
 		ShadowPass					m_ShadowPass			{ };
+		DepthPrePass				m_DepthPrePass			{ };
 		ForwardPass					m_ForwardPass			{ };
 
 		// -- Scene --

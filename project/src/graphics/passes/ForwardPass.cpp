@@ -119,7 +119,7 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
 			.SetPolygonMode(VK_POLYGON_MODE_FILL)
 			.SetSampleCount(context.physicalDevice.GetMaxSampleCount())
-			.SetDepthTest(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS)
+			.SetDepthTest(VK_TRUE, VK_FALSE, VK_COMPARE_OP_LESS_OR_EQUAL)
 			.SetVertexBindingDesc(Vertex::GetBindingDescription())
 			.SetVertexAttributeDesc(Vertex::GetAttributeDescriptions())
 			.Build(context, m_OpaquePipeline);
@@ -141,7 +141,7 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
 			.SetPolygonMode(VK_POLYGON_MODE_FILL)
 			.SetSampleCount(context.physicalDevice.GetMaxSampleCount())
-			.SetDepthTest(VK_TRUE, VK_FALSE, VK_COMPARE_OP_LESS)
+			.SetDepthTest(VK_TRUE, VK_FALSE, VK_COMPARE_OP_LESS_OR_EQUAL)
 			.SetVertexBindingDesc(Vertex::GetBindingDescription())
 			.SetVertexAttributeDesc(Vertex::GetAttributeDescriptions())
 			.EnableBlend()
@@ -268,11 +268,11 @@ void pom::ForwardPass::Record(const Context& context, CommandBuffer& commandBuff
 	vmaCopyMemoryToAllocation(context.allocator, &ubofs, m_vLightBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(ubofs));
 
 	// Transition Depth Image
-	depthImage.TransitionLayout(commandBuffer,
-		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-		VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
-		VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
-		0, 1, 0, 1);
+	//depthImage.TransitionLayout(commandBuffer,
+	//	VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+	//	VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
+	//	VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+	//	0, 1, 0, 1);
 
 	// Transition MSAA Image
 	m_MSAAImage.TransitionLayout(commandBuffer,
@@ -305,9 +305,8 @@ void pom::ForwardPass::Record(const Context& context, CommandBuffer& commandBuff
 	depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
 	depthAttachment.imageView = depthImage.GetViewHandle();
 	depthAttachment.imageLayout = depthImage.GetCurrentLayout();
-	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	depthAttachment.clearValue.depthStencil = {.depth = 1.0f, .stencil = 0 };
 
 	// Render Info
 	VkRenderingInfo renderingInfo{};

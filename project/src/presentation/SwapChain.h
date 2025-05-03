@@ -73,17 +73,19 @@ namespace pom
 		const VkSwapchainKHR& GetHandle() const;
 		std::vector<Image>& GetImages();
 		uint32_t GetImageCount() const;
-		Image& GetDepthImage();
+		std::vector<Image>& GetDepthImages();
 
 		VkFormat GetFormat() const;
+		VkFormat GetDepthFormat() const;
 		VkExtent2D GetExtent() const;
 
 	private:
 		VkSwapchainKHR				m_SwapChain{ VK_NULL_HANDLE };
-		Image						m_DepthImage{};
+		std::vector<Image>			m_vDepthImages{};
 
 		std::vector<Image>			m_vSwapChainImages{};
 		VkFormat					m_SwapChainImageFormat{};
+		VkFormat					m_DepthFormat{};
 		VkExtent2D					m_SwapChainExtent{};
 
 		friend class SwapChainBuilder;

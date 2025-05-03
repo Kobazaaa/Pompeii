@@ -263,6 +263,17 @@ void pom::Renderer::InitializeVulkan()
 		m_Context.deletionQueue.Push([&] {m_ShadowPass.Destroy(); });
 	}
 
+	// -- Depth PrePass --
+	{
+		DepthPrePassCreateInfo createInfo{};
+		createInfo.pDescriptorPool = &m_DescriptorPool;
+		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
+		createInfo.depthFormat = m_SwapChain.GetDepthFormat();
+
+		m_DepthPrePass.Initialize(m_Context, createInfo);
+		m_Context.deletionQueue.Push([&] {m_DepthPrePass.Destroy(); });
+	}
+
 	// -- Forward Pass --
 	{
 		ForwardPassCreateInfo createInfo{};
@@ -272,7 +283,7 @@ void pom::Renderer::InitializeVulkan()
 		createInfo.pScene = m_pScene;
 		createInfo.extent = m_SwapChain.GetExtent();
 		createInfo.format = m_SwapChain.GetFormat();
-		createInfo.depthFormat = m_SwapChain.GetDepthImage().GetFormat();
+		createInfo.depthFormat = m_SwapChain.GetDepthFormat();
 
 		m_ForwardPass.Initialize(m_Context, createInfo);
 		m_Context.deletionQueue.Push([&] {m_ForwardPass.Destroy(); });
@@ -319,7 +330,7 @@ void pom::Renderer::RecreateSwapChain()
 void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex)
 {
 	Image& swapChainImage = m_SwapChain.GetImages()[imageIndex];
-	Image& depthImage = m_SwapChain.GetDepthImage();
+	Image& depthImage = m_SwapChain.GetDepthImages()[imageIndex];
 
 	commandBuffer.Begin();
 	{
@@ -330,6 +341,15 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
 			VK_ACCESS_2_SHADER_SAMPLED_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+			0, 1, 0, 1);
+
+		// -- Depth PrePass --
+		m_DepthPrePass.Record(m_Context, commandBuffer, imageIndex, depthImage, m_pScene, m_pCamera);
+		// -- Transition Depth Image --
+		m_ShadowPass.GetMap(imageIndex).TransitionLayout(commandBuffer,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+			VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
 			0, 1, 0, 1);
 
 		// -- Record Forward Pass --
