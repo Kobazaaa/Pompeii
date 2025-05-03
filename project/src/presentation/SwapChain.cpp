@@ -73,32 +73,30 @@ void pom::SwapChainBuilder::Build(Context& context, const Window& window, SwapCh
 
 	// -- Retrieve the SwapChain Images --
 	vkGetSwapchainImagesKHR(context.device.GetHandle(), swapChain.m_SwapChain, &imageCount, nullptr);
-	swapChain.m_vSwapChainImages.resize(imageCount);
-	vkGetSwapchainImagesKHR(context.device.GetHandle(), swapChain.m_SwapChain, &imageCount, swapChain.m_vSwapChainImages.data());
+	std::vector<VkImage> swapChainImages;
+	swapChainImages.resize(imageCount);
+	vkGetSwapchainImagesKHR(context.device.GetHandle(), swapChain.m_SwapChain, &imageCount, swapChainImages.data());
 
 	swapChain.m_SwapChainImageFormat = surfaceFormat.format;
 	swapChain.m_SwapChainExtent = extent;
+	swapChain.m_vSwapChainImages.resize(imageCount);
 
-	// -- Create the SwapChain Image Views --
-	swapChain.m_vSwapChainImageViews.resize(imageCount);
-	for (size_t index = 0; index < swapChain.GetImageCount(); ++index)
+	// -- Create the SwapChain Image & Views --
+	swapChain.m_vSwapChainImages.resize(imageCount);
+	for (size_t index = 0; index < swapChainImages.size(); ++index)
 	{
-		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(swapChain.m_vSwapChainImages[index]),
-			VK_OBJECT_TYPE_IMAGE, "Swapchain_Image_" + std::to_string(index));
-
-		VkImageViewCreateInfo viewInfo{};
-		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		viewInfo.image = swapChain.m_vSwapChainImages[index];
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = swapChain.GetFormat();
-		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		viewInfo.subresourceRange.baseMipLevel = 0;
-		viewInfo.subresourceRange.levelCount = 1;
-		viewInfo.subresourceRange.baseArrayLayer = 0;
-		viewInfo.subresourceRange.layerCount = 1;
-
-		if (vkCreateImageView(context.device.GetHandle(), &viewInfo, nullptr, &swapChain.m_vSwapChainImageViews[index]) != VK_SUCCESS)
-			throw std::runtime_error("Failed to create Image View!");
+		std::string name = "Swapchain_Image_" + std::to_string(index);
+		ImageBuilder builder{};
+		builder
+			.SetDebugName(name.c_str())
+			.SetWidth(extent.width)
+			.SetHeight(extent.height)
+			.SetFormat(swapChain.m_SwapChainImageFormat)
+			.SetPreMadeImage(swapChainImages[index])
+			.Build(context, swapChain.m_vSwapChainImages[index]);
+		swapChain.m_vSwapChainImages[index].CreateView(context, swapChain.GetFormat(),
+			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D,
+			0, 1, 0, 1);
 	}
 
 	// -- Create the SwapChain's Depth Image --
@@ -189,8 +187,8 @@ void pom::SwapChain::Destroy(const Context& context) const
 {
 	m_DepthImage.Destroy(context);
 
-	for (const VkImageView& view : m_vSwapChainImageViews)
-		vkDestroyImageView(context.device.GetHandle(), view, nullptr);
+	for (const Image& image : m_vSwapChainImages)
+		vkDestroyImageView(context.device.GetHandle(), image.GetViewHandle(), nullptr);
 
 	vkDestroySwapchainKHR(context.device.GetHandle(), m_SwapChain, nullptr);
 }
@@ -204,11 +202,10 @@ void pom::SwapChain::Recreate(Context& context, const Window& window, CommandPoo
 //    Accessors & Mutators
 //--------------------------------------------------
 const VkSwapchainKHR& pom::SwapChain::GetHandle()	const		{ return m_SwapChain; }
-std::vector<VkImage>& pom::SwapChain::GetImageHandles()			{ return m_vSwapChainImages; }
-std::vector<VkImageView>& pom::SwapChain::GetViewHandles()		{ return m_vSwapChainImageViews; }
+std::vector<pom::Image>& pom::SwapChain::GetImages()			{ return m_vSwapChainImages; }
 
 uint32_t pom::SwapChain::GetImageCount()			const		{ return static_cast<uint32_t>(m_vSwapChainImages.size()); }
-const pom::Image& pom::SwapChain::GetDepthImage()	const		{ return m_DepthImage; }
+pom::Image& pom::SwapChain::GetDepthImage()						{ return m_DepthImage; }
 
 VkFormat pom::SwapChain::GetFormat()				const		{ return m_SwapChainImageFormat; }
 VkExtent2D pom::SwapChain::GetExtent()				const		{ return m_SwapChainExtent; }

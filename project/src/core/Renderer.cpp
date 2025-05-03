@@ -8,7 +8,6 @@
 #include "Camera.h"
 #include "Debugger.h"
 #include "Window.h"
-#include "Shader.h"
 #include "CommandBuffer.h"
 #include "Timer.h"
 
@@ -271,15 +270,12 @@ void pom::Renderer::InitializeVulkan()
 		createInfo.pDescriptorPool = &m_DescriptorPool;
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
 		createInfo.pScene = m_pScene;
-		createInfo.pSwapChain = &m_SwapChain;
+		createInfo.extent = m_SwapChain.GetExtent();
+		createInfo.format = m_SwapChain.GetFormat();
+		createInfo.depthFormat = m_SwapChain.GetDepthImage().GetFormat();
 
 		m_ForwardPass.Initialize(m_Context, createInfo);
 		m_Context.deletionQueue.Push([&] {m_ForwardPass.Destroy(); });
-	}
-
-	// -- Create Frame Buffers & MSAA Image - Requirements - [Device - SwapChain - RenderPass]
-	{
-		CreateFrameBuffers();
 	}
 
 	// -- Create Sync Objects - Requirements - [Device]
@@ -308,7 +304,7 @@ void pom::Renderer::RecreateSwapChain()
 	m_SwapChain.Recreate(m_Context, *m_pWindow, m_CommandPool);
 	m_DeletionQueueSC.Push([&] { m_SwapChain.Destroy(m_Context); });
 
-	CreateFrameBuffers();
+	m_ForwardPass.Resize(m_Context, m_SwapChain.GetExtent(), m_SwapChain.GetFormat());
 
 	const CameraSettings& oldSettings = m_pCamera->GetSettings();
 	const CameraSettings settings
@@ -320,39 +316,11 @@ void pom::Renderer::RecreateSwapChain()
 	};
 	m_pCamera->ChangeSettings(settings);
 }
-void pom::Renderer::CreateFrameBuffers()
-{
-	ImageBuilder iBuilder{};
-	iBuilder
-		.SetDebugName("MSAA Buffer")
-		.SetWidth(m_SwapChain.GetExtent().width)
-		.SetHeight(m_SwapChain.GetExtent().height)
-		.SetFormat(m_SwapChain.GetFormat())
-		.SetMipLevels(1)
-		.SetSampleCount(m_Context.physicalDevice.GetMaxSampleCount())
-		.SetTiling(VK_IMAGE_TILING_OPTIMAL)
-		.SetUsageFlags(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
-		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-		.Build(m_Context, m_MSAAImage);
-	m_MSAAImage.CreateView(m_Context, m_SwapChain.GetFormat(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
-	m_DeletionQueueSC.Push([&] { m_MSAAImage.Destroy(m_Context); });
-
-	for (const VkImageView& view : m_SwapChain.GetViewHandles())
-	{
-		FrameBufferBuilder builder{};
-		builder
-			.SetRenderPass(m_ForwardPass.GetRenderPass())
-			.AddAttachment(m_MSAAImage.GetViewHandle())
-			.AddAttachment(m_SwapChain.GetDepthImage().GetViewHandle())
-			.AddAttachment(view)
-			.SetExtent(m_SwapChain.GetExtent().width, m_SwapChain.GetExtent().height)
-			.Build(m_Context, m_vFrameBuffers);
-	}
-	m_DeletionQueueSC.Push([&] { for (auto& framebuffer : m_vFrameBuffers) framebuffer.Destroy(m_Context); m_vFrameBuffers.clear(); });
-}
-
 void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex)
 {
+	Image& swapChainImage = m_SwapChain.GetImages()[imageIndex];
+	Image& depthImage = m_SwapChain.GetDepthImage();
+
 	commandBuffer.Begin();
 	{
 		// -- Record Shadow Pass --
@@ -363,7 +331,13 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 		// -- Sync --
 
 		// -- Record Forward Pass --
-		m_ForwardPass.Record(m_Context, m_vFrameBuffers[imageIndex], m_SwapChain, commandBuffer, imageIndex, m_pScene, m_pCamera);
+		m_ForwardPass.Record(m_Context, commandBuffer, imageIndex, swapChainImage, depthImage, m_pScene, m_pCamera);
+
+		// -- Transition Image to Present Layout --
+		swapChainImage.TransitionLayout(commandBuffer,
+			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+			VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE, 0, 1, 0, 1);
 	}
 	commandBuffer.End();
 }

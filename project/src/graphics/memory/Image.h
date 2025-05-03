@@ -48,9 +48,12 @@ namespace pom
 		uint32_t			GetLayerCount()			const;
 
 		VkFormat			GetFormat()				const;
+		VkExtent3D			GetExtent3D()			const;
+		VkExtent2D			GetExtent2D()			const;
 		VkImageLayout		GetCurrentLayout()		const;
 
 		bool				HasStencilComponent()	const;
+		bool				HasDepthComponent()		const;
 
 		//--------------------------------------------------
 		//    Commands
@@ -70,6 +73,7 @@ namespace pom
 		VkImageCreateInfo m_ImageInfo	{ };
 
 		friend class ImageBuilder;
+		friend class SwapChainBuilder;
 	};
 
 
@@ -105,6 +109,7 @@ namespace pom
 		ImageBuilder& SetSharingMode(VkSharingMode sharingMode);
 		ImageBuilder& SetImageType(VkImageType type);
 		ImageBuilder& InitialData(void* data, uint32_t offset, uint32_t width, uint32_t height, uint32_t dataSize, VkImageLayout finalLayout, CommandPool& cmdPool);
+		ImageBuilder& SetPreMadeImage(VkImage image);
 
 		void Build(const Context& context, Image& image) const;
 
@@ -120,6 +125,7 @@ namespace pom
 
 		const char* m_pName{};
 
+		VkImage m_PreMadeImage;
 		VkImageCreateInfo m_ImageInfo{};
 		VmaAllocationCreateInfo m_AllocInfo{};
 	};

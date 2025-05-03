@@ -71,10 +71,9 @@ namespace pom
 		//    Accessors & Mutators
 		//--------------------------------------------------
 		const VkSwapchainKHR& GetHandle() const;
-		std::vector<VkImage>& GetImageHandles();
-		std::vector<VkImageView>& GetViewHandles();
+		std::vector<Image>& GetImages();
 		uint32_t GetImageCount() const;
-		const Image& GetDepthImage() const;
+		Image& GetDepthImage();
 
 		VkFormat GetFormat() const;
 		VkExtent2D GetExtent() const;
@@ -83,8 +82,7 @@ namespace pom
 		VkSwapchainKHR				m_SwapChain{ VK_NULL_HANDLE };
 		Image						m_DepthImage{};
 
-		std::vector<VkImage>		m_vSwapChainImages{};
-		std::vector<VkImageView>	m_vSwapChainImageViews{};
+		std::vector<Image>			m_vSwapChainImages{};
 		VkFormat					m_SwapChainImageFormat{};
 		VkExtent2D					m_SwapChainExtent{};
 

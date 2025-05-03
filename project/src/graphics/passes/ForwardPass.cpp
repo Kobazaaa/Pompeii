@@ -7,54 +7,18 @@
 #include "ShadowPass.h"
 #include "Debugger.h"
 #include "Shader.h"
-#include "SwapChain.h"
 #include "DescriptorPool.h"
-#include "FrameBuffer.h"
 #include "Context.h"
 #include "Camera.h"
+#include "ConsoleTextSettings.h"
 #include "Scene.h"
 
 void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreateInfo& createInfo)
 {
-	// -- Render Pass --
+	// -- MSAA Image --
 	{
-		RenderPassBuilder builder{};
-
-		builder
-			.NewSubpass()
-				.SetBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
-				.NewAttachment()
-					.SetFormat(createInfo.pSwapChain->GetFormat())
-					.SetSamples(context.physicalDevice.GetMaxSampleCount())
-					.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE)
-					.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
-					.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-					.SetFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-					.AddSubpassColorAttachment(0)
-				.NewAttachment()
-					.SetFormat(createInfo.pSwapChain->GetDepthImage().GetFormat())
-					.SetSamples(context.physicalDevice.GetMaxSampleCount())
-					.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE)
-					.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
-					.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-					.SetFinalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-					.SetSubpassDepthAttachment(1)
-				.NewAttachment()
-					.SetFormat(createInfo.pSwapChain->GetFormat())
-					.SetSamples(VK_SAMPLE_COUNT_1_BIT)
-					.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE)
-					.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
-					.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-					.SetFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
-					.SetSubpassResolveAttachment(2)
-				.NewDependency()
-					.SetSrcSubPass(VK_SUBPASS_EXTERNAL)
-					.SetDstSubPass(0)
-					.SetSrcMasks(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0)
-					.SetDstMasks(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-						VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-			.Build(context, m_ForwardPass);
-		m_DeletionQueue.Push([&] { m_ForwardPass.Destroy(context); });
+		CreateMSAAImage(context, createInfo.extent, createInfo.format);
+		m_DeletionQueue.Push([&] { m_MSAAImage.Destroy(context); });
 	}
 
 	// -- Descriptor Set Layout --
@@ -122,19 +86,28 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 
 	// -- Pipelines --
 	{
+		// Load in shaders
 		ShaderLoader shaderLoader{};
-
 		ShaderModule vertShader;
 		ShaderModule fragShader;
 		shaderLoader.Load(context, "shaders/shader.vert.spv", vertShader);
 		shaderLoader.Load(context, "shaders/shader.frag.spv", fragShader);
-
 		uint32_t arraySize = static_cast<uint32_t>(createInfo.pScene->model.images.size());
+
+		// Setup dynamic rendering info
+		VkPipelineRenderingCreateInfo renderingCreateInfo{};
+		VkFormat format = createInfo.format;
+		renderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+		renderingCreateInfo.colorAttachmentCount = 1;
+		renderingCreateInfo.pColorAttachmentFormats = &format;
+		renderingCreateInfo.depthAttachmentFormat = createInfo.depthFormat;
+
+		// Create pipeline
 		GraphicsPipelineBuilder builder{};
 		builder
 			.SetDebugName("Graphics Pipeline (Default)")
 			.SetPipelineLayout(m_DefaultPipelineLayout)
-			.SetRenderPass(m_ForwardPass)
+			.SetupDynamicRendering(renderingCreateInfo)
 			.AddDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
 			.AddDynamicState(VK_DYNAMIC_STATE_SCISSOR)
 			.AddShader(vertShader, VK_SHADER_STAGE_VERTEX_BIT)
@@ -157,7 +130,7 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 		builder
 			.SetDebugName("Graphics Pipeline (Transparent)")
 			.SetPipelineLayout(m_DefaultPipelineLayout)
-			.SetRenderPass(m_ForwardPass)
+			.SetupDynamicRendering(renderingCreateInfo)
 			.AddDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
 			.AddDynamicState(VK_DYNAMIC_STATE_SCISSOR)
 			.AddShader(vertShader, VK_SHADER_STAGE_VERTEX_BIT)
@@ -262,44 +235,101 @@ void pom::ForwardPass::Destroy()
 	m_DeletionQueue.Flush();
 }
 
-void pom::ForwardPass::Record(const Context& context, const FrameBuffer& fb, const SwapChain& sc, CommandBuffer& commandBuffer, uint32_t imageIndex, Scene* pScene, Camera* pCamera)
+void pom::ForwardPass::Resize(const Context& context, VkExtent2D extent, VkFormat format)
 {
+	m_MSAAImage.Destroy(context);
+	CreateMSAAImage(context, extent, format);
+}
+void pom::ForwardPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Image& recordImage, Image& depthImage, Scene* pScene, Camera* pCamera)
+{
+	// Do sizes match?!
+	VkExtent3D extentImage = recordImage.GetExtent3D();
+	VkExtent3D extentMSAA = m_MSAAImage.GetExtent3D();
+	if (extentImage.width  != extentMSAA.width  ||
+		extentImage.height != extentMSAA.height || 
+		extentImage.depth  != extentMSAA.depth)
+	{
+		std::cout << WARNING_TXT << "RecordImage and MSAA Image have different sizes and thus are incompatible! Did you forget to resize?\n" << RESET_TXT;
+		return;
+	}
+
+	// Update VS UBO
 	UniformBufferVS ubo;
 	ubo.view = pCamera->GetViewMatrix();
 	ubo.proj = pCamera->GetProjectionMatrix();
 	ubo.lightSpace = pScene->directionalLight.GetLightSpaceMatrix();
 	vmaCopyMemoryToAllocation(context.allocator, &ubo, m_vUniformBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(ubo));
 
+	// Update FS UBO
 	UniformBufferFS ubofs;
 	ubofs.intensity = pScene->directionalLight.GetIntensity();
 	ubofs.color = pScene->directionalLight.GetColor();
 	ubofs.dir = pScene->directionalLight.GetDirection();
 	vmaCopyMemoryToAllocation(context.allocator, &ubofs, m_vLightBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(ubofs));
 
+	// Transition Depth Image
+	depthImage.TransitionLayout(commandBuffer,
+		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+		VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
+		VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+		0, 1, 0, 1);
+
+	// Transition MSAA Image
+	m_MSAAImage.TransitionLayout(commandBuffer,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
+		VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+		0, 1, 0, 1);
+
+	// Transition Swapchain Image
+	recordImage.TransitionLayout(commandBuffer,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
+		VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+		0, 1, 0, 1);
+
+	// Setup attachments
+	VkRenderingAttachmentInfo colorAttachment{};
+	colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+	colorAttachment.imageView = m_MSAAImage.GetViewHandle();
+	colorAttachment.imageLayout = m_MSAAImage.GetCurrentLayout();
+	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachment.clearValue.color = { {0.53f, 0.81f, 0.92f, 1.0f} };
+	colorAttachment.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
+	colorAttachment.resolveImageLayout = recordImage.GetCurrentLayout();
+	colorAttachment.resolveImageView = recordImage.GetViewHandle();
+
+
+	VkRenderingAttachmentInfo depthAttachment{};
+	depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+	depthAttachment.imageView = depthImage.GetViewHandle();
+	depthAttachment.imageLayout = depthImage.GetCurrentLayout();
+	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.clearValue.depthStencil = {.depth = 1.0f, .stencil = 0 };
+
+	// Render Info
+	VkRenderingInfo renderingInfo{};
+	renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+	renderingInfo.renderArea = VkRect2D{ VkOffset2D{0, 0}, recordImage.GetExtent2D() };
+	renderingInfo.layerCount = 1;
+	renderingInfo.colorAttachmentCount = 1;
+	renderingInfo.pColorAttachments = &colorAttachment;
+	renderingInfo.pDepthAttachment = &depthAttachment;
+	renderingInfo.pStencilAttachment = nullptr;
+
+	// Render
 	const VkCommandBuffer& vCmdBuffer = commandBuffer.GetHandle();
-	VkRenderPassBeginInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = m_ForwardPass.GetHandle();
-	renderPassInfo.framebuffer = fb.GetHandle();
-	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = sc.GetExtent();
-
-	std::array<VkClearValue, 2> clearValues{};
-	clearValues[0].color = { {0.53f, 0.81f, 0.92f, 1.0f} };
-	clearValues[1].depthStencil = { .depth = 1.0f, .stencil = 0 };
-
-	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassInfo.pClearValues = clearValues.data();
-
 	Debugger::BeginDebugLabel(commandBuffer, "Render Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
-	vkCmdBeginRenderPass(vCmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRendering(vCmdBuffer, &renderingInfo);
 	{
 		// -- Set Dynamic Viewport --
 		VkViewport viewport;
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(sc.GetExtent().width);
-		viewport.height = static_cast<float>(sc.GetExtent().height);
+		viewport.width = static_cast<float>(recordImage.GetExtent2D().width);
+		viewport.height = static_cast<float>(recordImage.GetExtent2D().height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Viewport", glm::vec4(0.2f, 1.f, 0.2f, 1.f));
@@ -308,7 +338,7 @@ void pom::ForwardPass::Record(const Context& context, const FrameBuffer& fb, con
 		// -- Set Dynamic Scissors --
 		VkRect2D scissor;
 		scissor.offset = { .x = 0, .y = 0 };
-		scissor.extent = sc.GetExtent();
+		scissor.extent = recordImage.GetExtent2D();
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Scissor", glm::vec4(1.f, 1.f, 0.2f, 1.f));
 		vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
 
@@ -390,11 +420,23 @@ void pom::ForwardPass::Record(const Context& context, const FrameBuffer& fb, con
 			Debugger::InsertDebugLabel(commandBuffer, "Draw Transparent Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
 		}
 	}
-	vkCmdEndRenderPass(vCmdBuffer);
+	vkCmdEndRendering(vCmdBuffer);
 	Debugger::EndDebugLabel(commandBuffer);
 }
 
-const pom::RenderPass& pom::ForwardPass::GetRenderPass() const
+void pom::ForwardPass::CreateMSAAImage(const Context& context, VkExtent2D extent, VkFormat format)
 {
-	return m_ForwardPass;
+	ImageBuilder iBuilder{};
+	iBuilder
+		.SetDebugName("MSAA Buffer")
+		.SetWidth(extent.width)
+		.SetHeight(extent.height)
+		.SetFormat(format)
+		.SetMipLevels(1)
+		.SetSampleCount(context.physicalDevice.GetMaxSampleCount())
+		.SetTiling(VK_IMAGE_TILING_OPTIMAL)
+		.SetUsageFlags(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		.Build(context, m_MSAAImage);
+	m_MSAAImage.CreateView(context, format, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
 }

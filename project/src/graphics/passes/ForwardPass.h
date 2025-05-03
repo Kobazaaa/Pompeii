@@ -8,8 +8,8 @@
 #include "DeletionQueue.h"
 #include "DescriptorSet.h"
 #include "GraphicsPipeline.h"
-#include "RenderPass.h"
 #include "Sampler.h"
+#include "Image.h"
 
 // -- Forward Declarations --
 namespace pom
@@ -32,7 +32,9 @@ namespace pom
 	{
 		uint32_t maxFramesInFlight{};
 		Scene* pScene{};
-		SwapChain* pSwapChain{};
+		VkExtent2D extent{};
+		VkFormat format{};
+		VkFormat depthFormat{};
 		DescriptorPool* pDescriptorPool{};
 		ShadowPass* pShadowPass{};
 	};
@@ -49,13 +51,8 @@ namespace pom
 		//--------------------------------------------------
 		void Initialize(const Context& context, const ForwardPassCreateInfo& createInfo);
 		void Destroy();
-		void Record(const Context& context, const FrameBuffer& fb, const SwapChain& sc, CommandBuffer& commandBuffer, uint32_t imageIndex, Scene* pScene, Camera* pCamera);
-
-		//--------------------------------------------------
-		//    Accessors & Mutators
-		//--------------------------------------------------
-		const RenderPass& GetRenderPass() const;
-
+		void Resize(const Context& context, VkExtent2D extent, VkFormat format);
+		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Image& recordImage, Image& depthImage, Scene* pScene, Camera* pCamera);
 
 		//--------------------------------------------------
 		//    Shader Infos
@@ -92,9 +89,6 @@ namespace pom
 		};
 
 	private:
-		// -- Pass --
-		RenderPass					m_ForwardPass			{ };
-
 		// -- Pipeline --
 		GraphicsPipelineLayout		m_DefaultPipelineLayout	{ };
 		GraphicsPipeline			m_OpaquePipeline		{ };
@@ -102,6 +96,8 @@ namespace pom
 
 		// -- Image --
 		Sampler						m_Sampler				{ };
+		Image						m_MSAAImage				{ };
+		void CreateMSAAImage(const Context& context, VkExtent2D extent, VkFormat format);
 
 		// -- Descriptors --
 		DescriptorSetLayout			m_UniformDSL			{ };

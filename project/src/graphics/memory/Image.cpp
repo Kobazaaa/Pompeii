@@ -64,8 +64,34 @@ uint32_t pom::Image::GetMipLevels()				const		{ return m_ImageInfo.mipLevels; }
 uint32_t pom::Image::GetLayerCount()			const		{ return m_ImageInfo.arrayLayers; }
 
 VkFormat pom::Image::GetFormat()				const		{ return m_ImageInfo.format; }
+VkExtent3D pom::Image::GetExtent3D()			const		{ return m_ImageInfo.extent; }
+VkExtent2D pom::Image::GetExtent2D()			const		{ return VkExtent2D{ m_ImageInfo.extent.width, m_ImageInfo.extent.height}; }
 VkImageLayout pom::Image::GetCurrentLayout()	const		{ return m_CurrentLayout; }
-bool pom::Image::HasStencilComponent()			const		{ return m_ImageInfo.format == VK_FORMAT_D32_SFLOAT_S8_UINT || m_ImageInfo.format == VK_FORMAT_D24_UNORM_S8_UINT; }
+bool pom::Image::HasStencilComponent()			const
+{
+	switch (m_ImageInfo.format)
+	{
+	case VK_FORMAT_D32_SFLOAT_S8_UINT:
+	case VK_FORMAT_D24_UNORM_S8_UINT:
+		return true;
+	default:
+		return false;
+	}
+}
+bool pom::Image::HasDepthComponent()			const
+{
+	switch (m_ImageInfo.format)
+	{
+	case VK_FORMAT_D16_UNORM:
+	case VK_FORMAT_X8_D24_UNORM_PACK32:
+	case VK_FORMAT_D32_SFLOAT:
+	case VK_FORMAT_D24_UNORM_S8_UINT:
+	case VK_FORMAT_D32_SFLOAT_S8_UINT:
+		return true;
+	default:
+		return false;
+	}
+}
 
 
 //--------------------------------------------------
@@ -93,7 +119,7 @@ void pom::Image::TransitionLayout(const CommandBuffer& cmd, VkImageLayout newLay
 	barrier.dstStageMask = dstStage;
 
 	barrier.subresourceRange.aspectMask = 0;
-	if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+	if (HasDepthComponent())
 	{
 		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 		if (HasStencilComponent()) barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
@@ -325,6 +351,7 @@ pom::ImageBuilder::ImageBuilder()
 	m_AllocInfo.usage = VMA_MEMORY_USAGE_AUTO;						// CAN'T CHANGE
 	m_AllocInfo.requiredFlags = 0;									//? CAN CHANGE
 
+	m_PreMadeImage = VK_NULL_HANDLE;								//? CAN CHANGE
 	m_pName = nullptr;												//? CAN CHANGE
 	m_UseInitialData = false;										//? CAN CHANGE
 	m_pData = nullptr;												//? CAN CHANGE
@@ -370,13 +397,22 @@ pom::ImageBuilder& pom::ImageBuilder::InitialData(void* data, uint32_t offset, u
 	m_pCmdPool = &cmdPool;
 	return *this;
 }
+pom::ImageBuilder& pom::ImageBuilder::SetPreMadeImage(VkImage image)
+{
+	m_PreMadeImage = image;
+	return *this;
+}
 
 void pom::ImageBuilder::Build(const Context& context, Image& image) const
 {
 	image.m_ImageInfo = m_ImageInfo;
 	image.m_CurrentLayout = m_ImageInfo.initialLayout;
-	if (vmaCreateImage(context.allocator, &m_ImageInfo, &m_AllocInfo, &image.m_Image, &image.m_ImageMemory, nullptr) != VK_SUCCESS)
-		throw std::runtime_error("Failed to create Image!");
+	image.m_Image = m_PreMadeImage;
+	if (image.m_Image == VK_NULL_HANDLE)
+	{
+		if (vmaCreateImage(context.allocator, &m_ImageInfo, &m_AllocInfo, &image.m_Image, &image.m_ImageMemory, nullptr) != VK_SUCCESS)
+			throw std::runtime_error("Failed to create Image!");
+	}
 
 	if (m_UseInitialData)
 	{

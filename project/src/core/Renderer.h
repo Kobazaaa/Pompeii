@@ -17,7 +17,6 @@
 #include "Context.h"
 #include "CommandPool.h"
 #include "DescriptorPool.h"
-#include "FrameBuffer.h"
 #include "Window.h"
 #include "Scene.h"
 #include "SwapChain.h"
@@ -65,9 +64,7 @@ namespace pom
 
 		// -- SwapChain --
 		SwapChain					m_SwapChain				{ };
-		std::vector<FrameBuffer>	m_vFrameBuffers			{ };
 		uint32_t					m_MaxFramesInFlight		{ 3 };
-		Image						m_MSAAImage				{ };
 
 		// -- Pools --
 		DescriptorPool				m_DescriptorPool		{ };
@@ -87,7 +84,6 @@ namespace pom
 		//    Helpers
 		//--------------------------------------------------
 		void RecreateSwapChain();
-		void CreateFrameBuffers();
 		void RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex);
 
 		// -- Window --
