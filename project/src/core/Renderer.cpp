@@ -325,14 +325,15 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 	{
 		// -- Record Shadow Pass --
 		m_ShadowPass.Record(m_Context, commandBuffer, imageIndex, m_pScene);
-
-		// -- Sync --
-		// No explicit synchronization needed, as the subpass dependencies of the Shadow Pass take care of this
-		// -- Sync --
+		// -- Transition Shadow Pass Image --
+		m_ShadowPass.GetMap(imageIndex).TransitionLayout(commandBuffer,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+			VK_ACCESS_2_SHADER_SAMPLED_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+			0, 1, 0, 1);
 
 		// -- Record Forward Pass --
 		m_ForwardPass.Record(m_Context, commandBuffer, imageIndex, swapChainImage, depthImage, m_pScene, m_pCamera);
-
 		// -- Transition Image to Present Layout --
 		swapChainImage.TransitionLayout(commandBuffer,
 			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,

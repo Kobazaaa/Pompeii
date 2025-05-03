@@ -44,7 +44,7 @@ namespace pom
 		//    Accessors & Mutators
 		//--------------------------------------------------
 		const Sampler& GetSampler() const;
-		const Image& GetMap(uint32_t idx) const;
+		Image& GetMap(uint32_t idx);
 
 		//--------------------------------------------------
 		//    Shader Infos
@@ -59,9 +59,6 @@ namespace pom
 		};
 
 	private:
-		// -- Pass --
-		RenderPass					m_ShadowPass			{ };
-
 		// -- Pipeline --
 		GraphicsPipelineLayout		m_ShadowPipelineLayout	{ };
 		GraphicsPipeline			m_ShadowPipeline		{ };
@@ -75,7 +72,6 @@ namespace pom
 		std::vector<DescriptorSet>	m_vLightDataDS			{ };
 
 		// -- Buffers --
-		std::vector<FrameBuffer>	m_vFrameBuffers			{ };
 		std::vector<Buffer>			m_vLightDataBuffers		{ };
 
 		// -- DQ --

@@ -8,36 +8,6 @@
 
 void pom::ShadowPass::Initialize(const Context& context, const ShadowPassCreateInfo& createInfo)
 {
-	// -- Shadow Pass --
-	{
-		RenderPassBuilder builder{};
-		builder
-			.NewSubpass()
-				.SetBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
-				.NewAttachment()
-					.SetFormat(VK_FORMAT_D32_SFLOAT)
-					.SetSamples(VK_SAMPLE_COUNT_1_BIT)
-					.SetLoadStoreOp(VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE)
-					.SetStencilLoadStoreOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE)
-					.SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-					.SetFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-				.SetSubpassDepthAttachment(0)
-			.NewDependency()
-				.AddDependencyFlag(VK_DEPENDENCY_BY_REGION_BIT)
-				.SetSrcSubPass(VK_SUBPASS_EXTERNAL)
-				.SetDstSubPass(0)
-				.SetSrcMasks(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT)
-				.SetDstMasks(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-			.NewDependency()
-				.AddDependencyFlag(VK_DEPENDENCY_BY_REGION_BIT)
-				.SetSrcSubPass(0)
-				.SetDstSubPass(VK_SUBPASS_EXTERNAL)
-				.SetSrcMasks(VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-				.SetDstMasks(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT)
-			.Build(context, m_ShadowPass);
-		m_DeletionQueue.Push([&] { m_ShadowPass.Destroy(context); });
-	}
-
 	// -- Descriptor Set Layout --
 	{
 		DescriptorSetLayoutBuilder builder{};
@@ -69,11 +39,16 @@ void pom::ShadowPass::Initialize(const Context& context, const ShadowPassCreateI
 		ShaderModule vertShader;
 		shaderLoader.Load(context, "shaders/shadowmap.vert.spv", vertShader);
 
+		// Setup dynamic rendering info
+		VkPipelineRenderingCreateInfo renderingCreateInfo{};
+		renderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+		renderingCreateInfo.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
+
 		GraphicsPipelineBuilder builder{};
 		builder
 			.SetDebugName("Shadow Pipeline")
 			.SetPipelineLayout(m_ShadowPipelineLayout)
-			.SetRenderPass(m_ShadowPass)
+			.SetupDynamicRendering(renderingCreateInfo)
 			.AddDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
 			.AddDynamicState(VK_DYNAMIC_STATE_SCISSOR)
 			.AddShader(vertShader, VK_SHADER_STAGE_VERTEX_BIT)
@@ -124,20 +99,6 @@ void pom::ShadowPass::Initialize(const Context& context, const ShadowPassCreateI
 		m_DeletionQueue.Push([&] { m_ShadowSampler.Destroy(context); });
 	}
 
-	// -- Shadow FrameBuffers --
-	{
-		for (const Image& image : m_vShadowMaps)
-		{
-			FrameBufferBuilder builder{};
-			builder
-				.SetRenderPass(m_ShadowPass)
-				.AddAttachment(image.GetViewHandle())
-				.SetExtent(createInfo.extent.x, createInfo.extent.y)
-				.Build(context, m_vFrameBuffers);
-		}
-		m_DeletionQueue.Push([&] { for (auto& framebuffer : m_vFrameBuffers) framebuffer.Destroy(context); m_vFrameBuffers.clear(); });
-	}
-
 	// -- Buffers --
 	{
 		m_vLightDataBuffers.resize(createInfo.maxFramesInFlight);
@@ -179,28 +140,39 @@ void pom::ShadowPass::Record(const Context& context, CommandBuffer& commandBuffe
 	light.lightSpace = pScene->directionalLight.GetLightSpaceMatrix();
 	vmaCopyMemoryToAllocation(context.allocator, &light, m_vLightDataBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(light));
 
+	// Transition Image
+	m_vShadowMaps[imageIndex].TransitionLayout(commandBuffer,
+		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+		VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
+		VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+		0, 1, 0, 1);
+
+	// Setup attachments
+	VkRenderingAttachmentInfo depthAttachment{};
+	depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+	depthAttachment.imageView = m_vShadowMaps[imageIndex].GetViewHandle();
+	depthAttachment.imageLayout = m_vShadowMaps[imageIndex].GetCurrentLayout();
+	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	depthAttachment.clearValue.depthStencil = { .depth = 1.0f, .stencil = 0 };
+
+	// Render Info
+	VkRenderingInfo renderingInfo{};
+	renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+	renderingInfo.renderArea = VkRect2D{ VkOffset2D{0, 0}, m_vShadowMaps[imageIndex].GetExtent2D() };
+	renderingInfo.layerCount = 1;
+	renderingInfo.pDepthAttachment = &depthAttachment;
+
 	const VkCommandBuffer& vCmdBuffer = commandBuffer.GetHandle();
-	VkRenderPassBeginInfo shadowPassInfo{};
-	shadowPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	shadowPassInfo.renderPass = m_ShadowPass.GetHandle();
-	shadowPassInfo.framebuffer = m_vFrameBuffers[imageIndex].GetHandle();
-	shadowPassInfo.renderArea.offset = { .x = 0, .y = 0 };
-	shadowPassInfo.renderArea.extent = m_vFrameBuffers[imageIndex].GetExtent();
-
-	VkClearValue clearValue{};
-	clearValue.depthStencil = { .depth = 1.0f, .stencil = 0 };
-	shadowPassInfo.clearValueCount = 1;
-	shadowPassInfo.pClearValues = &clearValue;
-
 	Debugger::BeginDebugLabel(commandBuffer, "Shadow Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
-	vkCmdBeginRenderPass(vCmdBuffer, &shadowPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRendering(vCmdBuffer, &renderingInfo);
 	{
 		// -- Set Dynamic Viewport --
 		VkViewport viewport;
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(m_vFrameBuffers[imageIndex].GetExtent().width);
-		viewport.height = static_cast<float>(m_vFrameBuffers[imageIndex].GetExtent().height);
+		viewport.width = static_cast<float>(m_vShadowMaps[imageIndex].GetExtent2D().width);
+		viewport.height = static_cast<float>(m_vShadowMaps[imageIndex].GetExtent2D().height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Viewport", glm::vec4(0.2f, 1.f, 0.2f, 1.f));
@@ -209,7 +181,7 @@ void pom::ShadowPass::Record(const Context& context, CommandBuffer& commandBuffe
 		// -- Set Dynamic Scissors --
 		VkRect2D scissor;
 		scissor.offset = { .x = 0, .y = 0 };
-		scissor.extent = m_vFrameBuffers[imageIndex].GetExtent();
+		scissor.extent = m_vShadowMaps[imageIndex].GetExtent2D();
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Scissor", glm::vec4(1.f, 1.f, 0.2f, 1.f));
 		vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
 
@@ -237,7 +209,7 @@ void pom::ShadowPass::Record(const Context& context, CommandBuffer& commandBuffe
 			Debugger::InsertDebugLabel(commandBuffer, "Draw Opaque Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
 		}
 	}
-	vkCmdEndRenderPass(vCmdBuffer);
+	vkCmdEndRendering(vCmdBuffer);
 	Debugger::EndDebugLabel(commandBuffer);
 }
 
@@ -245,8 +217,7 @@ const pom::Sampler& pom::ShadowPass::GetSampler() const
 {
 	return m_ShadowSampler;
 }
-
-const pom::Image& pom::ShadowPass::GetMap(uint32_t idx) const
+pom::Image& pom::ShadowPass::GetMap(uint32_t idx)
 {
 	return m_vShadowMaps[idx];
 }
