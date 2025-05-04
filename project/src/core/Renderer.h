@@ -65,6 +65,7 @@ namespace pom
 
 		// -- SwapChain --
 		SwapChain					m_SwapChain				{ };
+		std::vector<Image>			m_vDepthImages			{ };
 		uint32_t					m_MaxFramesInFlight		{ 3 };
 
 		// -- Pools --
@@ -86,6 +87,7 @@ namespace pom
 		//    Helpers
 		//--------------------------------------------------
 		void RecreateSwapChain();
+		void CreateDepthResources(const Context& context, VkExtent2D extent);
 		void RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex);
 
 		// -- Window --
@@ -94,10 +96,6 @@ namespace pom
 
 		// -- Frame Counter --
 		uint32_t			m_CurrentFrame		{ 0 };
-
-		// -- Deletion Queues --
-		DeletionQueue		m_DeletionQueueSC	{ };
-
 	};
 }
 

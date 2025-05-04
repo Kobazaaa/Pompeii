@@ -20,7 +20,7 @@
 pom::SwapChainBuilder& pom::SwapChainBuilder::SetDesiredImageCount(uint32_t count) { m_DesiredImageCount = count; return *this; }
 pom::SwapChainBuilder& pom::SwapChainBuilder::SetImageUsage(VkImageUsageFlags usage) { m_CreateInfo.imageUsage = usage; return *this; }
 pom::SwapChainBuilder& pom::SwapChainBuilder::SetImageArrayLayers(uint32_t layerCount) { m_CreateInfo.imageArrayLayers = layerCount; return *this; }
-void pom::SwapChainBuilder::Build(Context& context, const Window& window, SwapChain& swapChain, CommandPool& cmdPool)
+void pom::SwapChainBuilder::Build(Context& context, const Window& window, SwapChain& swapChain)
 {
 	// -- Get Support Details --
 	const SwapChainSupportDetails swapChainSupport = context.physicalDevice.GetSwapChainSupportDetails(window.GetVulkanSurface());
@@ -98,39 +98,6 @@ void pom::SwapChainBuilder::Build(Context& context, const Window& window, SwapCh
 			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D,
 			0, 1, 0, 1);
 	}
-
-	swapChain.m_vDepthImages.resize(imageCount);
-	for (Image& image : swapChain.m_vDepthImages)
-	{
-		// -- Create the SwapChain's Depth Image --
-		swapChain.m_DepthFormat = Image::FindSupportedFormat(context.physicalDevice,
-			{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
-			VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-		ImageBuilder imageBuilder{};
-		imageBuilder
-			.SetDebugName("Depth Buffer")
-			.SetWidth(extent.width)
-			.SetHeight(extent.height)
-			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
-			.SetSampleCount(context.physicalDevice.GetMaxSampleCount())
-			.SetFormat(swapChain.m_DepthFormat)
-			.SetUsageFlags(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-			.Build(context, image);
-		image.CreateView(context, swapChain.m_DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
-		CommandBuffer& cmd = cmdPool.AllocateCmdBuffers(1);
-		cmd.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-		{
-			image.TransitionLayout(
-				cmd, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-				0, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
-				VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-				0, 1, 0, 1);
-		}
-		cmd.End();
-		cmd.Submit(context.device.GetGraphicQueue(), true);
-		cmd.Free(context.device);
-	}
 }
 
 //--------------------------------------------------
@@ -189,17 +156,14 @@ VkPresentModeKHR pom::SwapChainBuilder::ChooseSwapPresentMode(const std::vector<
 //--------------------------------------------------
 void pom::SwapChain::Destroy(const Context& context) const
 {
-	for (const Image& image : m_vDepthImages)
-		image.Destroy(context);
-
 	for (const Image& image : m_vSwapChainImages)
 		vkDestroyImageView(context.device.GetHandle(), image.GetViewHandle(), nullptr);
 
 	vkDestroySwapchainKHR(context.device.GetHandle(), m_SwapChain, nullptr);
 }
-void pom::SwapChain::Recreate(Context& context, const Window& window, CommandPool& cmdPool)
+void pom::SwapChain::Recreate(Context& context, const Window& window)
 {
-	m_OriginalBuilder.Build(context, window, *this, cmdPool);
+	m_OriginalBuilder.Build(context, window, *this);
 }
 
 
@@ -210,8 +174,6 @@ const VkSwapchainKHR& pom::SwapChain::GetHandle()	const		{ return m_SwapChain; }
 std::vector<pom::Image>& pom::SwapChain::GetImages()			{ return m_vSwapChainImages; }
 
 uint32_t pom::SwapChain::GetImageCount()			const		{ return static_cast<uint32_t>(m_vSwapChainImages.size()); }
-std::vector<pom::Image>& pom::SwapChain::GetDepthImages()		{ return m_vDepthImages; }
 
 VkFormat pom::SwapChain::GetFormat()				const		{ return m_SwapChainImageFormat; }
-VkFormat pom::SwapChain::GetDepthFormat()			const		{ return m_DepthFormat; }
 VkExtent2D pom::SwapChain::GetExtent()				const		{ return m_SwapChainExtent; }

@@ -26,7 +26,6 @@ void pom::Renderer::Initialize(Camera* pCamera, Window* pWindow)
 void pom::Renderer::Destroy()
 {
 	m_Context.device.WaitIdle();
-	m_DeletionQueueSC.Flush();
 	m_Context.deletionQueue.Flush();
 }
 
@@ -224,14 +223,12 @@ void pom::Renderer::InitializeVulkan()
 	// -- Create SwapChain - Requirements - [Device - Allocator - Physical Device, Window, Command Pool]
 	{
 		SwapChainBuilder builder;
-
 		builder
 			.SetDesiredImageCount(m_MaxFramesInFlight)
 			.SetImageArrayLayers(1)
 			.SetImageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
-			.Build(m_Context, *m_pWindow, m_SwapChain, m_CommandPool);
-
-		m_DeletionQueueSC.Push([&] { m_SwapChain.Destroy(m_Context); });
+			.Build(m_Context, *m_pWindow, m_SwapChain);
+		m_Context.deletionQueue.Push([&] { m_SwapChain.Destroy(m_Context); });
 	}
 
 	// -- Allocate Scene - Requirements - []
@@ -252,6 +249,12 @@ void pom::Renderer::InitializeVulkan()
 		m_Context.deletionQueue.Push([&] {m_DescriptorPool.Destroy(m_Context); });
 	}
 
+	// -- Depth Resources --
+	{
+		CreateDepthResources(m_Context, m_SwapChain.GetExtent());
+		m_Context.deletionQueue.Push([&] { for (const Image& image : m_vDepthImages) image.Destroy(m_Context); });
+	}
+
 	// -- Shadow Pass --
 	{
 		ShadowPassCreateInfo createInfo{};
@@ -268,7 +271,7 @@ void pom::Renderer::InitializeVulkan()
 		DepthPrePassCreateInfo createInfo{};
 		createInfo.pDescriptorPool = &m_DescriptorPool;
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
-		createInfo.depthFormat = m_SwapChain.GetDepthFormat();
+		createInfo.depthFormat = m_vDepthImages[0].GetFormat();
 
 		m_DepthPrePass.Initialize(m_Context, createInfo);
 		m_Context.deletionQueue.Push([&] {m_DepthPrePass.Destroy(); });
@@ -283,7 +286,7 @@ void pom::Renderer::InitializeVulkan()
 		createInfo.pScene = m_pScene;
 		createInfo.extent = m_SwapChain.GetExtent();
 		createInfo.format = m_SwapChain.GetFormat();
-		createInfo.depthFormat = m_SwapChain.GetDepthFormat();
+		createInfo.depthFormat = m_vDepthImages[0].GetFormat();
 
 		m_ForwardPass.Initialize(m_Context, createInfo);
 		m_Context.deletionQueue.Push([&] {m_ForwardPass.Destroy(); });
@@ -310,11 +313,17 @@ void pom::Renderer::RecreateSwapChain()
 	}
 
 	m_Context.device.WaitIdle();
-	m_DeletionQueueSC.Flush();
 
-	m_SwapChain.Recreate(m_Context, *m_pWindow, m_CommandPool);
-	m_DeletionQueueSC.Push([&] { m_SwapChain.Destroy(m_Context); });
+	// Swap Chain
+	m_SwapChain.Destroy(m_Context);
+	m_SwapChain.Recreate(m_Context, *m_pWindow);
 
+	// Depth
+	for (const Image& image : m_vDepthImages)
+		image.Destroy(m_Context);
+	CreateDepthResources(m_Context, m_SwapChain.GetExtent());
+
+	// Passes
 	m_ForwardPass.Resize(m_Context, m_SwapChain.GetExtent(), m_SwapChain.GetFormat());
 
 	const CameraSettings& oldSettings = m_pCamera->GetSettings();
@@ -327,10 +336,34 @@ void pom::Renderer::RecreateSwapChain()
 	};
 	m_pCamera->ChangeSettings(settings);
 }
+
+void pom::Renderer::CreateDepthResources(const Context& context, VkExtent2D extent)
+{
+	m_vDepthImages.resize(m_MaxFramesInFlight);
+	for (Image& image : m_vDepthImages)
+	{
+		const auto format = Image::FindSupportedFormat(context.physicalDevice,
+			{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+			VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+		ImageBuilder imageBuilder{};
+		imageBuilder
+			.SetDebugName("Depth Buffer")
+			.SetWidth(extent.width)
+			.SetHeight(extent.height)
+			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
+			.SetSampleCount(context.physicalDevice.GetMaxSampleCount())
+			.SetFormat(format)
+			.SetUsageFlags(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+			.Build(context, image);
+		image.CreateView(context, format, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
+	}
+}
+
 void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex)
 {
 	Image& swapChainImage = m_SwapChain.GetImages()[imageIndex];
-	Image& depthImage = m_SwapChain.GetDepthImages()[imageIndex];
+	Image& depthImage = m_vDepthImages[imageIndex];
 
 	commandBuffer.Begin();
 	{
@@ -346,8 +379,8 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 		// -- Depth PrePass --
 		m_DepthPrePass.Record(m_Context, commandBuffer, imageIndex, depthImage, m_pScene, m_pCamera);
 		// -- Transition Depth Image --
-		m_ShadowPass.GetMap(imageIndex).TransitionLayout(commandBuffer,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		depthImage.TransitionLayout(commandBuffer,
+			VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 			VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
 			VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
 			0, 1, 0, 1);

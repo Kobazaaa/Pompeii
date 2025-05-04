@@ -39,7 +39,7 @@ namespace pom
 		SwapChainBuilder& SetDesiredImageCount(uint32_t count);
 		SwapChainBuilder& SetImageUsage(VkImageUsageFlags usage);
 		SwapChainBuilder& SetImageArrayLayers(uint32_t layerCount);
-		void Build(Context& context, const Window& window, SwapChain& swapChain, CommandPool& cmdPool);
+		void Build(Context& context, const Window& window, SwapChain& swapChain);
 
 	private:
 		//--------------------------------------------------
@@ -65,7 +65,7 @@ namespace pom
 		//--------------------------------------------------
 		SwapChain() = default;
 		void Destroy(const Context& context) const;
-		void Recreate(Context& context, const Window& window, CommandPool& cmdPool);
+		void Recreate(Context& context, const Window& window);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
@@ -73,19 +73,15 @@ namespace pom
 		const VkSwapchainKHR& GetHandle() const;
 		std::vector<Image>& GetImages();
 		uint32_t GetImageCount() const;
-		std::vector<Image>& GetDepthImages();
 
 		VkFormat GetFormat() const;
-		VkFormat GetDepthFormat() const;
 		VkExtent2D GetExtent() const;
 
 	private:
 		VkSwapchainKHR				m_SwapChain{ VK_NULL_HANDLE };
-		std::vector<Image>			m_vDepthImages{};
 
 		std::vector<Image>			m_vSwapChainImages{};
 		VkFormat					m_SwapChainImageFormat{};
-		VkFormat					m_DepthFormat{};
 		VkExtent2D					m_SwapChainExtent{};
 
 		friend class SwapChainBuilder;
