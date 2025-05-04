@@ -156,9 +156,9 @@ namespace pom
 
 		// Blend Info
 		// Off by default
-		GraphicsPipelineBuilder& EnableBlend();
+		GraphicsPipelineBuilder& EnableBlend(uint32_t attachment);
 		// If not set, RGBA assumed by default
-		GraphicsPipelineBuilder& SetColorWriteMask(VkColorComponentFlags colorComponents);
+		GraphicsPipelineBuilder& SetColorWriteMask(VkColorComponentFlags colorComponents, uint32_t attachment);
 		// If not set, ONE, ZERO, ADD assumed by default
 		GraphicsPipelineBuilder& SetColorBlend(VkBlendFactor src, VkBlendFactor dst, VkBlendOp op);
 		// If not set, ONE, ZERO, ADD assumed by default
@@ -178,20 +178,21 @@ namespace pom
 
 	private:
 		// wtf vulkan
-		VkPipelineVertexInputStateCreateInfo	m_VertexInputInfo{};
-		VkPipelineInputAssemblyStateCreateInfo	m_InputAssembly{};
-		VkPipelineViewportStateCreateInfo		m_ViewportState{};
-		VkPipelineRasterizationStateCreateInfo	m_RasterizerInfo{};
-		VkPipelineMultisampleStateCreateInfo	m_MultiSamplingInfo{};
-		VkPipelineDepthStencilStateCreateInfo	m_DepthStencilInfo{};
-		VkPipelineColorBlendAttachmentState		m_ColorBlendAttachmentState{};
-		VkPipelineColorBlendStateCreateInfo		m_ColorBlendCreateInfo{};
-		VkPipelineDynamicStateCreateInfo		m_DynamicStateInfo{};
+		VkPipelineVertexInputStateCreateInfo				m_VertexInputInfo{};
+		VkPipelineInputAssemblyStateCreateInfo				m_InputAssembly{};
+		VkPipelineViewportStateCreateInfo					m_ViewportState{};
+		VkPipelineRasterizationStateCreateInfo				m_RasterizerInfo{};
+		VkPipelineMultisampleStateCreateInfo				m_MultiSamplingInfo{};
+		VkPipelineDepthStencilStateCreateInfo				m_DepthStencilInfo{};
+		std::vector<VkPipelineColorBlendAttachmentState>	m_vColorBlendAttachmentState{};
+		VkPipelineColorBlendStateCreateInfo					m_ColorBlendCreateInfo{};
+		VkPipelineDynamicStateCreateInfo					m_DynamicStateInfo{};
 
 		VkPipelineLayout	m_PipelineLayout;
 		VkRenderPass		m_RenderPass;
 		void*				m_pNext;
 		const char*			m_pName{};
+		uint32_t			m_CurrentAttachment{};
 
 		std::vector<VkDynamicState> m_vDynamicStates;
 		std::vector<VkPipelineShaderStageCreateInfo> m_vShaderInfo;

@@ -144,9 +144,9 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 			.SetDepthTest(VK_TRUE, VK_FALSE, VK_COMPARE_OP_LESS_OR_EQUAL)
 			.SetVertexBindingDesc(Vertex::GetBindingDescription())
 			.SetVertexAttributeDesc(Vertex::GetAttributeDescriptions())
-			.EnableBlend()
-			.SetColorBlend(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD)
-			.SetAlphaBlend(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD)
+			.EnableBlend(0)
+				.SetColorBlend(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD)
+				.SetAlphaBlend(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD)
 			.Build(context, m_TransparentPipeline);
 		m_DeletionQueue.Push([&] { m_TransparentPipeline.Destroy(context); });
 

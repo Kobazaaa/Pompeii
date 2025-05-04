@@ -151,25 +151,14 @@ pom::GraphicsPipelineBuilder::GraphicsPipelineBuilder()
 	m_DepthStencilInfo.front = {};																// CAN'T CHANGE
 	m_DepthStencilInfo.back = {};																// CAN'T CHANGE
 
-	m_ColorBlendAttachmentState = {};
-	m_ColorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |						//? CAN CHANGE
-												 VK_COLOR_COMPONENT_G_BIT |
-												 VK_COLOR_COMPONENT_B_BIT |
-												 VK_COLOR_COMPONENT_A_BIT;
-	m_ColorBlendAttachmentState.blendEnable = VK_FALSE;											//? CAN CHANGE
-	m_ColorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;						//? CAN CHANGE
-	m_ColorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;						//? CAN CHANGE
-	m_ColorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;									//? CAN CHANGE
-	m_ColorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;						//? CAN CHANGE
-	m_ColorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;						//? CAN CHANGE
-	m_ColorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;									//? CAN CHANGE
+	m_vColorBlendAttachmentState.clear();														//? CAN CHANGE
 
 	m_ColorBlendCreateInfo = {};
 	m_ColorBlendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;	// CAN'T CHANGE
 	m_ColorBlendCreateInfo.logicOpEnable = VK_FALSE;											// CAN'T CHANGE							
 	m_ColorBlendCreateInfo.logicOp = VK_LOGIC_OP_COPY;											// CAN'T CHANGE
-	m_ColorBlendCreateInfo.attachmentCount = 1;													// CAN'T CHANGE
-	m_ColorBlendCreateInfo.pAttachments = &m_ColorBlendAttachmentState;							//? CAN CHANGE
+	m_ColorBlendCreateInfo.attachmentCount = 0;													//? CAN CHANGE
+	m_ColorBlendCreateInfo.pAttachments = nullptr;												//? CAN CHANGE
 	m_ColorBlendCreateInfo.blendConstants[0] = 0.0f;											// CAN'T CHANGE
 	m_ColorBlendCreateInfo.blendConstants[1] = 0.0f;											// CAN'T CHANGE
 	m_ColorBlendCreateInfo.blendConstants[2] = 0.0f;											// CAN'T CHANGE
@@ -302,28 +291,31 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetDepthTest(VkBool3
 }
 
 // Blend Info
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::EnableBlend()
+pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::EnableBlend(uint32_t attachment)
 {
-	m_ColorBlendAttachmentState.blendEnable = VK_TRUE;
+	m_CurrentAttachment = attachment;
+	m_vColorBlendAttachmentState[m_CurrentAttachment].blendEnable = VK_TRUE;
 	return *this;
 }
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetColorWriteMask(VkColorComponentFlags colorComponents)
+
+pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetColorWriteMask(VkColorComponentFlags colorComponents, uint32_t attachment)
 {
-	m_ColorBlendAttachmentState.colorWriteMask = colorComponents;
+	m_CurrentAttachment = attachment;
+	m_vColorBlendAttachmentState[m_CurrentAttachment].colorWriteMask = colorComponents;
 	return *this;
 }
 pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetColorBlend(VkBlendFactor src, VkBlendFactor dst, VkBlendOp op)
 {
-	m_ColorBlendAttachmentState.srcColorBlendFactor = src;
-	m_ColorBlendAttachmentState.dstColorBlendFactor = dst;
-	m_ColorBlendAttachmentState.colorBlendOp = op;
+	m_vColorBlendAttachmentState[m_CurrentAttachment].srcColorBlendFactor = src;
+	m_vColorBlendAttachmentState[m_CurrentAttachment].dstColorBlendFactor = dst;
+	m_vColorBlendAttachmentState[m_CurrentAttachment].colorBlendOp = op;
 	return *this;
 }
 pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetAlphaBlend(VkBlendFactor src, VkBlendFactor dst, VkBlendOp op)
 {
-	m_ColorBlendAttachmentState.srcAlphaBlendFactor = src;
-	m_ColorBlendAttachmentState.dstAlphaBlendFactor = dst;
-	m_ColorBlendAttachmentState.alphaBlendOp = op;
+	m_vColorBlendAttachmentState[m_CurrentAttachment].srcAlphaBlendFactor = src;
+	m_vColorBlendAttachmentState[m_CurrentAttachment].dstAlphaBlendFactor = dst;
+	m_vColorBlendAttachmentState[m_CurrentAttachment].alphaBlendOp = op;
 	return *this;
 }
 
@@ -345,19 +337,58 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetPipelineLayout(co
 pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetRenderPass(const RenderPass& renderPass)
 {
 	m_RenderPass = renderPass.GetHandle();
+	for (uint32_t i{}; i < renderPass.GetAttachmentCount(); ++i)
+	{
+		m_vColorBlendAttachmentState.push_back(
+			{
+				.blendEnable = VK_FALSE,
+				.srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
+				.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+				.colorBlendOp = VK_BLEND_OP_ADD,
+				.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+				.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+				.alphaBlendOp = VK_BLEND_OP_ADD,
+				.colorWriteMask =
+						VK_COLOR_COMPONENT_R_BIT |
+						VK_COLOR_COMPONENT_G_BIT |
+						VK_COLOR_COMPONENT_B_BIT |
+						VK_COLOR_COMPONENT_A_BIT
+			}
+		);
+	}
 	return *this;
 }
 
 pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetupDynamicRendering(VkPipelineRenderingCreateInfo& dynamicRenderInfo)
 {
 	m_pNext = &dynamicRenderInfo;
+	for (uint32_t i{}; i < dynamicRenderInfo.colorAttachmentCount; ++i)
+	{
+		m_vColorBlendAttachmentState.push_back(
+			{
+				.blendEnable = VK_FALSE,
+				.srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
+				.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+				.colorBlendOp = VK_BLEND_OP_ADD,
+				.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+				.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+				.alphaBlendOp = VK_BLEND_OP_ADD,
+				.colorWriteMask =
+						VK_COLOR_COMPONENT_R_BIT |
+						VK_COLOR_COMPONENT_G_BIT |
+						VK_COLOR_COMPONENT_B_BIT |
+						VK_COLOR_COMPONENT_A_BIT
+			}
+		);
+	}
 	return *this;
 }
 
 // Build
 void pom::GraphicsPipelineBuilder::Build(const Context& context, GraphicsPipeline& pipeline)
 {
-	m_ColorBlendCreateInfo.pAttachments = &m_ColorBlendAttachmentState;
+	m_ColorBlendCreateInfo.attachmentCount = static_cast<uint32_t>(m_vColorBlendAttachmentState.size());
+	m_ColorBlendCreateInfo.pAttachments = m_vColorBlendAttachmentState.data();
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineInfo.pNext = m_pNext;

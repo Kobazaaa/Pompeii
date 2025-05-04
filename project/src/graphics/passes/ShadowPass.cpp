@@ -55,7 +55,6 @@ void pom::ShadowPass::Initialize(const Context& context, const ShadowPassCreateI
 			.SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 			.SetCullMode(VK_CULL_MODE_FRONT_BIT)
 			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
-			.SetColorWriteMask(0)
 			.EnableDepthBias(1.25f, 1.75f)
 			.SetPolygonMode(VK_POLYGON_MODE_FILL)
 			.SetDepthTest(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS)

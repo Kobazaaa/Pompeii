@@ -64,7 +64,6 @@ void pom::DepthPrePass::Initialize(const Context& context, const DepthPrePassCre
 			.AddShader(vertShader, VK_SHADER_STAGE_VERTEX_BIT)
 			.SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 			.SetCullMode(VK_CULL_MODE_BACK_BIT)
-			.SetColorWriteMask(0)
 			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
 			.SetPolygonMode(VK_POLYGON_MODE_FILL)
 			.SetDepthTest(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS)
@@ -147,7 +146,7 @@ void pom::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuf
 
 	// Render
 	const VkCommandBuffer& vCmdBuffer = commandBuffer.GetHandle();
-	Debugger::BeginDebugLabel(commandBuffer, "Render Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
+	Debugger::BeginDebugLabel(commandBuffer, "Depth Pre-Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
 	vkCmdBeginRendering(vCmdBuffer, &renderingInfo);
 	{
 		// -- Set Dynamic Viewport --

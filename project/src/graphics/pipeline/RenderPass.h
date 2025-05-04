@@ -29,9 +29,11 @@ namespace pom
 		//    Accessors & Mutators
 		//--------------------------------------------------
 		const VkRenderPass& GetHandle() const;
+		uint32_t GetAttachmentCount() const;
 
 	private:
 		VkRenderPass m_RenderPass;
+		uint32_t m_AttachmentCount;
 		friend class RenderPassBuilder;
 	};
 

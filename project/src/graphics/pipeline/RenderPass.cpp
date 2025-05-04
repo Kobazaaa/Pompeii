@@ -20,7 +20,7 @@ void pom::RenderPass::Destroy(const Context& context)		const { vkDestroyRenderPa
 //    Accessors & Mutators
 //--------------------------------------------------
 const VkRenderPass& pom::RenderPass::GetHandle()	const { return m_RenderPass; }
-
+uint32_t pom::RenderPass::GetAttachmentCount()		const {	return m_AttachmentCount; }
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -102,9 +102,10 @@ pom::RenderPassBuilder& pom::RenderPassBuilder::SetDstMasks(VkPipelineStageFlags
 
 void pom::RenderPassBuilder::Build(const Context& context, RenderPass& renderPass) const
 {
+	renderPass.m_AttachmentCount = static_cast<uint32_t>(m_vAttachmentDescriptions.size());
 	VkRenderPassCreateInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = static_cast<uint32_t>(m_vAttachmentDescriptions.size());
+	renderPassInfo.attachmentCount = renderPass.m_AttachmentCount;
 	renderPassInfo.pAttachments = m_vAttachmentDescriptions.data();
 	renderPassInfo.subpassCount = static_cast<uint32_t>(m_vSubPasses.size());
 	renderPassInfo.pSubpasses = m_vSubPasses.data();
