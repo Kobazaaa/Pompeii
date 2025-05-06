@@ -67,7 +67,7 @@ void pom::DepthPrePass::Initialize(const Context& context, const DepthPrePassCre
 			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
 			.SetPolygonMode(VK_POLYGON_MODE_FILL)
 			.SetDepthTest(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS)
-			.SetSampleCount(context.physicalDevice.GetMaxSampleCount())
+			//.SetSampleCount(context.physicalDevice.GetMaxSampleCount())
 			.SetVertexBindingDesc(Vertex::GetBindingDescription())
 			.SetVertexAttributeDesc(Vertex::GetAttributeDescriptions())
 			.Build(context, m_Pipeline);
@@ -195,4 +195,11 @@ void pom::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuf
 	}
 	vkCmdEndRendering(vCmdBuffer);
 	Debugger::EndDebugLabel(commandBuffer);
+
+	// Transition Depth Image
+	depthImage.TransitionLayout(commandBuffer,
+		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+		VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+		VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+		0, 1, 0, 1);
 }

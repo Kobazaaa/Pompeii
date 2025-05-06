@@ -292,6 +292,19 @@ void pom::Renderer::InitializeVulkan()
 		m_Context.deletionQueue.Push([&] {m_ForwardPass.Destroy(); });
 	}
 
+	// -- Geometry Pass --
+	{
+		GeometryPassCreateInfo createInfo{};
+		createInfo.pDescriptorPool = &m_DescriptorPool;
+		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
+		createInfo.pScene = m_pScene;
+		createInfo.extent = m_SwapChain.GetExtent();
+		createInfo.depthFormat = m_vDepthImages[0].GetFormat();
+
+		m_GeometryPass.Initialize(m_Context, createInfo);
+		m_Context.deletionQueue.Push([&] {m_GeometryPass.Destroy(); });
+	}
+
 	// -- Create Sync Objects - Requirements - [Device]
 	{
 		m_SyncManager.Create(m_Context, m_MaxFramesInFlight);
@@ -325,6 +338,7 @@ void pom::Renderer::RecreateSwapChain()
 
 	// Passes
 	m_ForwardPass.Resize(m_Context, m_SwapChain.GetExtent(), m_SwapChain.GetFormat());
+	m_GeometryPass.Resize(m_Context, m_SwapChain.GetExtent());
 
 	const CameraSettings& oldSettings = m_pCamera->GetSettings();
 	const CameraSettings settings
@@ -351,7 +365,7 @@ void pom::Renderer::CreateDepthResources(const Context& context, VkExtent2D exte
 			.SetWidth(extent.width)
 			.SetHeight(extent.height)
 			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
-			.SetSampleCount(context.physicalDevice.GetMaxSampleCount())
+			//.SetSampleCount(context.physicalDevice.GetMaxSampleCount())
 			.SetFormat(format)
 			.SetUsageFlags(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
 			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
@@ -362,33 +376,27 @@ void pom::Renderer::CreateDepthResources(const Context& context, VkExtent2D exte
 
 void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex)
 {
-	Image& swapChainImage = m_SwapChain.GetImages()[imageIndex];
+	Image& renderImage = m_SwapChain.GetImages()[imageIndex];
 	Image& depthImage = m_vDepthImages[imageIndex];
 
 	commandBuffer.Begin();
 	{
-		// -- Record Shadow Pass --
+		// The ShadowPass generates a depth image from the POV of the light. After it is done it transition the image layout.
 		m_ShadowPass.Record(m_Context, commandBuffer, imageIndex, m_pScene);
-		// -- Transition Shadow Pass Image --
-		m_ShadowPass.GetMap(imageIndex).TransitionLayout(commandBuffer,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
-			VK_ACCESS_2_SHADER_SAMPLED_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-			0, 1, 0, 1);
 
-		// -- Depth PrePass --
+		// The Depth Pre-Pass renders the entire scene to the provided depth buffer.
+		// After it is done it transitions the depth image to ready for usage.
 		m_DepthPrePass.Record(m_Context, commandBuffer, imageIndex, depthImage, m_pScene, m_pCamera);
-		// -- Transition Depth Image --
-		depthImage.TransitionLayout(commandBuffer,
-			VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-			VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
-			VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
-			0, 1, 0, 1);
 
-		// -- Record Forward Pass --
-		m_ForwardPass.Record(m_Context, commandBuffer, imageIndex, swapChainImage, depthImage, m_pScene, m_pCamera);
-		// -- Transition Image to Present Layout --
-		swapChainImage.TransitionLayout(commandBuffer,
+		// The Geometry Pass renders the entire scene to a GBuffer.
+		// After it is done, the GBuffers are transitioned to a layout ready for being sampled from.
+		m_GeometryPass.Record(m_Context, commandBuffer, imageIndex, depthImage, m_pScene, m_pCamera);
+
+		// The Forward Pass renders the entire screen to the provided image.
+		//m_ForwardPass.Record(m_Context, commandBuffer, imageIndex, renderImage, depthImage, m_pScene, m_pCamera);
+
+		// At last, transition the renderImage to be readied from presentation!
+		renderImage.TransitionLayout(commandBuffer,
 			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 			VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
 			VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE, 0, 1, 0, 1);

@@ -1,5 +1,5 @@
-#ifndef DEPTH_PRE_PASS_H
-#define DEPTH_PRE_PASS_H
+#ifndef GEOMETRY_PASS_H
+#define GEOMETRY_PASS_H
 
 // -- Math Includes --
 #include "glm/glm.hpp"
@@ -7,6 +7,7 @@
 // -- Pompeii Includes --
 #include "DeletionQueue.h"
 #include "DescriptorSet.h"
+#include "GBuffer.h"
 #include "GraphicsPipeline.h"
 #include "Sampler.h"
 #include "Image.h"
@@ -25,26 +26,35 @@ namespace pom
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Create Info	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	struct DepthPrePassCreateInfo
+	struct GeometryPassCreateInfo
 	{
 		uint32_t maxFramesInFlight{};
+		Scene* pScene{};
+		VkExtent2D extent{};
 		VkFormat depthFormat{};
 		DescriptorPool* pDescriptorPool{};
 	};
 
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  Depth PrePass	
+	//? ~~	  Geometry Pass	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	class DepthPrePass final
+	class GeometryPass final
 	{
 	public:
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		void Initialize(const Context& context, const DepthPrePassCreateInfo& createInfo);
+		void Initialize(const Context& context, const GeometryPassCreateInfo& createInfo);
 		void Destroy();
+		void Resize(const Context& context, VkExtent2D extent);
 		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Image& depthImage, Scene* pScene, Camera* pCamera);
+
+		//--------------------------------------------------
+		//    Accessors & Mutators
+		//--------------------------------------------------
+		const std::vector<GBuffer>& GetGBuffers() const;
+		const GBuffer& GetGBuffer(uint32_t index) const;
 
 		//--------------------------------------------------
 		//    Shader Infos
@@ -59,6 +69,19 @@ namespace pom
 			glm::mat4 model;
 		};
 
+		struct PCMaterialDataFS
+		{
+			// -- Textures --
+			uint32_t diffuseIdx;
+			uint32_t opacityIdx;
+			uint32_t specularIdx;
+			uint32_t shininessIdx;
+			uint32_t heightIdx;
+
+			// -- Data --
+			float expo;
+		};
+
 	private:
 		// -- Pipeline --
 		GraphicsPipelineLayout		m_PipelineLayout{ };
@@ -68,12 +91,17 @@ namespace pom
 		DescriptorSetLayout			m_UniformDSL{ };
 		std::vector<DescriptorSet>	m_vUniformDS{ };
 
-		// -- Buffers --
-		std::vector<Buffer>			m_vUniformBuffers{ };
+		DescriptorSetLayout			m_TextureDSL{ };
+		DescriptorSet				m_TextureDS{ };
 
-		// -- DQ --
+		// -- Buffers --
+		std::vector<GBuffer>		m_vGBuffers;
+		std::vector<Buffer>			m_vUniformBuffers;
+
+		Sampler						m_TextureSampler{ };
+
 		DeletionQueue				m_DeletionQueue{ };
 	};
 }
 
-#endif // DEPTH_PRE_PASS_H
+#endif // GEOMETRY_PASS_H

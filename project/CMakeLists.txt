@@ -33,12 +33,14 @@ set(SOURCES
 	# graphics
 	 # graphics/memory
 	"${SOURCE_DIR}/graphics/memory/Buffer.h"				"${SOURCE_DIR}/graphics/memory/Buffer.cpp"
+	"${SOURCE_DIR}/graphics/memory/GBuffer.h"				"${SOURCE_DIR}/graphics/memory/GBuffer.cpp"
 	"${SOURCE_DIR}/graphics/memory/Image.h"					"${SOURCE_DIR}/graphics/memory/Image.cpp"
 	"${SOURCE_DIR}/graphics/memory/Sampler.h"				"${SOURCE_DIR}/graphics/memory/Sampler.cpp"
 	"${SOURCE_DIR}/graphics/memory/SyncManager.h"			"${SOURCE_DIR}/graphics/memory/SyncManager.cpp"
 	 # graphics/passes
 	"${SOURCE_DIR}/graphics/passes/DepthPrePass.h"			"${SOURCE_DIR}/graphics/passes/DepthPrePass.cpp"
 	"${SOURCE_DIR}/graphics/passes/ForwardPass.h"			"${SOURCE_DIR}/graphics/passes/ForwardPass.cpp"
+	"${SOURCE_DIR}/graphics/passes/GeometryPass.h"			"${SOURCE_DIR}/graphics/passes/GeometryPass.cpp"
 	"${SOURCE_DIR}/graphics/passes/ShadowPass.h"			"${SOURCE_DIR}/graphics/passes/ShadowPass.cpp"
 	 # graphics/pipeline
 	"${SOURCE_DIR}/graphics/pipeline/DescriptorPool.h"		"${SOURCE_DIR}/graphics/pipeline/DescriptorPool.cpp"

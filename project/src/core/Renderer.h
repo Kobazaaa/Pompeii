@@ -19,10 +19,10 @@
 #include "DepthPrePass.h"
 #include "DescriptorPool.h"
 #include "Window.h"
-#include "Scene.h"
 #include "SwapChain.h"
 #include "SyncManager.h"
 #include "ForwardPass.h"
+#include "GeometryPass.h"
 #include "ShadowPass.h"
 
 
@@ -79,6 +79,7 @@ namespace pom
 		ShadowPass					m_ShadowPass			{ };
 		DepthPrePass				m_DepthPrePass			{ };
 		ForwardPass					m_ForwardPass			{ };
+		GeometryPass				m_GeometryPass			{ };
 
 		// -- Scene --
 		Scene*						m_pScene{ };

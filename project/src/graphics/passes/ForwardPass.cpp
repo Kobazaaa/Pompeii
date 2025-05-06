@@ -267,13 +267,7 @@ void pom::ForwardPass::Record(const Context& context, CommandBuffer& commandBuff
 	ubofs.dir = pScene->directionalLight.GetDirection();
 	vmaCopyMemoryToAllocation(context.allocator, &ubofs, m_vLightBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(ubofs));
 
-	// Transition Depth Image
-	//depthImage.TransitionLayout(commandBuffer,
-	//	VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-	//	VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
-	//	VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
-	//	0, 1, 0, 1);
-
+	// todo is this needed? I don't think the layout ever changes?
 	// Transition MSAA Image
 	m_MSAAImage.TransitionLayout(commandBuffer,
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
