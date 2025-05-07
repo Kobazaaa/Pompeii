@@ -305,6 +305,19 @@ void pom::Renderer::InitializeVulkan()
 		m_Context.deletionQueue.Push([&] {m_GeometryPass.Destroy(); });
 	}
 
+	// -- Lighting Pass --
+	{
+		LightingPassCreateInfo createInfo{};
+		createInfo.pDescriptorPool = &m_DescriptorPool;
+		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
+		createInfo.pGeometryPass = &m_GeometryPass;
+		createInfo.format = m_SwapChain.GetFormat();
+		createInfo.depthFormat = m_vDepthImages[0].GetFormat();
+
+		m_LightingPass.Initialize(m_Context, createInfo);
+		m_Context.deletionQueue.Push([&] {m_LightingPass.Destroy(); });
+	}
+
 	// -- Create Sync Objects - Requirements - [Device]
 	{
 		m_SyncManager.Create(m_Context, m_MaxFramesInFlight);
@@ -339,6 +352,7 @@ void pom::Renderer::RecreateSwapChain()
 	// Passes
 	m_ForwardPass.Resize(m_Context, m_SwapChain.GetExtent(), m_SwapChain.GetFormat());
 	m_GeometryPass.Resize(m_Context, m_SwapChain.GetExtent());
+	m_LightingPass.Resize(m_Context, m_GeometryPass);
 
 	const CameraSettings& oldSettings = m_pCamera->GetSettings();
 	const CameraSettings settings
@@ -394,6 +408,9 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 
 		// The Forward Pass renders the entire screen to the provided image.
 		//m_ForwardPass.Record(m_Context, commandBuffer, imageIndex, renderImage, depthImage, m_pScene, m_pCamera);
+
+		// The Lighting Pass calculates all the heavy lighting calculations using the data from the Geometry Pass
+		m_LightingPass.Record(m_Context, commandBuffer, imageIndex, renderImage, depthImage, m_pScene, m_pCamera);
 
 		// At last, transition the renderImage to be readied from presentation!
 		renderImage.TransitionLayout(commandBuffer,

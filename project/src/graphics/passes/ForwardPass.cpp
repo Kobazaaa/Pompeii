@@ -276,6 +276,7 @@ void pom::ForwardPass::Record(const Context& context, CommandBuffer& commandBuff
 		0, 1, 0, 1);
 
 	// Transition Swapchain Image
+	// todo should this handle it?
 	recordImage.TransitionLayout(commandBuffer,
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,

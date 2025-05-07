@@ -23,6 +23,7 @@
 #include "SyncManager.h"
 #include "ForwardPass.h"
 #include "GeometryPass.h"
+#include "LightingPass.h"
 #include "ShadowPass.h"
 
 
@@ -80,6 +81,7 @@ namespace pom
 		DepthPrePass				m_DepthPrePass			{ };
 		ForwardPass					m_ForwardPass			{ };
 		GeometryPass				m_GeometryPass			{ };
+		LightingPass				m_LightingPass			{ };
 
 		// -- Scene --
 		Scene*						m_pScene{ };

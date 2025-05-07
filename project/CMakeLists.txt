@@ -41,6 +41,7 @@ set(SOURCES
 	"${SOURCE_DIR}/graphics/passes/DepthPrePass.h"			"${SOURCE_DIR}/graphics/passes/DepthPrePass.cpp"
 	"${SOURCE_DIR}/graphics/passes/ForwardPass.h"			"${SOURCE_DIR}/graphics/passes/ForwardPass.cpp"
 	"${SOURCE_DIR}/graphics/passes/GeometryPass.h"			"${SOURCE_DIR}/graphics/passes/GeometryPass.cpp"
+	"${SOURCE_DIR}/graphics/passes/LightingPass.h"			"${SOURCE_DIR}/graphics/passes/LightingPass.cpp"
 	"${SOURCE_DIR}/graphics/passes/ShadowPass.h"			"${SOURCE_DIR}/graphics/passes/ShadowPass.cpp"
 	 # graphics/pipeline
 	"${SOURCE_DIR}/graphics/pipeline/DescriptorPool.h"		"${SOURCE_DIR}/graphics/pipeline/DescriptorPool.cpp"
