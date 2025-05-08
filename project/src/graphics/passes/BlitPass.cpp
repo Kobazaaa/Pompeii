@@ -1,5 +1,5 @@
 // -- Pompeii Includes --
-#include "LightingPass.h"
+#include "BlitPass.h"
 #include "Context.h"
 #include "Debugger.h"
 #include "GBuffer.h"
@@ -7,27 +7,18 @@
 #include "Shader.h"
 #include "Scene.h"
 
-void pom::LightingPass::Initialize(const Context& context, const LightingPassCreateInfo& createInfo)
+void pom::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo& createInfo)
 {
 	// -- Descriptor Set Layout --
 	{
 		DescriptorSetLayoutBuilder builder{};
 		builder
-			.SetDebugName("GBuffer Textures Layout")
+			.SetDebugName("Rendered Texture")
 			.NewLayoutBinding()
 				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
-			.NewLayoutBinding()
-				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
-			.NewLayoutBinding()
-				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
-			.NewLayoutBinding()
-				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
-			.Build(context, m_GBufferTexturesDSL);
-		m_DeletionQueue.Push([&] { m_GBufferTexturesDSL.Destroy(context); });
+			.Build(context, m_TextureDSL);
+		m_DeletionQueue.Push([&] { m_TextureDSL.Destroy(context); });
 	}
 
 	// -- Pipeline Layout --
@@ -35,11 +26,7 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 		GraphicsPipelineLayoutBuilder builder{};
 
 		builder
-			//.NewPushConstantRange()
-			//.SetPCOffset(0)
-			//.SetPCSize(sizeof(Lig))
-			//.SetPCStageFlags(VK_SHADER_STAGE_FRAGMENT_BIT)
-			.AddLayout(m_GBufferTexturesDSL)
+			.AddLayout(m_TextureDSL)
 			.Build(context, m_PipelineLayout);
 		m_DeletionQueue.Push([&] {m_PipelineLayout.Destroy(context); });
 	}
@@ -51,7 +38,7 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 		ShaderModule vertShader;
 		ShaderModule fragShader;
 		shaderLoader.Load(context, "shaders/fullscreenTri.vert.spv", vertShader);
-		shaderLoader.Load(context, "shaders/lighting.frag.spv", fragShader);
+		shaderLoader.Load(context, "shaders/blit.frag.spv", fragShader);
 
 		// Setup dynamic rendering info
 		VkPipelineRenderingCreateInfo renderingCreateInfo{};
@@ -63,7 +50,7 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 		// Create pipeline
 		GraphicsPipelineBuilder builder{};
 		builder
-			.SetDebugName("Graphics Pipeline (Lighting)")
+			.SetDebugName("Graphics Pipeline (Blitting)")
 			.SetPipelineLayout(m_PipelineLayout)
 			.SetupDynamicRendering(renderingCreateInfo)
 			.AddDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
@@ -90,58 +77,46 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 			.SetAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER)
 			.SetMipmapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST)
 			.SetBorderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
-			.Build(context, m_GBufferSampler);
-		m_DeletionQueue.Push([&] { m_GBufferSampler.Destroy(context); });
+			.Build(context, m_Sampler);
+		m_DeletionQueue.Push([&] { m_Sampler.Destroy(context); });
 	}
 
 	// -- Buffers --
 	{
-		m_vGBufferTexturesDS = createInfo.pDescriptorPool->AllocateSets(context, m_GBufferTexturesDSL, createInfo.maxFramesInFlight, "GBuffer Textures DS");
-		UpdateDescriptors(context, *createInfo.pGeometryPass);
+		m_vTexturesDS = createInfo.pDescriptorPool->AllocateSets(context, m_TextureDSL, createInfo.maxFramesInFlight, "Render Texture DS");
+		DescriptorSetWriter writer{};
+		for (uint32_t i{}; i < m_vTexturesDS.size(); ++i)
+		{
+			writer
+				.AddImageInfo((*createInfo.renderImages)[i],
+					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_Sampler)
+				.WriteImages(m_vTexturesDS[i], 0)
+				.Execute(context);
+		}
 	}
 }
 
-void pom::LightingPass::Destroy()
+void pom::BlitPass::Destroy()
 {
 	m_DeletionQueue.Flush();
 }
 
-void pom::LightingPass::UpdateDescriptors(const Context& context, const GeometryPass& pGeometryPass) const
+void pom::BlitPass::UpdateDescriptors(const Context& context, const std::vector<Image>& renderImages) const
 {
 	DescriptorSetWriter writer{};
-	for (uint32_t i{}; i < pGeometryPass.GetGBuffers().size(); ++i)
+	for (uint32_t i{}; i < m_vTexturesDS.size(); ++i)
 	{
-		const GBuffer& gBuffer = pGeometryPass.GetGBuffer(i);
-
 		writer
-			.AddImageInfo(gBuffer.GetAlbedoOpacityImage(),
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_GBufferSampler)
-			.WriteImages(m_vGBufferTexturesDS[i], 0)
-			.Execute(context);
-
-		writer
-			.AddImageInfo(gBuffer.GetNormalImage(),
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_GBufferSampler)
-			.WriteImages(m_vGBufferTexturesDS[i], 1)
-			.Execute(context);
-
-		writer
-			.AddImageInfo(gBuffer.GetWorldPosImage(),
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_GBufferSampler)
-			.WriteImages(m_vGBufferTexturesDS[i], 2)
-			.Execute(context);
-
-		writer
-			.AddImageInfo(gBuffer.GetSpecularityImage(),
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_GBufferSampler)
-			.WriteImages(m_vGBufferTexturesDS[i], 3)
+			.AddImageInfo(renderImages[i],
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_Sampler)
+			.WriteImages(m_vTexturesDS[i], 0)
 			.Execute(context);
 	}
 }
 
-void pom::LightingPass::Record(const Context&, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage) const
+void pom::BlitPass::Record(const Context&, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage) const
 {
-	// -- Setup Attachment --
+	// -- Set Up Attachment --
 	VkRenderingAttachmentInfo colorAttachment{};
 	colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
 	colorAttachment.imageView = renderImage.GetViewHandle();
@@ -150,7 +125,7 @@ void pom::LightingPass::Record(const Context&, CommandBuffer& commandBuffer, uin
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	colorAttachment.clearValue.color = { {0.f, 0.f, 0.f, 1.0f} };
 
-	// -- Rendering Info --
+	// -- Render Info --
 	VkRenderingInfo renderingInfo{};
 	renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
 	renderingInfo.renderArea = VkRect2D{ VkOffset2D{0, 0}, renderImage.GetExtent2D() };
@@ -160,7 +135,7 @@ void pom::LightingPass::Record(const Context&, CommandBuffer& commandBuffer, uin
 
 	// -- Render --
 	const VkCommandBuffer& vCmdBuffer = commandBuffer.GetHandle();
-	Debugger::BeginDebugLabel(commandBuffer, "Lighting Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
+	Debugger::BeginDebugLabel(commandBuffer, "Blitting Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
 	vkCmdBeginRendering(vCmdBuffer, &renderingInfo);
 	{
 		// -- Set Dynamic Viewport --
@@ -182,11 +157,11 @@ void pom::LightingPass::Record(const Context&, CommandBuffer& commandBuffer, uin
 		vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
 
 		// -- Bind Descriptor Sets --
-		Debugger::InsertDebugLabel(commandBuffer, "Bind GBuffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
-		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vGBufferTexturesDS[imageIndex].GetHandle(), 0, nullptr);
+		Debugger::InsertDebugLabel(commandBuffer, "Bind Rendered Image", glm::vec4(0.f, 1.f, 1.f, 1.f));
+		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vTexturesDS[imageIndex].GetHandle(), 0, nullptr);
 
 		// -- Draw Triangle --
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Lighting)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
+		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Blitting)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
 		Debugger::InsertDebugLabel(commandBuffer, "Draw Full Screen Triangle", glm::vec4(0.4f, 0.8f, 1.f, 1.f));
 		vkCmdDraw(commandBuffer.GetHandle(), 3, 1, 0, 0);

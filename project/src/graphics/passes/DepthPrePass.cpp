@@ -1,7 +1,3 @@
-// -- Standard Library --
-#include <array>
-#include <iostream>
-
 // -- Pompeii Includes --
 #include "DepthPrePass.h"
 #include "Debugger.h"
@@ -9,7 +5,6 @@
 #include "DescriptorPool.h"
 #include "Context.h"
 #include "Camera.h"
-#include "ConsoleTextSettings.h"
 #include "Scene.h"
 
 void pom::DepthPrePass::Initialize(const Context& context, const DepthPrePassCreateInfo& createInfo)
@@ -113,22 +108,15 @@ void pom::DepthPrePass::Destroy()
 	m_DeletionQueue.Flush();
 }
 
-void pom::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Image& depthImage, Scene* pScene, Camera* pCamera)
+void pom::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, const Scene* pScene, Camera* pCamera) const
 {
-	// Update VS UBO
+	// -- Update Vertex UBO --
 	UniformBufferVS ubo;
 	ubo.view = pCamera->GetViewMatrix();
 	ubo.proj = pCamera->GetProjectionMatrix();
 	vmaCopyMemoryToAllocation(context.allocator, &ubo, m_vUniformBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(ubo));
 
-	// Transition Depth Image
-	depthImage.TransitionLayout(commandBuffer,
-		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-		VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
-		VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
-		0, 1, 0, 1);
-
-	// Setup attachments
+	// -- Set Up Attachments --
 	VkRenderingAttachmentInfo depthAttachment{};
 	depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
 	depthAttachment.imageView = depthImage.GetViewHandle();
@@ -137,14 +125,14 @@ void pom::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuf
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	depthAttachment.clearValue.depthStencil = { .depth = 1.0f, .stencil = 0 };
 
-	// Render Info
+	// -- Render Info --
 	VkRenderingInfo renderingInfo{};
 	renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
 	renderingInfo.renderArea = VkRect2D{ VkOffset2D{0, 0}, depthImage.GetExtent2D() };
 	renderingInfo.layerCount = 1;
 	renderingInfo.pDepthAttachment = &depthAttachment;
 
-	// Render
+	// -- Render --
 	const VkCommandBuffer& vCmdBuffer = commandBuffer.GetHandle();
 	Debugger::BeginDebugLabel(commandBuffer, "Depth Pre-Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
 	vkCmdBeginRendering(vCmdBuffer, &renderingInfo);
@@ -175,7 +163,7 @@ void pom::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuf
 		pScene->model.Bind(commandBuffer);
 
 		// -- Draw Opaque --
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Default)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
+		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Depth PrePass)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
 		for (const Mesh& mesh : pScene->model.opaqueMeshes)
 		{
@@ -195,11 +183,4 @@ void pom::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuf
 	}
 	vkCmdEndRendering(vCmdBuffer);
 	Debugger::EndDebugLabel(commandBuffer);
-
-	// Transition Depth Image
-	depthImage.TransitionLayout(commandBuffer,
-		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-		VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
-		VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
-		0, 1, 0, 1);
 }

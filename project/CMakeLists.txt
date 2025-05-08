@@ -38,6 +38,7 @@ set(SOURCES
 	"${SOURCE_DIR}/graphics/memory/Sampler.h"				"${SOURCE_DIR}/graphics/memory/Sampler.cpp"
 	"${SOURCE_DIR}/graphics/memory/SyncManager.h"			"${SOURCE_DIR}/graphics/memory/SyncManager.cpp"
 	 # graphics/passes
+	"${SOURCE_DIR}/graphics/passes/BlitPass.h"				"${SOURCE_DIR}/graphics/passes/BlitPass.cpp"
 	"${SOURCE_DIR}/graphics/passes/DepthPrePass.h"			"${SOURCE_DIR}/graphics/passes/DepthPrePass.cpp"
 	"${SOURCE_DIR}/graphics/passes/ForwardPass.h"			"${SOURCE_DIR}/graphics/passes/ForwardPass.cpp"
 	"${SOURCE_DIR}/graphics/passes/GeometryPass.h"			"${SOURCE_DIR}/graphics/passes/GeometryPass.cpp"

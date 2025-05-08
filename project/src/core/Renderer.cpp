@@ -255,6 +255,12 @@ void pom::Renderer::InitializeVulkan()
 		m_Context.deletionQueue.Push([&] { for (const Image& image : m_vDepthImages) image.Destroy(m_Context); });
 	}
 
+	// -- Target Resources --
+	{
+		CreateRenderTargetResources(m_Context, m_SwapChain.GetExtent());
+		m_Context.deletionQueue.Push([&] { for (const Image& image : m_vRenderTargets) image.Destroy(m_Context); });
+	}
+
 	// -- Shadow Pass --
 	{
 		ShadowPassCreateInfo createInfo{};
@@ -312,10 +318,21 @@ void pom::Renderer::InitializeVulkan()
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
 		createInfo.pGeometryPass = &m_GeometryPass;
 		createInfo.format = m_SwapChain.GetFormat();
-		createInfo.depthFormat = m_vDepthImages[0].GetFormat();
 
 		m_LightingPass.Initialize(m_Context, createInfo);
-		m_Context.deletionQueue.Push([&] {m_LightingPass.Destroy(); });
+		m_Context.deletionQueue.Push([&] { m_LightingPass.Destroy(); });
+	}
+
+	// -- Blit Pass --
+	{
+		BlitPassCreateInfo createInfo{};
+		createInfo.pDescriptorPool = &m_DescriptorPool;
+		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
+		createInfo.renderImages = &m_vRenderTargets;
+		createInfo.format = m_SwapChain.GetFormat();
+
+		m_BlitPass.Initialize(m_Context, createInfo);
+		m_Context.deletionQueue.Push([&] { m_BlitPass.Destroy(); });
 	}
 
 	// -- Create Sync Objects - Requirements - [Device]
@@ -340,20 +357,27 @@ void pom::Renderer::RecreateSwapChain()
 
 	m_Context.device.WaitIdle();
 
-	// Swap Chain
+	// -- Recreate the SwapChain --
 	m_SwapChain.Destroy(m_Context);
 	m_SwapChain.Recreate(m_Context, *m_pWindow);
 
-	// Depth
+	// -- Recreate the Depth Resource --
 	for (const Image& image : m_vDepthImages)
 		image.Destroy(m_Context);
 	CreateDepthResources(m_Context, m_SwapChain.GetExtent());
 
-	// Passes
+	// -- Recreate the Render Targets --
+	for (const Image& image : m_vRenderTargets)
+		image.Destroy(m_Context);
+	CreateRenderTargetResources(m_Context, m_SwapChain.GetExtent());
+
+	// -- Resize Passes if needed --
 	m_ForwardPass.Resize(m_Context, m_SwapChain.GetExtent(), m_SwapChain.GetFormat());
 	m_GeometryPass.Resize(m_Context, m_SwapChain.GetExtent());
-	m_LightingPass.Resize(m_Context, m_GeometryPass);
+	m_LightingPass.UpdateDescriptors(m_Context, m_GeometryPass);
+	m_BlitPass.UpdateDescriptors(m_Context, m_vRenderTargets);
 
+	// -- Update Camera Settings --
 	const CameraSettings& oldSettings = m_pCamera->GetSettings();
 	const CameraSettings settings
 	{
@@ -387,36 +411,112 @@ void pom::Renderer::CreateDepthResources(const Context& context, VkExtent2D exte
 		image.CreateView(context, format, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
 	}
 }
+void pom::Renderer::CreateRenderTargetResources(const Context& context, VkExtent2D extent)
+{
+	m_vRenderTargets.resize(m_MaxFramesInFlight);
+	for (Image& image : m_vRenderTargets)
+	{
+		ImageBuilder imageBuilder{};
+		imageBuilder
+			.SetDebugName("Render Target")
+			.SetWidth(extent.width)
+			.SetHeight(extent.height)
+			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
+			//.SetSampleCount(context.physicalDevice.GetMaxSampleCount())
+			.SetFormat(VK_FORMAT_B8G8R8A8_SRGB)
+			.SetUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+			.Build(context, image);
+		image.CreateView(context, VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
+	}
+}
 
 void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex)
 {
-	Image& renderImage = m_SwapChain.GetImages()[imageIndex];
+	Image& presentImage = m_SwapChain.GetImages()[imageIndex];
+	Image& renderImage = m_vRenderTargets[imageIndex];
 	Image& depthImage = m_vDepthImages[imageIndex];
 
 	commandBuffer.Begin();
 	{
-		// The ShadowPass generates a depth image from the POV of the light. After it is done it transition the image layout.
-		m_ShadowPass.Record(m_Context, commandBuffer, imageIndex, m_pScene);
+		// -- Shadow Pass --
+		{
+			// The ShadowPass generates a depth image from the POV of the light.
+			m_ShadowPass.Record(m_Context, commandBuffer, imageIndex, m_pScene);
+			// After it is done it transition the image layout.
+		}
 
-		// The Depth Pre-Pass renders the entire scene to the provided depth buffer.
-		// After it is done it transitions the depth image to ready for usage.
-		m_DepthPrePass.Record(m_Context, commandBuffer, imageIndex, depthImage, m_pScene, m_pCamera);
+		// -- Depth Pre-Pass --
+		{
+			// Transition the current Depth Image to be written to
+			depthImage.TransitionLayout(commandBuffer,
+				VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+				VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
+				VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+				0, 1, 0, 1);
 
-		// The Geometry Pass renders the entire scene to a GBuffer.
-		// After it is done, the GBuffers are transitioned to a layout ready for being sampled from.
-		m_GeometryPass.Record(m_Context, commandBuffer, imageIndex, depthImage, m_pScene, m_pCamera);
+			// The Depth Pre-Pass renders the entire scene to the provided depth buffer.
+			m_DepthPrePass.Record(m_Context, commandBuffer, imageIndex, depthImage, m_pScene, m_pCamera);
 
-		// The Forward Pass renders the entire screen to the provided image.
-		//m_ForwardPass.Record(m_Context, commandBuffer, imageIndex, renderImage, depthImage, m_pScene, m_pCamera);
+			// Transition the current Depth Image to be read from
+			depthImage.TransitionLayout(commandBuffer,
+				VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+				VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+				VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+				0, 1, 0, 1);
+		}
 
-		// The Lighting Pass calculates all the heavy lighting calculations using the data from the Geometry Pass
-		m_LightingPass.Record(m_Context, commandBuffer, imageIndex, renderImage, depthImage, m_pScene, m_pCamera);
+		// -- Geometry Pass --
+		{
+			// The Geometry Pass renders the entire scene to a GBuffer.
+			m_GeometryPass.Record(m_Context, commandBuffer, imageIndex, depthImage, m_pScene, m_pCamera);
+			// After it is done, the GBuffers are transitioned to a layout ready for being sampled from.
+		}
 
-		// At last, transition the renderImage to be readied from presentation!
-		renderImage.TransitionLayout(commandBuffer,
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-			VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-			VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE, 0, 1, 0, 1);
+		// -- Forward Pass -- Deprecated --
+		{
+			// The Forward Pass renders the entire screen to the provided image.
+			//m_ForwardPass.Record(m_Context, commandBuffer, imageIndex, renderImage, depthImage, m_pScene, m_pCamera);
+		}
+
+		// -- Lighting Pass --
+		{
+			// Transition the current Render Image to be written to
+			renderImage.TransitionLayout(commandBuffer,
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
+				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+				0, 1, 0, 1);
+
+			// The Lighting Pass calculates all the heavy lighting calculations using the data from the Geometry Pass
+			m_LightingPass.Record(m_Context, commandBuffer, imageIndex, renderImage);
+
+			// Transition the current Render Image to be sampled from
+			renderImage.TransitionLayout(commandBuffer,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+				VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+				0, 1, 0, 1);
+		}
+
+		// -- Blit Pass --
+		{
+			// Transition the current Present Image to be written to
+			presentImage.TransitionLayout(commandBuffer,
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
+				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+				0, 1, 0, 1);
+
+			// The blit pass will blit the rendered image to the swapchain and potentially do post-processing.
+			m_BlitPass.Record(m_Context, commandBuffer, imageIndex, presentImage);
+
+			// At last, transition the current Present Image to be presented
+			presentImage.TransitionLayout(commandBuffer,
+				VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+				VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE, 0, 1, 0, 1);
+		}
 	}
 	commandBuffer.End();
 }

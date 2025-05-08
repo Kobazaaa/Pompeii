@@ -1,5 +1,5 @@
-#ifndef LIGHTING_PASS_H
-#define LIGHTING_PASS_H
+#ifndef BLIT_PASS_H
+#define BLIT_PASS_H
 
 // -- Pompeii Includes --
 #include "DeletionQueue.h"
@@ -11,6 +11,7 @@
 // -- Forward Declarations --
 namespace pom
 {
+	class LightingPass;
 	class GeometryPass;
 	class DescriptorPool;
 	struct Scene;
@@ -20,44 +21,44 @@ namespace pom
 }
 
 namespace pom
-{	
+{
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Create Info	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	struct LightingPassCreateInfo
+	struct BlitPassCreateInfo
 	{
 		uint32_t maxFramesInFlight{};
 		VkFormat format{};
 		DescriptorPool* pDescriptorPool{};
-		GeometryPass* pGeometryPass;
+		std::vector<Image>* renderImages{};
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Lighting Pass	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	class LightingPass
+	class BlitPass
 	{
 	public:
-		void Initialize(const Context& context, const LightingPassCreateInfo& createInfo);
+		void Initialize(const Context& context, const BlitPassCreateInfo& createInfo);
 		void Destroy();
-		void UpdateDescriptors(const Context& context, const GeometryPass& pGeometryPass) const;
-		void Record(const Context&, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage) const;
+		void UpdateDescriptors(const Context& context, const std::vector<Image>& renderImages) const;
+		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage) const;
 
 	private:
 		// -- Pipeline --
-		GraphicsPipelineLayout		m_PipelineLayout		{ };
-		GraphicsPipeline			m_Pipeline				{ };
+		GraphicsPipelineLayout		m_PipelineLayout{ };
+		GraphicsPipeline			m_Pipeline{ };
 
 		// -- Image --
-		Sampler						m_GBufferSampler		{ };
+		Sampler						m_Sampler{ };
 
 		// -- Descriptors --
-		DescriptorSetLayout			m_GBufferTexturesDSL	{ };
-		std::vector<DescriptorSet>	m_vGBufferTexturesDS	{ };
+		DescriptorSetLayout			m_TextureDSL{ };
+		std::vector<DescriptorSet>	m_vTexturesDS{ };
 
 		// -- DQ --
-		DeletionQueue				m_DeletionQueue			{ };
+		DeletionQueue				m_DeletionQueue{ };
 	};
 }
 
-#endif // LIGHTING_PASS_H
+#endif // BLIT_PASS_H

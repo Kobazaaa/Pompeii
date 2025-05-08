@@ -235,7 +235,7 @@ void pom::GeometryPass::Record(const Context& context, CommandBuffer& commandBuf
 		pScene->model.Bind(commandBuffer);
 
 		// -- Draw Opaque --
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Default)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
+		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (GBuffer)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
 		for (const Mesh& mesh : pScene->model.opaqueMeshes)
 		{

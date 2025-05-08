@@ -151,7 +151,7 @@ namespace pom
 
 
 		// Depth Stencil Info
-		// If not set, enabled by default with VK_COMPARE_OP_LESS
+		// If not set, enabled by default with VK_COMPARE_OP_LESS with WRITE and READ Enabled
 		GraphicsPipelineBuilder& SetDepthTest(VkBool32 depthRead, VkBool32 depthWrite, VkCompareOp compareOp);
 
 		// Blend Info

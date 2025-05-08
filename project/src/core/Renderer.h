@@ -14,6 +14,7 @@
 #include <vector>
 
 // -- Pompeii Includes --
+#include "BlitPass.h"
 #include "Context.h"
 #include "CommandPool.h"
 #include "DepthPrePass.h"
@@ -67,6 +68,7 @@ namespace pom
 		// -- SwapChain --
 		SwapChain					m_SwapChain				{ };
 		std::vector<Image>			m_vDepthImages			{ };
+		std::vector<Image>			m_vRenderTargets		{ };
 		uint32_t					m_MaxFramesInFlight		{ 3 };
 
 		// -- Pools --
@@ -82,6 +84,7 @@ namespace pom
 		ForwardPass					m_ForwardPass			{ };
 		GeometryPass				m_GeometryPass			{ };
 		LightingPass				m_LightingPass			{ };
+		BlitPass					m_BlitPass				{ };
 
 		// -- Scene --
 		Scene*						m_pScene{ };
@@ -91,6 +94,7 @@ namespace pom
 		//--------------------------------------------------
 		void RecreateSwapChain();
 		void CreateDepthResources(const Context& context, VkExtent2D extent);
+		void CreateRenderTargetResources(const Context& context, VkExtent2D extent);
 		void RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex);
 
 		// -- Window --
