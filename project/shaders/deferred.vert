@@ -28,15 +28,17 @@ layout(location = 2) out vec3 fragTangent;
 layout(location = 3) out vec3 fragBitangent;
 layout(location = 4) out vec2 fragTexCoord;
 layout(location = 5) out vec3 fragWorldPos;
+layout(location = 6) out vec3 fragCameraPos;
 
 // -- Shader --
 void main()
 {
-    gl_Position = ubo.proj * ubo.view * modelData.model * vec4(inPosition, 1.0);
-	fragColor = inColor;
-	fragNormal = normalize(mat3(modelData.model) * inNormal);
-	fragTangent = normalize(mat3(modelData.model) * inTangent);
-	fragBitangent = normalize(mat3(modelData.model) * inBitangent);
-	fragTexCoord = inTexCoord;
-	fragWorldPos = (modelData.model * vec4(inPosition, 1.0)).rgb;
+    gl_Position			= ubo.proj * ubo.view * modelData.model * vec4(inPosition, 1.0);
+	fragColor			= inColor;
+	fragNormal			= normalize(vec3(modelData.model * vec4(inNormal, 0.0)));
+	fragTangent			= normalize(vec3(modelData.model * vec4(inTangent, 0.0)));
+	fragBitangent		= normalize(vec3(modelData.model * vec4(inBitangent, 0.0)));
+	fragTexCoord		= inTexCoord;
+	fragWorldPos		= (modelData.model * vec4(inPosition, 1.0)).rgb;
+	fragCameraPos		= inverse(ubo.view)[3].xyz;
 }

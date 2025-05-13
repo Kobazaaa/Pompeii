@@ -179,6 +179,7 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 {
 	opaqueMeshes.emplace_back();
 	opaqueMeshes.back().name = pMesh->mName.C_Str();
+	opaqueMeshes.back().matrix = transform;
 
 	// -- Process Vertices --
 	opaqueMeshes.back().vertexOffset = static_cast<uint32_t>(vertices.size());
@@ -189,8 +190,6 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 		vertex.position = glm::vec3(pMesh->mVertices[vIdx].x,
 									pMesh->mVertices[vIdx].y,
 									pMesh->mVertices[vIdx].z);
-		glm::vec4 pos = transform * glm::vec4(vertex.position, 1);
-		vertex.position = glm::vec3(pos);
 
 		if (pMesh->HasNormals())
 			vertex.normal = glm::vec3(pMesh->mNormals[vIdx].x,
@@ -242,13 +241,13 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 		auto insertResult = pathToIdx.insert({ss.str(), idx});
 		if (insertResult.second)
 		{
-			opaqueMeshes.back().material.diffuseIdx = idx;
+			opaqueMeshes.back().material.albedoIdx = idx;
 			textures.emplace_back();
 			textures.back().LoadFromFile(ss.str());
 		}
 		else
 		{
-			opaqueMeshes.back().material.diffuseIdx = insertResult.first->second;
+			opaqueMeshes.back().material.albedoIdx = insertResult.first->second;
 		}
 	}
 
@@ -276,7 +275,6 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 	}
 
 	// -- Shininess --
-	material->Get(AI_MATKEY_SHININESS, opaqueMeshes.back().material.exp);
 	count = material->GetTextureCount(aiTextureType_SHININESS);
 	for (uint32_t mIdx{}; mIdx < count; ++mIdx)
 	{
@@ -319,6 +317,75 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 		else
 		{
 			opaqueMeshes.back().material.heightIdx = insertResult.first->second;
+		}
+	}
+
+	// -- Normal --
+	count = material->GetTextureCount(aiTextureType_NORMALS);
+	for (uint32_t mIdx{}; mIdx < count; ++mIdx)
+	{
+		aiString texturePath;
+		material->GetTexture(aiTextureType_NORMALS, mIdx, &texturePath);
+		std::stringstream ss;
+		ss << "textures/" << texturePath.C_Str();
+
+		uint32_t idx = static_cast<uint32_t>(textures.size());
+		auto insertResult = pathToIdx.insert({ ss.str(), idx });
+		if (insertResult.second)
+		{
+			opaqueMeshes.back().material.normalIdx = idx;
+			textures.emplace_back();
+			textures.back().LoadFromFile(ss.str());
+		}
+		else
+		{
+			opaqueMeshes.back().material.normalIdx = insertResult.first->second;
+		}
+	}
+
+	// -- Roughness --
+	count = material->GetTextureCount(aiTextureType_DIFFUSE_ROUGHNESS);
+	for (uint32_t mIdx{}; mIdx < count; ++mIdx)
+	{
+		aiString texturePath;
+		material->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, mIdx, &texturePath);
+		std::stringstream ss;
+		ss << "textures/" << texturePath.C_Str();
+
+		uint32_t idx = static_cast<uint32_t>(textures.size());
+		auto insertResult = pathToIdx.insert({ ss.str(), idx });
+		if (insertResult.second)
+		{
+			opaqueMeshes.back().material.roughnessIdx = idx;
+			textures.emplace_back();
+			textures.back().LoadFromFile(ss.str());
+		}
+		else
+		{
+			opaqueMeshes.back().material.roughnessIdx = insertResult.first->second;
+		}
+	}
+
+	// -- Metallic --
+	count = material->GetTextureCount(aiTextureType_METALNESS);
+	for (uint32_t mIdx{}; mIdx < count; ++mIdx)
+	{
+		aiString texturePath;
+		material->GetTexture(aiTextureType_METALNESS, mIdx, &texturePath);
+		std::stringstream ss;
+		ss << "textures/" << texturePath.C_Str();
+
+		uint32_t idx = static_cast<uint32_t>(textures.size());
+		auto insertResult = pathToIdx.insert({ ss.str(), idx });
+		if (insertResult.second)
+		{
+			opaqueMeshes.back().material.metalnessIdx = idx;
+			textures.emplace_back();
+			textures.back().LoadFromFile(ss.str());
+		}
+		else
+		{
+			opaqueMeshes.back().material.metalnessIdx = insertResult.first->second;
 		}
 	}
 

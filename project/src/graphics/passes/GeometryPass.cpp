@@ -250,12 +250,11 @@ void pom::GeometryPass::Record(const Context& context, CommandBuffer& commandBuf
 
 			PCMaterialDataFS pcfs
 			{
-				.diffuseIdx = mesh.material.diffuseIdx,
+				.diffuseIdx = mesh.material.albedoIdx,
 				.opacityIdx = mesh.material.opacityIdx,
-				.specularIdx = mesh.material.specularIdx,
-				.shininessIdx = mesh.material.shininessIdx,
-				.heightIdx = mesh.material.heightIdx,
-				.expo = mesh.material.exp
+				.normalIdx = mesh.material.normalIdx,
+				.roughnessIdx = mesh.material.roughnessIdx,
+				.metallicIdx = mesh.material.metalnessIdx,
 			};
 			vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(PCModelDataVS),
 				sizeof(PCMaterialDataFS), &pcfs);
@@ -278,12 +277,11 @@ void pom::GeometryPass::Record(const Context& context, CommandBuffer& commandBuf
 
 			PCMaterialDataFS pcfs
 			{
-				.diffuseIdx = mesh.material.diffuseIdx,
+				.diffuseIdx = mesh.material.albedoIdx,
 				.opacityIdx = mesh.material.opacityIdx,
-				.specularIdx = mesh.material.specularIdx,
-				.shininessIdx = mesh.material.shininessIdx,
-				.heightIdx = mesh.material.heightIdx,
-				.expo = mesh.material.exp
+				.normalIdx = mesh.material.normalIdx,
+				.roughnessIdx = mesh.material.roughnessIdx,
+				.metallicIdx = mesh.material.metalnessIdx,
 			};
 			vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(PCModelDataVS),
 				sizeof(PCMaterialDataFS), &pcfs);

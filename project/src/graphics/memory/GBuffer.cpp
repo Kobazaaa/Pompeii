@@ -22,12 +22,12 @@ void pom::GBuffer::Initialize(const Context& context, VkExtent2D size)
 	CreateImage(context, m_Normal,
 		size, VK_FORMAT_R8G8B8A8_UNORM,
 		"GBuffer - Normal");
-	CreateImage(context, m_WorldPos,
-		size, VK_FORMAT_R32G32B32A32_SFLOAT,
+	CreateImage(context, m_ViewDir,
+		size, VK_FORMAT_R8G8B8A8_UNORM,
 		"GBuffer - WorldPos");
-	CreateImage(context, m_Specularity,
-		size, VK_FORMAT_R32_SFLOAT,
-		"GBuffer - Specularity");
+	CreateImage(context, m_Roughness_Metallic,
+		size, VK_FORMAT_R32G32_SFLOAT,
+		"GBuffer - Roughness_Metallic");
 }
 void pom::GBuffer::Destroy(const Context& context)
 {
@@ -80,14 +80,14 @@ uint32_t pom::GBuffer::GetAttachmentCount()											  const { return static_ca
 //--------------------------------------------------
 std::vector<VkFormat> pom::GBuffer::GetAllFormats() const
 {
-	return {m_Albedo_Opacity.GetFormat(), m_Normal.GetFormat(), m_WorldPos.GetFormat(), m_Specularity.GetFormat()};
+	return {m_Albedo_Opacity.GetFormat(), m_Normal.GetFormat(), m_ViewDir.GetFormat(), m_Roughness_Metallic.GetFormat()};
 }
 VkExtent2D pom::GBuffer::GetExtent() const { return m_Extent; }
 
-const pom::Image& pom::GBuffer::GetAlbedoOpacityImage()		const {	return m_Albedo_Opacity; }
-const pom::Image& pom::GBuffer::GetNormalImage()			const { return m_Normal; }
-const pom::Image& pom::GBuffer::GetWorldPosImage()			const { return m_WorldPos; }
-const pom::Image& pom::GBuffer::GetSpecularityImage()		const { return m_Specularity; }
+const pom::Image& pom::GBuffer::GetAlbedoOpacityImage()			const {	return m_Albedo_Opacity; }
+const pom::Image& pom::GBuffer::GetNormalImage()				const { return m_Normal; }
+const pom::Image& pom::GBuffer::GetViewDirImage()				const { return m_ViewDir; }
+const pom::Image& pom::GBuffer::GetRoughnessMetallicImage()		const { return m_Roughness_Metallic; }
 
 // -- Helper --
 void pom::GBuffer::CreateImage(const Context& context, Image& image, VkExtent2D size, VkFormat format, const char* pName)

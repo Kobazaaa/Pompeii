@@ -28,6 +28,15 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
 			.Build(context, m_GBufferTexturesDSL);
 		m_DeletionQueue.Push([&] { m_GBufferTexturesDSL.Destroy(context); });
+
+		builder = {};
+		builder
+			.SetDebugName("Light Layout")
+			.NewLayoutBinding()
+				.SetType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
+			.Build(context, m_UniformDSL);
+		m_DeletionQueue.Push([&] { m_UniformDSL.Destroy(context); });
 	}
 
 	// -- Pipeline Layout --
@@ -40,6 +49,7 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 			//.SetPCSize(sizeof(Lig))
 			//.SetPCStageFlags(VK_SHADER_STAGE_FRAGMENT_BIT)
 			.AddLayout(m_GBufferTexturesDSL)
+			.AddLayout(m_UniformDSL)
 			.Build(context, m_PipelineLayout);
 		m_DeletionQueue.Push([&] {m_PipelineLayout.Destroy(context); });
 	}
@@ -94,10 +104,37 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 		m_DeletionQueue.Push([&] { m_GBufferSampler.Destroy(context); });
 	}
 
+	// -- UBO --
+	{
+		m_vLightBuffers.resize(createInfo.maxFramesInFlight);
+		for (size_t i{}; i < createInfo.maxFramesInFlight; ++i)
+		{
+			BufferAllocator bufferAlloc{};
+			bufferAlloc
+				.SetDebugName("Uniform Buffer (Light)")
+				.SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+				.SetSize(sizeof(UniformBufferFS))
+				.HostAccess(true)
+				.Allocate(context, m_vLightBuffers[i]);
+		}
+		m_DeletionQueue.Push([&] { for (auto& ubo : m_vLightBuffers) ubo.Destroy(context); });
+	}
+
 	// -- Buffers --
 	{
 		m_vGBufferTexturesDS = createInfo.pDescriptorPool->AllocateSets(context, m_GBufferTexturesDSL, createInfo.maxFramesInFlight, "GBuffer Textures DS");
+		m_vUniformDS = createInfo.pDescriptorPool->AllocateSets(context, m_UniformDSL, createInfo.maxFramesInFlight, "Light DS");
 		UpdateDescriptors(context, *createInfo.pGeometryPass);
+
+		DescriptorSetWriter writer{};
+		for (uint32_t i{}; i < createInfo.maxFramesInFlight; ++i)
+		{
+			writer
+				.AddBufferInfo(m_vLightBuffers[i], 0, sizeof(UniformBufferFS))
+				.WriteBuffers(m_vUniformDS[i], 0)
+				.Execute(context);
+		}
+
 	}
 }
 
@@ -126,21 +163,28 @@ void pom::LightingPass::UpdateDescriptors(const Context& context, const Geometry
 			.Execute(context);
 
 		writer
-			.AddImageInfo(gBuffer.GetWorldPosImage(),
+			.AddImageInfo(gBuffer.GetViewDirImage(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_GBufferSampler)
 			.WriteImages(m_vGBufferTexturesDS[i], 2)
 			.Execute(context);
 
 		writer
-			.AddImageInfo(gBuffer.GetSpecularityImage(),
+			.AddImageInfo(gBuffer.GetRoughnessMetallicImage(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_GBufferSampler)
 			.WriteImages(m_vGBufferTexturesDS[i], 3)
 			.Execute(context);
 	}
 }
 
-void pom::LightingPass::Record(const Context&, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage) const
+void pom::LightingPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const Scene* pScene) const
 {
+	// -- Update DS --
+	UniformBufferFS ubofs;
+	ubofs.intensity = pScene->directionalLight.GetIntensity();
+	ubofs.color = pScene->directionalLight.GetColor();
+	ubofs.dir = pScene->directionalLight.GetDirection();
+	vmaCopyMemoryToAllocation(context.allocator, &ubofs, m_vLightBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(ubofs));
+
 	// -- Setup Attachment --
 	VkRenderingAttachmentInfo colorAttachment{};
 	colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -184,6 +228,8 @@ void pom::LightingPass::Record(const Context&, CommandBuffer& commandBuffer, uin
 		// -- Bind Descriptor Sets --
 		Debugger::InsertDebugLabel(commandBuffer, "Bind GBuffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
 		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vGBufferTexturesDS[imageIndex].GetHandle(), 0, nullptr);
+		Debugger::InsertDebugLabel(commandBuffer, "Bind Light Data", glm::vec4(0.f, 1.f, 1.f, 1.f));
+		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 1, 1, &m_vUniformDS[imageIndex].GetHandle(), 0, nullptr);
 
 		// -- Draw Triangle --
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Lighting)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));

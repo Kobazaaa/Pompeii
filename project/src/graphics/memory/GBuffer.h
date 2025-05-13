@@ -34,15 +34,15 @@ namespace pom
 		// -- Images --
 		const Image& GetAlbedoOpacityImage() const;
 		const Image& GetNormalImage() const;
-		const Image& GetWorldPosImage() const;
-		const Image& GetSpecularityImage() const;
+		const Image& GetViewDirImage() const;
+		const Image& GetRoughnessMetallicImage() const;
 
 	private:
 		// -- Images --
 		Image m_Albedo_Opacity;
 		Image m_Normal;
-		Image m_WorldPos;
-		Image m_Specularity;
+		Image m_ViewDir;
+		Image m_Roughness_Metallic;
 		std::vector<Image*> m_vAllImages;
 		void CreateImage(const Context& context, Image& image, VkExtent2D size, VkFormat format, const char* pName);
 

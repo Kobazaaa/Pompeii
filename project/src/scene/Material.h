@@ -8,8 +8,7 @@
 #include "stb_image.h"
 
 // -- Math Includes --
-#include "glm/vec2.hpp"
-#include "glm/vec3.hpp"
+#include "glm/glm.hpp"
 
 
 namespace pom
@@ -48,15 +47,26 @@ namespace pom
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	struct Material
 	{
+		// -- Colors --
+		glm::vec4 baseColor		{ };
+
+		// -- Data --
+		glm::vec3 kd			{ 0.f, 0.f, 0.f };
+		bool metalness			{ false };
+		bool _padding[3];
+		float roughness			{ 0.f };
+		float alphaCutoff		{ 0.5f };
+
 		// -- Textures --
-		uint32_t diffuseIdx		{ std::numeric_limits<uint32_t>::max() };
+		uint32_t albedoIdx		{ std::numeric_limits<uint32_t>::max() };
+		uint32_t normalIdx		{ std::numeric_limits<uint32_t>::max() };
+		uint32_t metalnessIdx	{ std::numeric_limits<uint32_t>::max() };
+		uint32_t roughnessIdx	{ std::numeric_limits<uint32_t>::max() };
+
 		uint32_t opacityIdx		{ std::numeric_limits<uint32_t>::max() };
 		uint32_t specularIdx	{ std::numeric_limits<uint32_t>::max() };
 		uint32_t shininessIdx	{ std::numeric_limits<uint32_t>::max() };
 		uint32_t heightIdx		{ std::numeric_limits<uint32_t>::max() };
-
-		// -- Data --
-		float exp				{ 0.f };
 	};
 }
 

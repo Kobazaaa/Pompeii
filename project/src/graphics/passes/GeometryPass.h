@@ -74,12 +74,9 @@ namespace pom
 			// -- Textures --
 			uint32_t diffuseIdx;
 			uint32_t opacityIdx;
-			uint32_t specularIdx;
-			uint32_t shininessIdx;
-			uint32_t heightIdx;
-
-			// -- Data --
-			float expo;
+			uint32_t normalIdx;
+			uint32_t roughnessIdx;
+			uint32_t metallicIdx;
 		};
 
 	private:

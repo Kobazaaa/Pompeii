@@ -3,10 +3,16 @@
 // -- Data --
 layout(set = 0, binding = 0) uniform sampler2D Albedo_Opacity;
 layout(set = 0, binding = 1) uniform sampler2D Normal;
-layout(set = 0, binding = 2) uniform sampler2D WorldPos;
+layout(set = 0, binding = 2) uniform sampler2D ViewDir;
 layout(set = 0, binding = 3) uniform sampler2D Specularity;
+layout(set = 1, binding = 0) uniform LightUbo
+{
+	vec3 dir;
+	vec3 color;
+	float intensity;
+} light;
 
-//// -- Input --
+// -- Input --
 layout(location = 0) in vec2 fragTexCoord;
 
 // -- Output --
@@ -20,27 +26,20 @@ void main()
 	
 	// -- Diffuse + Opacity --
 	outColor = texture(Albedo_Opacity, fragTexCoord);
-
 	
 	// -- Normal --
-	vec3 normal = normalize((texture(Normal, fragTexCoord).rgb - 0.5) * 2.0);
-	
+	vec3 normal = normalize(texture(Normal, fragTexCoord).rgb * 2.0 - 1.0);
+
 	// -- Specular - Blinn-Phong  --
-	vec3 worldPos = texture(WorldPos, fragTexCoord).rgb;
-	vec3 viewDir = normalize(vec3(0, 0, 0) - worldPos);
+	vec3 viewDir = normalize(texture(ViewDir, fragTexCoord).rgb * 2.0 - 1.0);
 	float ks = texture(Specularity, fragTexCoord).r;
-	vec3 h = -normalize(viewDir + vec3(0.577, -0.577, 0.577));
+	vec3 h = -normalize(viewDir + light.dir);
 	float cosa = max(dot(h, normal), 0);
-	outColor.rgb += ks * pow(cosa, 10);
+	outColor.rgb += ks * pow(cosa, 50);
 	
 	// -- Lambert Cosine Law --
 	//outColor.rgb *= max(dot(-lightDir, normal), 0);
-	outColor.rgb *= (dot(-vec3(0.577, -0.577, 0.577), normal) + 1) * 0.5;
-
-	//vec3 projCoords = fragShadowPos.xyz / fragShadowPos.w;
-	//projCoords.xy = projCoords.xy * 0.5 + 0.5;
-    //float closestDepth = texture(shadowMap, projCoords.xy).r;
-    //float currentDepth = projCoords.z;
-	//if(currentDepth > closestDepth)
-	//	outColor.rgb *= 0.2;
+	outColor.rgb *= (dot(-light.dir, normal) + 1) * 0.5;
+//	outColor.rgb = vec3(1,1,1) * (dot(-light.dir, normal) + 1) * 0.5;
+//	outColor.rgb = normal;
 }

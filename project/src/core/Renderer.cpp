@@ -489,7 +489,7 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 				0, 1, 0, 1);
 
 			// The Lighting Pass calculates all the heavy lighting calculations using the data from the Geometry Pass
-			m_LightingPass.Record(m_Context, commandBuffer, imageIndex, renderImage);
+			m_LightingPass.Record(m_Context, commandBuffer, imageIndex, renderImage, m_pScene);
 
 			// Transition the current Render Image to be sampled from
 			renderImage.TransitionLayout(commandBuffer,

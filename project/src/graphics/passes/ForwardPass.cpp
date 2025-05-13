@@ -368,12 +368,12 @@ void pom::ForwardPass::Record(const Context& context, CommandBuffer& commandBuff
 
 			PCMaterialDataFS pcfs
 			{
-				.diffuseIdx = mesh.material.diffuseIdx,
+				.diffuseIdx = mesh.material.albedoIdx,
 				.opacityIdx = mesh.material.opacityIdx,
 				.specularIdx = mesh.material.specularIdx,
 				.shininessIdx = mesh.material.shininessIdx,
 				.heightIdx = mesh.material.heightIdx,
-				.expo = mesh.material.exp
+				.expo = 10
 			};
 			vkCmdPushConstants(vCmdBuffer, m_DefaultPipelineLayout.GetHandle(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(PCModelDataVS),
 			                   sizeof(PCMaterialDataFS), &pcfs);
@@ -399,12 +399,12 @@ void pom::ForwardPass::Record(const Context& context, CommandBuffer& commandBuff
 
 			PCMaterialDataFS pcfs
 			{
-				.diffuseIdx = mesh.material.diffuseIdx,
+				.diffuseIdx = mesh.material.albedoIdx,
 				.opacityIdx = mesh.material.opacityIdx,
 				.specularIdx = mesh.material.specularIdx,
 				.shininessIdx = mesh.material.shininessIdx,
 				.heightIdx = mesh.material.heightIdx,
-				.expo = mesh.material.exp
+				.expo = 10
 			};
 			vkCmdPushConstants(vCmdBuffer, m_DefaultPipelineLayout.GetHandle(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(PCModelDataVS),
 				sizeof(PCMaterialDataFS), &pcfs);
