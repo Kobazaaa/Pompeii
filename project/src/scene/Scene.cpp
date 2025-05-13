@@ -8,7 +8,7 @@
 void pom::Scene::Load(const std::string& path)
 {
 	model.LoadModel(path);
-	directionalLight = { /* direction */	{ 0.25f, -1, 0 },
+	directionalLight = { /* direction */	{ 0.577f, -0.577f, 0.577f },
 						 /* color */		{ 1.f, 1.f, 1.f },
 						 /* intensity */	1.f,
 						 /* size */		{ 5000.f, 5000.f },

@@ -107,7 +107,7 @@ void pom::Renderer::Render()
 void pom::Renderer::InitializeVulkan()
 {
 	// -- Start Loading Scene on CPU --
-	std::jthread sceneLoader{ &Scene::Load, m_pScene, "models/sponza.obj" };
+	std::jthread sceneLoader{ &Scene::Load, m_pScene, "models/Sponza.gltf" };
 
 
 	// -- Enable Debugger - Requirements - [Debug Mode]

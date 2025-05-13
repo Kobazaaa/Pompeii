@@ -39,7 +39,7 @@ int main()
 		{
 			.fov = 45.f,
 			.aspectRatio = pWindow->GetAspectRatio(),
-			.nearPlane = 0.1f,
+			.nearPlane = 0.001f,
 			.farPlane = 10000.f
 		};
 		Camera* pCamera = new Camera(settings, pWindow);
