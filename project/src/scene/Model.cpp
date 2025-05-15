@@ -92,8 +92,7 @@ void pom::Model::LoadModel(const std::string& path)
 		aiProcess_Triangulate |
 		aiProcess_OptimizeMeshes |
 		aiProcess_CalcTangentSpace |
-		aiProcess_FlipUVs |
-		//aiProcess_FlipWindingOrder |
+		aiProcess_ConvertToLeftHanded |
 		aiProcess_JoinIdenticalVertices |
 		aiProcess_SortByPType);
 

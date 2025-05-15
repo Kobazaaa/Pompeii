@@ -107,7 +107,7 @@ void pom::Renderer::Render()
 void pom::Renderer::InitializeVulkan()
 {
 	// -- Start Loading Scene on CPU --
-	std::jthread sceneLoader{ &Scene::Load, m_pScene, "models/Sponza.gltf" };
+	std::jthread sceneLoader{ &Scene::Load, m_pScene, "models/FlightHelmet.gltf" };
 
 
 	// -- Enable Debugger - Requirements - [Debug Mode]
@@ -439,10 +439,10 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 
 	commandBuffer.Begin();
 	{
-		// -- Shadow Pass --
+		// -- Shadow Pass -- Disabled For Now
 		{
 			// The ShadowPass generates a depth image from the POV of the light.
-			m_ShadowPass.Record(m_Context, commandBuffer, imageIndex, m_pScene);
+			// m_ShadowPass.Record(m_Context, commandBuffer, imageIndex, m_pScene);
 			// After it is done it transition the image layout.
 		}
 
