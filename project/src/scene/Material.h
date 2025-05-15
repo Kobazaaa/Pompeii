@@ -1,6 +1,9 @@
 #ifndef MATERIAL_TEXTURE_H
 #define MATERIAL_TEXTURE_H
 
+// -- Vulkan --
+#include <vulkan/vulkan.h>
+
 // -- Standard Library --
 #include <string>
 
@@ -23,7 +26,7 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		Texture() = default;
-		void LoadFromFile(const std::string& path);
+		void LoadFromFile(const std::string& path, VkFormat format);
 		void FreePixels() const;
 
 
@@ -33,12 +36,14 @@ namespace pom
 		stbi_uc* GetPixels() const;
 		uint32_t GetMemorySize() const;
 		glm::ivec2 GetExtent() const;
+		VkFormat GetFormat() const;
 
 	private:
 		stbi_uc* m_pPixels;
 		int m_Width;
 		int m_Height;
 		int m_Channels;
+		VkFormat m_Format;
 	};
 
 

@@ -26,7 +26,7 @@ void pom::GBuffer::Initialize(const Context& context, VkExtent2D size)
 		size, VK_FORMAT_R8G8B8A8_UNORM,
 		"GBuffer - WorldPos");
 	CreateImage(context, m_Roughness_Metallic,
-		size, VK_FORMAT_R32G32_SFLOAT,
+		size, VK_FORMAT_R8G8_UNORM,
 		"GBuffer - Roughness_Metallic");
 }
 void pom::GBuffer::Destroy(const Context& context)

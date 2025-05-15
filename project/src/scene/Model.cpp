@@ -227,195 +227,48 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 
 	// -- Process Materials --
 	const aiMaterial* material = pScene->mMaterials[pMesh->mMaterialIndex];
+	auto LoadMatTexture = [&](aiTextureType type, uint32_t& targetIdx, VkFormat format)
+		{
+			uint32_t count = material->GetTextureCount(type);
+			for (uint32_t mIdx{}; mIdx < count; ++mIdx)
+			{
+				aiString texturePath;
+				material->GetTexture(type, mIdx, &texturePath);
+				std::string fullPath = "textures/" + std::string(texturePath.C_Str());
+
+				uint32_t idx = static_cast<uint32_t>(textures.size());
+				auto [it, succeeded] = pathToIdx.insert({ fullPath, idx });
+				targetIdx = it->second;
+
+				if (succeeded)
+				{
+					textures.emplace_back();
+					textures.back().LoadFromFile(fullPath, format);
+				}
+			}
+		};
 
 	// -- Diffuse --
-	uint32_t count = material->GetTextureCount(aiTextureType_DIFFUSE);
-	for (uint32_t mIdx{}; mIdx < count; ++mIdx)
-	{
-		aiString texturePath;
-		material->GetTexture(aiTextureType_DIFFUSE, mIdx, &texturePath);
-		std::stringstream ss;
-		ss << "textures/" << texturePath.C_Str();
+	auto& mat = opaqueMeshes.back().material;
+	LoadMatTexture(aiTextureType_DIFFUSE,			mat.albedoIdx,		VK_FORMAT_R8G8B8A8_SRGB);
 
-		uint32_t idx = static_cast<uint32_t>(textures.size());
-		auto insertResult = pathToIdx.insert({ss.str(), idx});
-		if (insertResult.second)
-		{
-			opaqueMeshes.back().material.albedoIdx = idx;
-			textures.emplace_back();
-			textures.back().LoadFromFile(ss.str());
-		}
-		else
-		{
-			opaqueMeshes.back().material.albedoIdx = insertResult.first->second;
-		}
-	}
+	LoadMatTexture(aiTextureType_SPECULAR,			mat.specularIdx,		VK_FORMAT_R8G8B8A8_UNORM);
+	LoadMatTexture(aiTextureType_SHININESS,			mat.shininessIdx,	VK_FORMAT_R8G8B8A8_UNORM);
 
-	// -- Specular --
-	count = material->GetTextureCount(aiTextureType_SPECULAR);
-	for (uint32_t mIdx{}; mIdx < count; ++mIdx)
-	{
-		aiString texturePath;
-		material->GetTexture(aiTextureType_SPECULAR, mIdx, &texturePath);
-		std::stringstream ss;
-		ss << "textures/" << texturePath.C_Str();
+	LoadMatTexture(aiTextureType_HEIGHT,			mat.heightIdx,		VK_FORMAT_R8G8B8A8_UNORM);
+	LoadMatTexture(aiTextureType_NORMALS,			mat.normalIdx,		VK_FORMAT_R8G8B8A8_UNORM);
 
-		uint32_t idx = static_cast<uint32_t>(textures.size());
-		auto insertResult = pathToIdx.insert({ ss.str(), idx });
-		if (insertResult.second)
-		{
-			opaqueMeshes.back().material.specularIdx = idx;
-			textures.emplace_back();
-			textures.back().LoadFromFile(ss.str());
-		}
-		else
-		{
-			opaqueMeshes.back().material.specularIdx = insertResult.first->second;
-		}
-	}
+	LoadMatTexture(aiTextureType_DIFFUSE_ROUGHNESS, mat.roughnessIdx,	VK_FORMAT_R8G8B8A8_UNORM);
+	LoadMatTexture(aiTextureType_METALNESS,			mat.metalnessIdx,	VK_FORMAT_R8G8B8A8_UNORM);
 
-	// -- Shininess --
-	count = material->GetTextureCount(aiTextureType_SHININESS);
-	for (uint32_t mIdx{}; mIdx < count; ++mIdx)
-	{
-		aiString texturePath;
-		material->GetTexture(aiTextureType_SHININESS, mIdx, &texturePath);
-		std::stringstream ss;
-		ss << "textures/" << texturePath.C_Str();
-
-		uint32_t idx = static_cast<uint32_t>(textures.size());
-		auto insertResult = pathToIdx.insert({ ss.str(), idx });
-		if (insertResult.second)
-		{
-			opaqueMeshes.back().material.shininessIdx = idx;
-			textures.emplace_back();
-			textures.back().LoadFromFile(ss.str());
-		}
-		else
-		{
-			opaqueMeshes.back().material.shininessIdx = insertResult.first->second;
-		}
-	}
-
-	// -- Height --
-	count = material->GetTextureCount(aiTextureType_HEIGHT);
-	for (uint32_t mIdx{}; mIdx < count; ++mIdx)
-	{
-		aiString texturePath;
-		material->GetTexture(aiTextureType_HEIGHT, mIdx, &texturePath);
-		std::stringstream ss;
-		ss << "textures/" << texturePath.C_Str();
-
-		uint32_t idx = static_cast<uint32_t>(textures.size());
-		auto insertResult = pathToIdx.insert({ ss.str(), idx });
-		if (insertResult.second)
-		{
-			opaqueMeshes.back().material.heightIdx = idx;
-			textures.emplace_back();
-			textures.back().LoadFromFile(ss.str());
-		}
-		else
-		{
-			opaqueMeshes.back().material.heightIdx = insertResult.first->second;
-		}
-	}
-
-	// -- Normal --
-	count = material->GetTextureCount(aiTextureType_NORMALS);
-	for (uint32_t mIdx{}; mIdx < count; ++mIdx)
-	{
-		aiString texturePath;
-		material->GetTexture(aiTextureType_NORMALS, mIdx, &texturePath);
-		std::stringstream ss;
-		ss << "textures/" << texturePath.C_Str();
-
-		uint32_t idx = static_cast<uint32_t>(textures.size());
-		auto insertResult = pathToIdx.insert({ ss.str(), idx });
-		if (insertResult.second)
-		{
-			opaqueMeshes.back().material.normalIdx = idx;
-			textures.emplace_back();
-			textures.back().LoadFromFile(ss.str());
-		}
-		else
-		{
-			opaqueMeshes.back().material.normalIdx = insertResult.first->second;
-		}
-	}
-
-	// -- Roughness --
-	count = material->GetTextureCount(aiTextureType_DIFFUSE_ROUGHNESS);
-	for (uint32_t mIdx{}; mIdx < count; ++mIdx)
-	{
-		aiString texturePath;
-		material->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, mIdx, &texturePath);
-		std::stringstream ss;
-		ss << "textures/" << texturePath.C_Str();
-
-		uint32_t idx = static_cast<uint32_t>(textures.size());
-		auto insertResult = pathToIdx.insert({ ss.str(), idx });
-		if (insertResult.second)
-		{
-			opaqueMeshes.back().material.roughnessIdx = idx;
-			textures.emplace_back();
-			textures.back().LoadFromFile(ss.str());
-		}
-		else
-		{
-			opaqueMeshes.back().material.roughnessIdx = insertResult.first->second;
-		}
-	}
-
-	// -- Metallic --
-	count = material->GetTextureCount(aiTextureType_METALNESS);
-	for (uint32_t mIdx{}; mIdx < count; ++mIdx)
-	{
-		aiString texturePath;
-		material->GetTexture(aiTextureType_METALNESS, mIdx, &texturePath);
-		std::stringstream ss;
-		ss << "textures/" << texturePath.C_Str();
-
-		uint32_t idx = static_cast<uint32_t>(textures.size());
-		auto insertResult = pathToIdx.insert({ ss.str(), idx });
-		if (insertResult.second)
-		{
-			opaqueMeshes.back().material.metalnessIdx = idx;
-			textures.emplace_back();
-			textures.back().LoadFromFile(ss.str());
-		}
-		else
-		{
-			opaqueMeshes.back().material.metalnessIdx = insertResult.first->second;
-		}
-	}
-
-	// -- Transparency --
-	count = material->GetTextureCount(aiTextureType_OPACITY);
-	if (count > 0)
+	// Transparency Maps Separate --
+	if (material->GetTextureCount(aiTextureType_OPACITY) > 0)
 	{
 		transparentMeshes.push_back(opaqueMeshes.back());
 		opaqueMeshes.pop_back();
 
-		for (uint32_t mIdx{}; mIdx < count; ++mIdx)
-		{
-			aiString texturePath;
-			material->GetTexture(aiTextureType_OPACITY, mIdx, &texturePath);
-			std::stringstream ss;
-			ss << "textures/" << texturePath.C_Str();
-
-			uint32_t idx = static_cast<uint32_t>(textures.size());
-			auto insertResult = pathToIdx.insert({ ss.str(), idx });
-			if (insertResult.second)
-			{
-				transparentMeshes.back().material.opacityIdx = idx;
-				textures.emplace_back();
-				textures.back().LoadFromFile(ss.str());
-			}
-			else
-			{
-				transparentMeshes.back().material.opacityIdx = insertResult.first->second;
-			}
-		}
+		auto& transMat = transparentMeshes.back().material;
+		LoadMatTexture(aiTextureType_OPACITY, transMat.opacityIdx, VK_FORMAT_R8G8B8A8_UNORM);
 	}
 }
 
@@ -475,14 +328,14 @@ void pom::Model::CreateImages(const Context& context, CommandPool& cmdPool)
 			.SetDebugName(std::ranges::find_if(pathToIdx, [&](auto& keyVal) { return keyVal.second == index; })->first.c_str())
 			.SetWidth(texW)
 			.SetHeight(texH)
-			.SetFormat(VK_FORMAT_R8G8B8A8_SRGB)
+			.SetFormat(tex.GetFormat())
 			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
 			.SetMipLevels(mipLevels)
 			.SetUsageFlags(VK_IMAGE_USAGE_SAMPLED_BIT)
 			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 			.InitialData(tex.GetPixels(), 0, texW, texH, tex.GetMemorySize(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, cmdPool)
 			.Build(context, images.back());
-		images.back().CreateView(context, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, mipLevels, 0, 1);
+		images.back().CreateView(context, tex.GetFormat(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, mipLevels, 0, 1);
 		++index;
 	}
 	deletionQueue.Push([&] { for (Image& image : images) image.Destroy(context); });

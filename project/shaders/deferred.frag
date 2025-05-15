@@ -66,5 +66,5 @@ void main()
 		outRoughness_Metallic.g = texture(textures[pushConstants.metallicIdx], fragTexCoord).b;
 	
 	// -- World Pos --
-	outViewDir.rgb = normalize(fragWorldPos.xyz - fragCameraPos.xyz) * 0.5 + 0.5;
+	outViewDir.rgb = normalize(fragWorldPos - fragCameraPos) * 0.5 + 0.5;
 }

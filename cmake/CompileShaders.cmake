@@ -37,7 +37,7 @@ foreach(SHADER ${SHADER_SOURCES})
 
     add_custom_command(
         TARGET CompileShaders POST_BUILD
-        COMMAND ${GLSLC_EXECUTABLE} ${SHADER} -o ${SHADER_OUTPUT_DIR}
+        COMMAND ${GLSLC_EXECUTABLE} ${SHADER} -o ${SHADER_OUTPUT_DIR} -I${SHADER_SOURCE_DIR}
         DEPENDS ${SHADER}
         COMMENT "Compiling ${SHADER_INPUT_NAME} to ${SHADER_OUTPUT_NAME}.spv"
         VERBATIM

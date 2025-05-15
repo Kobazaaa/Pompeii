@@ -35,9 +35,9 @@ void main()
 {
     gl_Position			= ubo.proj * ubo.view * modelData.model * vec4(inPosition, 1.0);
 	fragColor			= inColor;
-	fragNormal			= normalize(vec3(modelData.model * vec4(inNormal, 0.0)));
-	fragTangent			= normalize(vec3(modelData.model * vec4(inTangent, 0.0)));
-	fragBitangent		= normalize(vec3(modelData.model * vec4(inBitangent, 0.0)));
+	fragNormal			= normalize(mat3(modelData.model) * inNormal);
+	fragTangent			= normalize(mat3(modelData.model) * inTangent);
+	fragBitangent		= normalize(mat3(modelData.model) * inBitangent);
 	fragTexCoord		= inTexCoord;
 	fragWorldPos		= (modelData.model * vec4(inPosition, 1.0)).rgb;
 	fragCameraPos		= inverse(ubo.view)[3].xyz;
