@@ -45,9 +45,12 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		Renderer() = default;
-		void Initialize(Camera* pCamera, Window* pWindow);
-		void Destroy();
+		explicit Renderer(Camera* pCamera, Window* pWindow);
+		~Renderer();
+		Renderer(const Renderer& other) = delete;
+		Renderer(Renderer&& other) noexcept = delete;
+		Renderer& operator=(const Renderer& other) = delete;
+		Renderer& operator=(Renderer&& other) noexcept = delete;
 
 		//--------------------------------------------------
 		//    Loop

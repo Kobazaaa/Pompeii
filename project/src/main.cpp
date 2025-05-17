@@ -1,4 +1,4 @@
-// -- Standard Library --
+﻿// -- Standard Library --
 #include <iostream>
 #include <stdexcept>
 #include <cstdlib>
@@ -23,18 +23,11 @@ using namespace pom;
 
 int main()
 {
-	// -- Create Application Level Deletion Queue --
-	DeletionQueue m_ApplicationDQ{};
-
 	// -- Try to run lol --
 	try
 	{
 		// -- Create Window --
-		Window* pWindow = new Window();
-		{
-			pWindow->Initialize("Vulkan Refactored", false, 800, 600);
-			m_ApplicationDQ.Push([&] { pWindow->Destroy(); delete pWindow; });
-		}
+		Window* pWindow = new Window("V - Pompeii - Kobe Dereyne 2GD10", false, 800, 600);
 
 		// -- Create Camera --
 		CameraSettings settings
@@ -45,14 +38,9 @@ int main()
 			.farPlane = 10000.f
 		};
 		Camera* pCamera = new Camera(settings, pWindow);
-		m_ApplicationDQ.Push([&] { delete pCamera; });
 
 		// -- Create Renderer --
-		Renderer* pRenderer = new Renderer();
-		{
-			pRenderer->Initialize(pCamera, pWindow);
-			m_ApplicationDQ.Push([&] { pRenderer->Destroy(); delete pRenderer; });
-		}
+		Renderer* pRenderer = new Renderer(pCamera, pWindow);
 
 		// -- Main Loop --
 		Timer::Start();
@@ -85,17 +73,18 @@ int main()
 
 			//std::this_thread::sleep_for(Timer::SleepDurationNanoSeconds());
 		}
+
+		// -- Cleanup --
+		delete pRenderer;
+		delete pCamera;
+		delete pWindow;
 	}
 	// -- Catch Failures --
 	catch (const std::exception& e)
 	{
 		std::cerr << ERROR_TXT << e.what() << RESET_TXT << "\n";
-
-		m_ApplicationDQ.Flush();
 		return EXIT_FAILURE;
 	}
 
-	// -- Cleanup --
-	m_ApplicationDQ.Flush();
 	return EXIT_SUCCESS;
 }

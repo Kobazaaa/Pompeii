@@ -14,7 +14,7 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::Renderer::Initialize(Camera* pCamera, Window* pWindow)
+pom::Renderer::Renderer(Camera* pCamera, Window* pWindow)
 {
 	m_pWindow = pWindow;
 	m_pCamera = pCamera;
@@ -22,8 +22,7 @@ void pom::Renderer::Initialize(Camera* pCamera, Window* pWindow)
 	m_Context.deletionQueue.Push([&] {delete m_pScene; });
 	InitializeVulkan();
 }
-
-void pom::Renderer::Destroy()
+pom::Renderer::~Renderer()
 {
 	m_Context.device.WaitIdle();
 	m_Context.deletionQueue.Flush();
@@ -35,6 +34,15 @@ void pom::Renderer::Destroy()
 //--------------------------------------------------
 void pom::Renderer::Update()
 {
+	static bool b = true;
+	if (b && Timer::GetTotalTimeSeconds() >= 5.f)
+	{
+		m_Context.device.WaitIdle();
+		auto& m = m_pScene->AddModel("models/Viking Room.fbx");
+		m.AllocateResources(m_Context, m_CommandPool, false);
+		m_GeometryPass.UpdateTextureDescriptor(m_Context, m_DescriptorPool, m_pScene);
+		b = false;
+	}
 }
 void pom::Renderer::Render()
 {

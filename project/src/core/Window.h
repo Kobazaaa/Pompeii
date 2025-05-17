@@ -26,9 +26,12 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		Window() = default;
-		void Initialize(const char* title, bool fullScreen, int width = 800, int height = 600);
-		void Destroy() const;
+		explicit Window(const char* title, bool fullScreen, int width = 800, int height = 600);
+		~Window();
+		Window(const Window& other) = delete;
+		Window(Window&& other) noexcept = delete;
+		Window& operator=(const Window& other) = delete;
+		Window& operator=(Window&& other) noexcept = delete;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators

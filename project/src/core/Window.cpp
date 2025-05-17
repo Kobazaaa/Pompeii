@@ -13,7 +13,7 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::Window::Initialize(const char* title, bool fullScreen, int width, int height)
+pom::Window::Window(const char* title, bool fullScreen, int width, int height)
 {
 	m_Fullscreen = fullScreen;
 	m_WindowedSize = { width, height };
@@ -35,12 +35,11 @@ void pom::Window::Initialize(const char* title, bool fullScreen, int width, int 
 	glfwSetWindowUserPointer(m_pWindow, this);
 	glfwSetFramebufferSizeCallback(m_pWindow, FrameBufferResizeCallback);
 }
-void pom::Window::Destroy() const
+pom::Window::~Window()
 {
 	glfwDestroyWindow(m_pWindow);
 	glfwTerminate();
 }
-
 
 //--------------------------------------------------
 //    Accessors & Mutators
