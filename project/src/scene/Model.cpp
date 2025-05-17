@@ -84,6 +84,48 @@ bool pom::Vertex::operator==(const Vertex& other) const
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
+pom::Model::Model(Model&& other) noexcept
+{
+	vertices = std::move(other.vertices);
+	other.vertices.clear();
+	indices = std::move(other.indices);
+	other.indices.clear();
+	textures = std::move(other.textures);
+	other.textures.clear();
+	pathToIdx = std::move(other.pathToIdx);
+	other.pathToIdx.clear();
+	vertexBuffer = std::move(other.vertexBuffer);
+	indexBuffer = std::move(other.indexBuffer);
+	images = std::move(other.images);
+	other.images.clear();
+	opaqueMeshes = std::move(other.opaqueMeshes);
+	other.opaqueMeshes.clear();
+	transparentMeshes = std::move(other.transparentMeshes);
+	other.transparentMeshes.clear();
+}
+pom::Model& pom::Model::operator=(Model&& other) noexcept
+{
+	if (this == &other)
+		return *this;
+	vertices = std::move(other.vertices);
+	other.vertices.clear();
+	indices = std::move(other.indices);
+	other.indices.clear();
+	textures = std::move(other.textures);
+	other.textures.clear();
+	pathToIdx = std::move(other.pathToIdx);
+	other.pathToIdx.clear();
+	vertexBuffer = std::move(other.vertexBuffer);
+	indexBuffer = std::move(other.indexBuffer);
+	images = std::move(other.images);
+	other.images.clear();
+	opaqueMeshes = std::move(other.opaqueMeshes);
+	other.opaqueMeshes.clear();
+	transparentMeshes = std::move(other.transparentMeshes);
+	other.transparentMeshes.clear();
+	return *this;
+}
+
 void pom::Model::LoadModel(const std::string& path)
 {
 	Assimp::Importer importer;
@@ -127,13 +169,16 @@ void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool,
 		pathToIdx.clear();
 	}
 }
-void pom::Model::Destroy()
+void pom::Model::Destroy(const Context& context)
 {
 	// -- Flush --
-	deletionQueue.Flush();
+	for (Image& image : images) 
+		image.Destroy(context);
+	indexBuffer.Destroy(context);
+	vertexBuffer.Destroy(context);
 
 	// -- Free Textures --
-	for (const Texture& tex : textures)
+	for (Texture& tex : textures)
 		tex.FreePixels();
 }
 
@@ -240,10 +285,7 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 				targetIdx = it->second;
 
 				if (succeeded)
-				{
-					textures.emplace_back();
-					textures.back().LoadFromFile(fullPath, format);
-				}
+					textures.emplace_back(fullPath, format);
 			}
 		};
 
@@ -292,7 +334,6 @@ void pom::Model::CreateVertexBuffer(const Context& context, CommandPool& cmdPool
 		.HostAccess(false)
 		.InitialData(vertices.data(), 0, bufferSize, cmdPool)
 		.Allocate(context, vertexBuffer);
-	deletionQueue.Push([&] { vertexBuffer.Destroy(context); });
 }
 void pom::Model::CreateIndexBuffer(const Context& context, CommandPool& cmdPool)
 {
@@ -305,7 +346,6 @@ void pom::Model::CreateIndexBuffer(const Context& context, CommandPool& cmdPool)
 		.HostAccess(false)
 		.InitialData(indices.data(), 0, bufferSize, cmdPool)
 		.Allocate(context, indexBuffer);
-	deletionQueue.Push([&] { indexBuffer.Destroy(context); });
 }
 void pom::Model::CreateImages(const Context& context, CommandPool& cmdPool)
 {
@@ -335,5 +375,4 @@ void pom::Model::CreateImages(const Context& context, CommandPool& cmdPool)
 			.Build(context, images.back());
 		images.back().CreateView(context, tex.GetFormat(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, mipLevels, 0, 1);
 	}
-	deletionQueue.Push([&] { for (Image& image : images) image.Destroy(context); });
 }

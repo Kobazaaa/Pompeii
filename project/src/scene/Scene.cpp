@@ -13,10 +13,10 @@ void pom::Scene::AllocateGPU(const Context& context, CommandPool& cmdPool, bool 
 	for (auto& model : m_vModels)
 		model.AllocateResources(context, cmdPool, keepHostData);
 }
-void pom::Scene::Destroy()
+void pom::Scene::Destroy(const Context& context)
 {
 	for (auto& model : std::ranges::reverse_view(m_vModels))
-		model.Destroy();
+		model.Destroy(context);
 }
 
 const std::vector<pom::Model>& pom::Scene::GetModels() const
@@ -48,7 +48,6 @@ std::vector<pom::DirectionalLight>& pom::Scene::GetLights()
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void pom::SponzaScene::Initialize()
 {
-	m_vModels.reserve(5);
 	AddModel("models/Sponza.gltf");
 
 	m_vLights.emplace_back(DirectionalLight

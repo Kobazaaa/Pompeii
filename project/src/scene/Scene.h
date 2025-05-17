@@ -27,7 +27,7 @@ namespace pom
 
 		virtual void Initialize() = 0;
 		virtual void AllocateGPU(const Context& context, CommandPool& cmdPool, bool keepHostData = false);
-		virtual void Destroy();
+		virtual void Destroy(const Context& context);
 
 
 		//--------------------------------------------------

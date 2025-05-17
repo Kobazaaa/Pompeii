@@ -81,15 +81,20 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		explicit Model() = default;
+		~Model() = default;
+		Model(const Model& other) = delete;
+		Model(Model&& other) noexcept;
+		Model& operator=(const Model& other) = delete;
+		Model& operator=(Model&& other) noexcept;
+
 		void LoadModel(const std::string& path);
 		void AllocateResources(const Context& context, CommandPool& cmdPool, bool keepHostData = false);
-		void Destroy();
+		void Destroy(const Context& context);
 
 		//--------------------------------------------------
 		//    Commands
 		//--------------------------------------------------
 		void Bind(CommandBuffer& cmdBuffer) const;
-
 
 		//--------------------------------------------------
 		//    Data
@@ -99,7 +104,6 @@ namespace pom
 		std::vector<uint32_t> indices{};
 		std::vector<Texture> textures{};
 		std::unordered_map<std::string, uint32_t> pathToIdx{};
-		DeletionQueue deletionQueue{};
 
 		// -- GPU --
 		Buffer vertexBuffer;

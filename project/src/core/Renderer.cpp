@@ -249,7 +249,7 @@ void pom::Renderer::InitializeVulkan()
 	{
 		sceneLoader.join();
 		m_pScene->AllocateGPU(m_Context, m_CommandPool, false);
-		m_Context.deletionQueue.Push([&] { m_pScene->Destroy(); });
+		m_Context.deletionQueue.Push([&] { m_pScene->Destroy(m_Context); });
 	}
 
 	// -- Create Descriptor Pool - Requirements - [Device]
