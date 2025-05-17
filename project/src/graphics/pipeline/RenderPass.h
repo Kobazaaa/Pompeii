@@ -22,7 +22,12 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		RenderPass() = default;
+		explicit RenderPass() = default;
+		~RenderPass() = default;
+		RenderPass(const RenderPass& other) = delete;
+		RenderPass(RenderPass&& other) noexcept = delete;
+		RenderPass& operator=(const RenderPass& other) = delete;
+		RenderPass& operator=(RenderPass&& other) noexcept = delete;
 		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
