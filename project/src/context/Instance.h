@@ -23,7 +23,12 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		Instance() = default;
+		explicit Instance() = default;
+		~Instance() = default;
+		Instance(const Instance& other) = delete;
+		Instance(Instance&& other) noexcept = delete;
+		Instance& operator=(const Instance& other) = delete;
+		Instance& operator=(Instance&& other) noexcept = delete;
 		void Destroy() const;
 
 		//--------------------------------------------------
