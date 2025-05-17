@@ -15,6 +15,22 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
+pom::FrameBuffer::FrameBuffer(FrameBuffer&& other) noexcept
+{
+	m_Buffer = other.m_Buffer;
+	other.m_Buffer = VK_NULL_HANDLE;
+	m_Extent = std::move(other.m_Extent);
+}
+pom::FrameBuffer& pom::FrameBuffer::operator=(FrameBuffer&& other) noexcept
+{
+	if (this == &other)
+		return *this;
+	m_Buffer = std::move(other.m_Buffer);
+	other.m_Buffer = VK_NULL_HANDLE;
+	m_Extent = std::move(other.m_Extent);
+	return *this;
+}
+
 void pom::FrameBuffer::Destroy(const Context& context) const { vkDestroyFramebuffer(context.device.GetHandle(), m_Buffer, nullptr); }
 
 //--------------------------------------------------

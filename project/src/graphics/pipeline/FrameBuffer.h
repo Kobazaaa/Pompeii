@@ -27,7 +27,13 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		FrameBuffer() = default;
+		explicit FrameBuffer() = default;
+		~FrameBuffer() = default;
+		FrameBuffer(const FrameBuffer& other) = delete;
+		FrameBuffer(FrameBuffer&& other) noexcept;
+		FrameBuffer& operator=(const FrameBuffer& other) = delete;
+		FrameBuffer& operator=(FrameBuffer&& other) noexcept;
+
 		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
@@ -55,11 +61,9 @@ namespace pom
 		//--------------------------------------------------
 		FrameBufferBuilder();
 
-
 		//--------------------------------------------------
 		//    Builder
 		//--------------------------------------------------
-
 		//! REQUIRED
 		FrameBufferBuilder& SetRenderPass(const RenderPass& renderPass);
 		FrameBufferBuilder& AddAttachment(const VkImageView& view);
