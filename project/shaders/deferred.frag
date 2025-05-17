@@ -24,12 +24,11 @@ layout(location = 2) in vec3 fragTangent;
 layout(location = 3) in vec3 fragBitangent;
 layout(location = 4) in vec2 fragTexCoord;
 layout(location = 5) in vec3 fragWorldPos;
-layout(location = 6) in vec3 fragCameraPos;
 
 // -- Output --
 layout(location = 0) out vec4 outAlbedo_Opacity;
 layout(location = 1) out vec4 outNormal;
-layout(location = 2) out vec4 outViewDir;
+layout(location = 2) out vec4 outWorldPos;
 layout(location = 3) out vec2 outRoughness_Metallic;
 
 // -- Shader --
@@ -66,5 +65,5 @@ void main()
 		outRoughness_Metallic.g = texture(textures[pushConstants.metallicIdx], fragTexCoord).b;
 	
 	// -- World Pos --
-	outViewDir.rgb = normalize(fragWorldPos - fragCameraPos) * 0.5 + 0.5;
+	outWorldPos = vec4(fragWorldPos, 1.0);
 }
