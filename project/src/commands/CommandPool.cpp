@@ -4,9 +4,6 @@
 // -- Pompeii Includes --
 #include "Context.h"
 #include "CommandPool.h"
-#include "Image.h"
-#include "Buffer.h"
-#include "Context.h"
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -18,7 +15,7 @@
 //--------------------------------------------------
 pom::CommandPool& pom::CommandPool::Create(Context& context)
 {
-	pom::QueueFamilyIndices queueFamilyIndices = context.physicalDevice.GetQueueFamilies();
+	const QueueFamilyIndices queueFamilyIndices = context.physicalDevice.GetQueueFamilies();
 
 	VkCommandPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -61,8 +58,7 @@ pom::CommandBuffer& pom::CommandPool::AllocateCmdBuffers(uint32_t count, VkComma
 		if (vkAllocateCommandBuffers(m_Context->device.GetHandle(), &allocInfo, &cmdBuffer) != VK_SUCCESS)
 			throw std::runtime_error("Failed to allocate command buffer!");
 
-		m_vCommandBuffers.emplace_back();
-		m_vCommandBuffers.back().Initialize(m_CommandPool, cmdBuffer);
+		m_vCommandBuffers.emplace_back(m_CommandPool, cmdBuffer);
 	}
 	return m_vCommandBuffers.back();
 }

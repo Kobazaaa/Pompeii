@@ -26,15 +26,17 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		CommandBuffer() = default;
-		void Initialize(VkCommandPool pool, VkCommandBuffer buffer);
-
+		explicit CommandBuffer(VkCommandPool pool, VkCommandBuffer buffer);
+		~CommandBuffer() = default;
+		CommandBuffer(const CommandBuffer& other) = delete;
+		CommandBuffer(CommandBuffer&& other) noexcept;
+		CommandBuffer& operator=(const CommandBuffer& other) = delete;
+		CommandBuffer& operator=(CommandBuffer&& other) noexcept;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
 		const VkCommandBuffer& GetHandle() const;
-
 
 		//--------------------------------------------------
 		//    Commands

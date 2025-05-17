@@ -30,10 +30,15 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		CommandPool() = default;
+		explicit CommandPool() = default;
+		~CommandPool() = default;
+		CommandPool(const CommandPool& other) = delete;
+		CommandPool(CommandPool&& other) noexcept = delete;
+		CommandPool& operator=(const CommandPool& other) = delete;
+		CommandPool& operator=(CommandPool&& other) noexcept = delete;
+
 		CommandPool& Create(Context& context);
 		void Destroy() const;
-
 
 		//--------------------------------------------------
 		//    Accessors & Mutators

@@ -13,12 +13,28 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::CommandBuffer::Initialize(VkCommandPool pool, VkCommandBuffer buffer)
-{
-	m_PoolOwner = pool;
-	m_CmdBuffer = buffer;
-}
+pom::CommandBuffer::CommandBuffer(VkCommandPool pool, VkCommandBuffer buffer)
+	: m_CmdBuffer(buffer)
+	, m_PoolOwner(pool)
+{}
 
+pom::CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept
+{
+	m_CmdBuffer = std::move(other.m_CmdBuffer);
+	other.m_CmdBuffer = VK_NULL_HANDLE;
+	m_PoolOwner = std::move(other.m_PoolOwner);
+	other.m_PoolOwner = VK_NULL_HANDLE;
+}
+pom::CommandBuffer& pom::CommandBuffer::operator=(CommandBuffer&& other) noexcept
+{
+	if (this == &other)
+		return *this;
+	m_CmdBuffer = std::move(other.m_CmdBuffer);
+	other.m_CmdBuffer = VK_NULL_HANDLE;
+	m_PoolOwner = std::move(other.m_PoolOwner);
+	other.m_PoolOwner = VK_NULL_HANDLE;
+	return *this;
+}
 
 //--------------------------------------------------
 //    Accessors & Mutators
