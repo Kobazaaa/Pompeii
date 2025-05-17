@@ -17,8 +17,9 @@ namespace pom
 		void Allocate(const Context& context, CommandPool& cmdPool, bool keepHostData = false);
 		void Destroy();
 
+
 		Model model;
-		DirectionalLight directionalLight;
+		std::vector<DirectionalLight> vLights;
 	};
 }
 

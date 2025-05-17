@@ -1,5 +1,7 @@
 // -- Pompeii Includes --
 #include "LightingPass.h"
+
+#include "Camera.h"
 #include "Context.h"
 #include "Debugger.h"
 #include "GBuffer.h"
@@ -11,7 +13,28 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 {
 	// -- Descriptor Set Layout --
 	{
+		// Camera Matrices
 		DescriptorSetLayoutBuilder builder{};
+		builder
+			.SetDebugName("Cam Layout")
+			.NewLayoutBinding()
+			.SetType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+			.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
+			.Build(context, m_CameraMatricesDSL);
+		m_DeletionQueue.Push([&] { m_CameraMatricesDSL.Destroy(context); });
+
+		// Light SSBO
+		builder = {};
+		builder
+			.SetDebugName("Light Layout")
+			.NewLayoutBinding()
+			.SetType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+			.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
+			.Build(context, m_SSBOLightDSL);
+		m_DeletionQueue.Push([&] { m_SSBOLightDSL.Destroy(context); });
+
+		// GBuffer Images
+		builder = {};
 		builder
 			.SetDebugName("GBuffer Textures Layout")
 			.NewLayoutBinding()
@@ -28,15 +51,6 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
 			.Build(context, m_GBufferTexturesDSL);
 		m_DeletionQueue.Push([&] { m_GBufferTexturesDSL.Destroy(context); });
-
-		builder = {};
-		builder
-			.SetDebugName("Light Layout")
-			.NewLayoutBinding()
-				.SetType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
-			.Build(context, m_UniformDSL);
-		m_DeletionQueue.Push([&] { m_UniformDSL.Destroy(context); });
 	}
 
 	// -- Pipeline Layout --
@@ -44,12 +58,9 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 		GraphicsPipelineLayoutBuilder builder{};
 
 		builder
-			//.NewPushConstantRange()
-			//.SetPCOffset(0)
-			//.SetPCSize(sizeof(Lig))
-			//.SetPCStageFlags(VK_SHADER_STAGE_FRAGMENT_BIT)
+			.AddLayout(m_CameraMatricesDSL)
+			.AddLayout(m_SSBOLightDSL)
 			.AddLayout(m_GBufferTexturesDSL)
-			.AddLayout(m_UniformDSL)
 			.Build(context, m_PipelineLayout);
 		m_DeletionQueue.Push([&] {m_PipelineLayout.Destroy(context); });
 	}
@@ -106,32 +117,50 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 
 	// -- UBO --
 	{
-		m_vLightBuffers.resize(createInfo.maxFramesInFlight);
+		m_vCameraMatrices.resize(createInfo.maxFramesInFlight);
 		for (size_t i{}; i < createInfo.maxFramesInFlight; ++i)
 		{
 			BufferAllocator bufferAlloc{};
 			bufferAlloc
-				.SetDebugName("Uniform Buffer (Light)")
+				.SetDebugName("Cam UBO")
 				.SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
-				.SetSize(sizeof(UniformBufferFS))
+				.SetSize(sizeof(glm::mat4) * 2)
 				.HostAccess(true)
-				.Allocate(context, m_vLightBuffers[i]);
+				.Allocate(context, m_vCameraMatrices[i]);
 		}
-		m_DeletionQueue.Push([&] { for (auto& ubo : m_vLightBuffers) ubo.Destroy(context); });
+		m_DeletionQueue.Push([&] { for (auto& ubo : m_vCameraMatrices) ubo.Destroy(context); });
+
+		m_vSSBOLights.resize(createInfo.maxFramesInFlight);
+		for (size_t i{}; i < createInfo.maxFramesInFlight; ++i)
+		{
+			BufferAllocator bufferAlloc{};
+			bufferAlloc
+				.SetDebugName("SSBO (Light)")
+				.SetUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+				.SetSize(sizeof(SSBOFrag))
+				.HostAccess(true)
+				.Allocate(context, m_vSSBOLights[i]);
+		}
+		m_DeletionQueue.Push([&] { for (auto& ubo : m_vSSBOLights) ubo.Destroy(context); });
 	}
 
 	// -- Buffers --
 	{
 		m_vGBufferTexturesDS = createInfo.pDescriptorPool->AllocateSets(context, m_GBufferTexturesDSL, createInfo.maxFramesInFlight, "GBuffer Textures DS");
-		m_vUniformDS = createInfo.pDescriptorPool->AllocateSets(context, m_UniformDSL, createInfo.maxFramesInFlight, "Light DS");
+		m_vSSBOLightDS = createInfo.pDescriptorPool->AllocateSets(context, m_SSBOLightDSL, createInfo.maxFramesInFlight, "SSBO Lights DS");
+		m_vCameraMatricesDS = createInfo.pDescriptorPool->AllocateSets(context, m_CameraMatricesDSL, createInfo.maxFramesInFlight, "Camera Matrices DS");
 		UpdateDescriptors(context, *createInfo.pGeometryPass);
 
 		DescriptorSetWriter writer{};
 		for (uint32_t i{}; i < createInfo.maxFramesInFlight; ++i)
 		{
 			writer
-				.AddBufferInfo(m_vLightBuffers[i], 0, sizeof(UniformBufferFS))
-				.WriteBuffers(m_vUniformDS[i], 0)
+				.AddBufferInfo(m_vSSBOLights[i], 0, sizeof(SSBOFrag))
+				.WriteBuffers(m_vSSBOLightDS[i], 0)
+				.Execute(context);
+			writer
+				.AddBufferInfo(m_vCameraMatrices[i], 0, sizeof(glm::mat4)*2)
+				.WriteBuffers(m_vCameraMatricesDS[i], 0)
 				.Execute(context);
 		}
 
@@ -163,7 +192,7 @@ void pom::LightingPass::UpdateDescriptors(const Context& context, const Geometry
 			.Execute(context);
 
 		writer
-			.AddImageInfo(gBuffer.GetViewDirImage(),
+			.AddImageInfo(gBuffer.GetWorldPosImage(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_GBufferSampler)
 			.WriteImages(m_vGBufferTexturesDS[i], 2)
 			.Execute(context);
@@ -176,14 +205,26 @@ void pom::LightingPass::UpdateDescriptors(const Context& context, const Geometry
 	}
 }
 
-void pom::LightingPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const Scene* pScene) const
+void pom::LightingPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const Scene* pScene, Camera* pCamera) const
 {
 	// -- Update DS --
-	UniformBufferFS ubofs;
-	ubofs.intensity = pScene->directionalLight.GetIntensity();
-	ubofs.color = pScene->directionalLight.GetColor();
-	ubofs.dir = pScene->directionalLight.GetDirection();
-	vmaCopyMemoryToAllocation(context.allocator, &ubofs, m_vLightBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(ubofs));
+	struct cam
+	{
+		glm::mat4 view = pCamera->GetViewMatrix();
+		glm::mat4 proj = pCamera->GetProjectionMatrix();
+	} camubo{};
+	vmaCopyMemoryToAllocation(context.allocator, &camubo, m_vCameraMatrices[imageIndex].GetMemoryHandle(), 0, sizeof(camubo));
+
+	struct gpuLight
+	{
+		glm::vec4 dirpostype;
+		glm::vec3 color;
+		float intensity;
+	} l{};
+	l.dirpostype = glm::vec4(pScene->vLights.front().GetDirection(), 0);
+	l.color = pScene->vLights.front().GetColor();
+	l.intensity = pScene->vLights.front().GetIntensity();
+	vmaCopyMemoryToAllocation(context.allocator, &l, m_vSSBOLights[imageIndex].GetMemoryHandle(), 0, sizeof(l));
 
 	// -- Setup Attachment --
 	VkRenderingAttachmentInfo colorAttachment{};
@@ -227,9 +268,11 @@ void pom::LightingPass::Record(const Context& context, CommandBuffer& commandBuf
 
 		// -- Bind Descriptor Sets --
 		Debugger::InsertDebugLabel(commandBuffer, "Bind GBuffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
-		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vGBufferTexturesDS[imageIndex].GetHandle(), 0, nullptr);
+		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 2, 1, &m_vGBufferTexturesDS[imageIndex].GetHandle(), 0, nullptr);
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Light Data", glm::vec4(0.f, 1.f, 1.f, 1.f));
-		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 1, 1, &m_vUniformDS[imageIndex].GetHandle(), 0, nullptr);
+		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 1, 1, &m_vSSBOLightDS[imageIndex].GetHandle(), 0, nullptr);
+		Debugger::InsertDebugLabel(commandBuffer, "Bind Cam Data", glm::vec4(0.f, 1.f, 1.f, 1.f));
+		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vCameraMatricesDS[imageIndex].GetHandle(), 0, nullptr);
 
 		// -- Draw Triangle --
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Lighting)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));

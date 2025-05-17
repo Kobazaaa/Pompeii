@@ -10,6 +10,7 @@
 
 // -- Math Includes --
 #include "glm/vec3.hpp"
+#include "glm/vec4.hpp"
 
 // -- Forward Declarations --
 namespace pom
@@ -47,15 +48,14 @@ namespace pom
 		void Initialize(const Context& context, const LightingPassCreateInfo& createInfo);
 		void Destroy();
 		void UpdateDescriptors(const Context& context, const GeometryPass& pGeometryPass) const;
-		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const Scene* pScene) const;
+		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const Scene* pScene, Camera* pCamera) const;
 
 		//--------------------------------------------------
 		//    Shader Infos
 		//--------------------------------------------------
-		struct alignas(16) UniformBufferFS
+		struct alignas(16) SSBOFrag
 		{
-			glm::vec3 dir;
-			float padding;
+			glm::vec4 dirPosType;
 			glm::vec3 color;
 			float intensity;
 		};
@@ -69,12 +69,16 @@ namespace pom
 		Sampler						m_GBufferSampler		{ };
 
 		// -- Descriptors --
+		DescriptorSetLayout			m_CameraMatricesDSL		{ };
+		DescriptorSetLayout			m_SSBOLightDSL			{ };
 		DescriptorSetLayout			m_GBufferTexturesDSL	{ };
+
+		std::vector<DescriptorSet>	m_vCameraMatricesDS		{ };
+		std::vector<DescriptorSet>	m_vSSBOLightDS			{ };
 		std::vector<DescriptorSet>	m_vGBufferTexturesDS	{ };
 
-		DescriptorSetLayout			m_UniformDSL			{ };
-		std::vector<DescriptorSet>	m_vUniformDS			{ };
-		std::vector<Buffer>			m_vLightBuffers			{ };
+		std::vector<Buffer>			m_vCameraMatrices		{ };
+		std::vector<Buffer>			m_vSSBOLights			{ };
 
 		// -- DQ --
 		DeletionQueue				m_DeletionQueue			{ };
