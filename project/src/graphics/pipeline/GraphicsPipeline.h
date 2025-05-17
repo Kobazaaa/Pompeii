@@ -27,9 +27,13 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		GraphicsPipelineLayout() = default;
+		explicit GraphicsPipelineLayout() = default;
+		~GraphicsPipelineLayout() = default;
+		GraphicsPipelineLayout(const GraphicsPipelineLayout& other) = delete;
+		GraphicsPipelineLayout(GraphicsPipelineLayout&& other) noexcept = delete;
+		GraphicsPipelineLayout& operator=(const GraphicsPipelineLayout& other) = delete;
+		GraphicsPipelineLayout& operator=(GraphicsPipelineLayout&& other) noexcept = delete;
 		void Destroy(const Context& context) const;
-
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
@@ -87,7 +91,12 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		GraphicsPipeline() = default;
+		explicit GraphicsPipeline() = default;
+		~GraphicsPipeline() = default;
+		GraphicsPipeline(const GraphicsPipeline& other) = delete;
+		GraphicsPipeline(GraphicsPipeline&& other) noexcept = delete;
+		GraphicsPipeline& operator=(const GraphicsPipeline& other) = delete;
+		GraphicsPipeline& operator=(GraphicsPipeline&& other) noexcept = delete;
 		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
