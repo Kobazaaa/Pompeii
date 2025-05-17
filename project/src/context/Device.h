@@ -16,10 +16,17 @@ namespace pom
 	class Device
 	{
 	public:
+
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		Device() = default;
+		explicit Device() = default;
+		~Device() = default;
+		Device(const Device& other) = delete;
+		Device(Device&& other) noexcept = delete;
+		Device& operator=(const Device& other) = delete;
+		Device& operator=(Device&& other) noexcept = delete;
+
 		void Initialize(VkDevice device);
 		void Destroy() const;
 
