@@ -12,6 +12,34 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
+pom::GBuffer::GBuffer(GBuffer&& other) noexcept
+{
+	m_Albedo_Opacity = std::move(other.m_Albedo_Opacity);
+	m_Normal = std::move(other.m_Normal);
+	m_WorldPos = std::move(other.m_WorldPos);
+	m_Roughness_Metallic = std::move(other.m_Roughness_Metallic);
+	m_vAllImages = std::move(other.m_vAllImages);
+	other.m_vAllImages.clear();
+	m_vRenderingAttachments = std::move(other.m_vRenderingAttachments);
+	other.m_vRenderingAttachments.clear();
+	m_Extent = std::move(other.m_Extent);
+}
+pom::GBuffer& pom::GBuffer::operator=(GBuffer&& other) noexcept
+{
+	if (this == &other)
+		return *this;
+	m_Albedo_Opacity = std::move(other.m_Albedo_Opacity);
+	m_Normal = std::move(other.m_Normal);
+	m_WorldPos = std::move(other.m_WorldPos);
+	m_Roughness_Metallic = std::move(other.m_Roughness_Metallic);
+	m_vAllImages = std::move(other.m_vAllImages);
+	other.m_vAllImages.clear();
+	m_vRenderingAttachments = std::move(other.m_vRenderingAttachments);
+	other.m_vRenderingAttachments.clear();
+	m_Extent = std::move(other.m_Extent);
+	return *this;
+}
+
 void pom::GBuffer::Initialize(const Context& context, VkExtent2D size)
 {
 	m_Extent = size;

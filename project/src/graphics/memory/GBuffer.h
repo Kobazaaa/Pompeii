@@ -15,6 +15,13 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
+		explicit GBuffer() = default;
+		~GBuffer() = default;
+		GBuffer(const GBuffer& other) = delete;
+		GBuffer(GBuffer&& other) noexcept;
+		GBuffer& operator=(const GBuffer& other) = delete;
+		GBuffer& operator=(GBuffer&& other) noexcept;
+
 		void Initialize(const Context& context, VkExtent2D size);
 		void Destroy(const Context& context);
 		void Resize(const Context& context, VkExtent2D size);

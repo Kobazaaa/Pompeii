@@ -13,6 +13,24 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
+pom::Buffer::Buffer(Buffer&& other) noexcept
+{
+	m_Memory = std::move(other.m_Memory);
+	other.m_Memory = VK_NULL_HANDLE;
+	m_Buffer = std::move(other.m_Buffer);
+	other.m_Buffer = VK_NULL_HANDLE;
+}
+pom::Buffer& pom::Buffer::operator=(Buffer&& other) noexcept
+{
+	if (this == &other)
+		return *this;
+	m_Memory = std::move(other.m_Memory);
+	other.m_Memory = VK_NULL_HANDLE;
+	m_Buffer = std::move(other.m_Buffer);
+	other.m_Buffer = VK_NULL_HANDLE;
+	return *this;
+}
+
 void pom::Buffer::Destroy(const Context& context) const
 {
 	vmaDestroyBuffer(context.allocator, m_Buffer, m_Memory);

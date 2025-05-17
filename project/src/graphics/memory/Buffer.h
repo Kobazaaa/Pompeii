@@ -13,7 +13,6 @@ namespace pom
 	struct Context;
 }
 
-
 namespace pom
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -25,7 +24,12 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		Buffer() = default;
+		explicit Buffer() = default;
+		~Buffer() = default;
+		Buffer(const Buffer& other) = delete;
+		Buffer(Buffer&& other) noexcept;
+		Buffer& operator=(const Buffer& other) = delete;
+		Buffer& operator=(Buffer&& other) noexcept;
 		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
