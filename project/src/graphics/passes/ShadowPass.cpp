@@ -131,92 +131,92 @@ void pom::ShadowPass::Destroy()
 	m_DeletionQueue.Flush();
 }
 
-void pom::ShadowPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Scene* pScene)
+void pom::ShadowPass::Record(const Context&, CommandBuffer&, uint32_t, Scene*)
 {
-	LightDataVS light;
-	glm::vec3 dir = { 1, -1, 1 };
-	dir = normalize(dir);
-	light.lightSpace = pScene->directionalLight.GetLightSpaceMatrix();
-	vmaCopyMemoryToAllocation(context.allocator, &light, m_vLightDataBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(light));
+	//LightDataVS light;
+	//glm::vec3 dir = { 1, -1, 1 };
+	//dir = normalize(dir);
+	//light.lightSpace = pScene->directionalLight.GetLightSpaceMatrix();
+	//vmaCopyMemoryToAllocation(context.allocator, &light, m_vLightDataBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(light));
 
-	// Transition Image
-	m_vShadowMaps[imageIndex].TransitionLayout(commandBuffer,
-		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-		VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
-		VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
-		0, 1, 0, 1);
+	//// Transition Image
+	//m_vShadowMaps[imageIndex].TransitionLayout(commandBuffer,
+	//	VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+	//	VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
+	//	VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+	//	0, 1, 0, 1);
 
-	// Setup attachments
-	VkRenderingAttachmentInfo depthAttachment{};
-	depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-	depthAttachment.imageView = m_vShadowMaps[imageIndex].GetViewHandle();
-	depthAttachment.imageLayout = m_vShadowMaps[imageIndex].GetCurrentLayout();
-	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	depthAttachment.clearValue.depthStencil = { .depth = 1.0f, .stencil = 0 };
+	//// Setup attachments
+	//VkRenderingAttachmentInfo depthAttachment{};
+	//depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+	//depthAttachment.imageView = m_vShadowMaps[imageIndex].GetViewHandle();
+	//depthAttachment.imageLayout = m_vShadowMaps[imageIndex].GetCurrentLayout();
+	//depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	//depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	//depthAttachment.clearValue.depthStencil = { .depth = 1.0f, .stencil = 0 };
 
-	// Render Info
-	VkRenderingInfo renderingInfo{};
-	renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-	renderingInfo.renderArea = VkRect2D{ VkOffset2D{0, 0}, m_vShadowMaps[imageIndex].GetExtent2D() };
-	renderingInfo.layerCount = 1;
-	renderingInfo.pDepthAttachment = &depthAttachment;
+	//// Render Info
+	//VkRenderingInfo renderingInfo{};
+	//renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+	//renderingInfo.renderArea = VkRect2D{ VkOffset2D{0, 0}, m_vShadowMaps[imageIndex].GetExtent2D() };
+	//renderingInfo.layerCount = 1;
+	//renderingInfo.pDepthAttachment = &depthAttachment;
 
-	const VkCommandBuffer& vCmdBuffer = commandBuffer.GetHandle();
-	Debugger::BeginDebugLabel(commandBuffer, "Shadow Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
-	vkCmdBeginRendering(vCmdBuffer, &renderingInfo);
-	{
-		// -- Set Dynamic Viewport --
-		VkViewport viewport;
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(m_vShadowMaps[imageIndex].GetExtent2D().width);
-		viewport.height = static_cast<float>(m_vShadowMaps[imageIndex].GetExtent2D().height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Viewport", glm::vec4(0.2f, 1.f, 0.2f, 1.f));
-		vkCmdSetViewport(vCmdBuffer, 0, 1, &viewport);
+	//const VkCommandBuffer& vCmdBuffer = commandBuffer.GetHandle();
+	//Debugger::BeginDebugLabel(commandBuffer, "Shadow Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
+	//vkCmdBeginRendering(vCmdBuffer, &renderingInfo);
+	//{
+	//	// -- Set Dynamic Viewport --
+	//	VkViewport viewport;
+	//	viewport.x = 0.0f;
+	//	viewport.y = 0.0f;
+	//	viewport.width = static_cast<float>(m_vShadowMaps[imageIndex].GetExtent2D().width);
+	//	viewport.height = static_cast<float>(m_vShadowMaps[imageIndex].GetExtent2D().height);
+	//	viewport.minDepth = 0.0f;
+	//	viewport.maxDepth = 1.0f;
+	//	Debugger::InsertDebugLabel(commandBuffer, "Bind Viewport", glm::vec4(0.2f, 1.f, 0.2f, 1.f));
+	//	vkCmdSetViewport(vCmdBuffer, 0, 1, &viewport);
 
-		// -- Set Dynamic Scissors --
-		VkRect2D scissor;
-		scissor.offset = { .x = 0, .y = 0 };
-		scissor.extent = m_vShadowMaps[imageIndex].GetExtent2D();
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Scissor", glm::vec4(1.f, 1.f, 0.2f, 1.f));
-		vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
+	//	// -- Set Dynamic Scissors --
+	//	VkRect2D scissor;
+	//	scissor.offset = { .x = 0, .y = 0 };
+	//	scissor.extent = m_vShadowMaps[imageIndex].GetExtent2D();
+	//	Debugger::InsertDebugLabel(commandBuffer, "Bind Scissor", glm::vec4(1.f, 1.f, 0.2f, 1.f));
+	//	vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
 
-		// -- Bind Descriptor Sets --
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Uniform Buffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
-		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_ShadowPipelineLayout.GetHandle(), 0, 1,
-			&m_vLightDataDS[imageIndex].GetHandle(), 0, nullptr);
+	//	// -- Bind Descriptor Sets --
+	//	Debugger::InsertDebugLabel(commandBuffer, "Bind Uniform Buffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
+	//	vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_ShadowPipelineLayout.GetHandle(), 0, 1,
+	//		&m_vLightDataDS[imageIndex].GetHandle(), 0, nullptr);
 
-		// -- Bind Model Data --
-		pScene->model.Bind(commandBuffer);
+	//	// -- Bind Model Data --
+	//	pScene->model.Bind(commandBuffer);
 
-		// -- Draw Opaque --
-		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_ShadowPipeline.GetHandle());
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Shadow Pipeline", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
-		for (const Mesh& mesh : pScene->model.opaqueMeshes)
-		{
-			PCModelDataVS pc
-			{
-				.model = mesh.matrix
-			};
-			vkCmdPushConstants(vCmdBuffer, m_ShadowPipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
-			                   sizeof(PCModelDataVS), &pc);
+	//	// -- Draw Opaque --
+	//	vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_ShadowPipeline.GetHandle());
+	//	Debugger::InsertDebugLabel(commandBuffer, "Bind Shadow Pipeline", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
+	//	for (const Mesh& mesh : pScene->model.opaqueMeshes)
+	//	{
+	//		PCModelDataVS pc
+	//		{
+	//			.model = mesh.matrix
+	//		};
+	//		vkCmdPushConstants(vCmdBuffer, m_ShadowPipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+	//		                   sizeof(PCModelDataVS), &pc);
 
-			vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
-			Debugger::InsertDebugLabel(commandBuffer, "Draw Opaque Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
-		}
-	}
-	vkCmdEndRendering(vCmdBuffer);
-	Debugger::EndDebugLabel(commandBuffer);
+	//		vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
+	//		Debugger::InsertDebugLabel(commandBuffer, "Draw Opaque Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
+	//	}
+	//}
+	//vkCmdEndRendering(vCmdBuffer);
+	//Debugger::EndDebugLabel(commandBuffer);
 
-	// Transition Image
-	m_vShadowMaps[imageIndex].TransitionLayout(commandBuffer,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
-		VK_ACCESS_2_SHADER_SAMPLED_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-		0, 1, 0, 1);
+	//// Transition Image
+	//m_vShadowMaps[imageIndex].TransitionLayout(commandBuffer,
+	//	VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	//	VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+	//	VK_ACCESS_2_SHADER_SAMPLED_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+	//	0, 1, 0, 1);
 }
 
 const pom::Sampler& pom::ShadowPass::GetSampler() const
