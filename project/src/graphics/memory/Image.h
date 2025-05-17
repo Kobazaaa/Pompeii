@@ -16,7 +16,6 @@ namespace pom
 	struct Context;
 }
 
-
 namespace pom
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -28,7 +27,12 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		Image() = default;
+		explicit Image() = default;
+		~Image() = default;
+		Image(const Image& other) = delete;
+		Image(Image&& other) noexcept;
+		Image& operator=(const Image& other) = delete;
+		Image& operator=(Image&& other) noexcept;
 		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------

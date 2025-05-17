@@ -16,10 +16,42 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
+pom::Image::Image(Image&& other) noexcept
+{
+	m_Image = std::move(other.m_Image);
+	other.m_Image = VK_NULL_HANDLE;
+	m_ImageView = std::move(other.m_ImageView);
+	other.m_ImageView = VK_NULL_HANDLE;
+	m_ImageMemory = std::move(other.m_ImageMemory);
+	other.m_ImageMemory = VK_NULL_HANDLE;
+	m_CurrentLayout = std::move(other.m_CurrentLayout);
+	other.m_CurrentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	m_ImageInfo = std::move(other.m_ImageInfo);
+	other.m_ImageInfo = {};
+}
+pom::Image& pom::Image::operator=(Image&& other) noexcept
+{
+	if (this == &other)
+		return *this;
+	m_Image = std::move(other.m_Image);
+	other.m_Image = VK_NULL_HANDLE;
+	m_ImageView = std::move(other.m_ImageView);
+	other.m_ImageView = VK_NULL_HANDLE;
+	m_ImageMemory = std::move(other.m_ImageMemory);
+	other.m_ImageMemory = VK_NULL_HANDLE;
+	m_CurrentLayout = std::move(other.m_CurrentLayout);
+	other.m_CurrentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	m_ImageInfo = std::move(other.m_ImageInfo);
+	other.m_ImageInfo = {};
+	return *this;
+}
+
 void pom::Image::Destroy(const Context& context) const
 {
-	vkDestroyImageView(context.device.GetHandle(), m_ImageView, nullptr);
-	vmaDestroyImage(context.allocator, m_Image, m_ImageMemory);
+	if (m_ImageView)
+		vkDestroyImageView(context.device.GetHandle(), m_ImageView, nullptr);
+	if (m_ImageMemory)
+		vmaDestroyImage(context.allocator, m_Image, m_ImageMemory);
 }
 VkImageView& pom::Image::CreateView(const Context& context, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType,
 									uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)
