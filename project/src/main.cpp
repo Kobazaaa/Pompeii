@@ -12,7 +12,6 @@
 
 // -- Pompeii Includes
 #include "Renderer.h"
-#include "DeletionQueue.h"
 #include "Window.h"
 #include "Camera.h"
 #include "ConsoleTextSettings.h"

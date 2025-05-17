@@ -12,11 +12,18 @@ namespace pom
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	class DeletionQueue
 	{
+
 	public:
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		DeletionQueue() = default;
+		~DeletionQueue() = default;
+
+		DeletionQueue(const DeletionQueue& other) = delete;
+		DeletionQueue(DeletionQueue&& other) noexcept = delete;
+		DeletionQueue& operator=(const DeletionQueue& other) = delete;
+		DeletionQueue& operator=(DeletionQueue&& other) noexcept = delete;
 
 		//--------------------------------------------------
 		//    Queue
