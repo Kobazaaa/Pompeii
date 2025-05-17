@@ -16,7 +16,6 @@ namespace pom
 	struct Context;
 }
 
-
 namespace pom
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -28,7 +27,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		DescriptorSetLayout() = default;
+		explicit DescriptorSetLayout() = default;
 		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
@@ -88,7 +87,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		DescriptorSet() = default;
+		explicit DescriptorSet() = default;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators

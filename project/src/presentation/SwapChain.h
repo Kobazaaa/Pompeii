@@ -60,10 +60,17 @@ namespace pom
 	class SwapChain final
 	{
 	public:
+
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		SwapChain() = default;
+		explicit SwapChain() = default;
+		~SwapChain() = default;
+		SwapChain(const SwapChain& other) = delete;
+		SwapChain(SwapChain&& other) noexcept = delete;
+		SwapChain& operator=(const SwapChain& other) = delete;
+		SwapChain& operator=(SwapChain&& other) noexcept = delete;
+
 		void Destroy(const Context& context) const;
 		void Recreate(Context& context, const Window& window);
 
