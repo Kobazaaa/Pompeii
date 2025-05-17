@@ -11,7 +11,6 @@
 // -- Forward Declarations --
 namespace pom { struct Context; }
 
-
 namespace pom
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -23,7 +22,12 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		ShaderModule() = default;
+		explicit ShaderModule() = default;
+		~ShaderModule() = default;
+		ShaderModule(const ShaderModule& other) = delete;
+		ShaderModule(ShaderModule&& other) noexcept = delete;
+		ShaderModule& operator=(const ShaderModule& other) = delete;
+		ShaderModule& operator=(ShaderModule&& other) noexcept = delete;
 		void Destroy(const Context& context) const;
 
 
