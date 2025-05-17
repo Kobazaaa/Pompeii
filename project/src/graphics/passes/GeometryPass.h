@@ -15,8 +15,9 @@
 // -- Forward Declarations --
 namespace pom
 {
+	struct Model;
 	class DescriptorPool;
-	struct Scene;
+	class Scene;
 	class Camera;
 	class CommandBuffer;
 }
@@ -48,6 +49,7 @@ namespace pom
 		void Initialize(const Context& context, const GeometryPassCreateInfo& createInfo);
 		void Destroy();
 		void Resize(const Context& context, VkExtent2D extent);
+		void UpdateTextureDescriptor(const Context& context, DescriptorPool& pool, const Scene* pScene);
 		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Image& depthImage, Scene* pScene, Camera* pCamera);
 
 		//--------------------------------------------------
@@ -77,6 +79,7 @@ namespace pom
 			uint32_t normalIdx;
 			uint32_t roughnessIdx;
 			uint32_t metallicIdx;
+			uint32_t textureCount;
 		};
 
 	private:
@@ -96,7 +99,7 @@ namespace pom
 		std::vector<Buffer>			m_vUniformBuffers;
 
 		Sampler						m_TextureSampler{ };
-
+		uint32_t					m_TextureCount{ };
 		DeletionQueue				m_DeletionQueue{ };
 	};
 }

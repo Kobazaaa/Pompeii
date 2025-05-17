@@ -108,7 +108,7 @@ void pom::DepthPrePass::Destroy()
 	m_DeletionQueue.Flush();
 }
 
-void pom::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, const Scene* pScene, Camera* pCamera) const
+void pom::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, Scene* pScene, Camera* pCamera) const
 {
 	// -- Update Vertex UBO --
 	UniformBufferVS ubo;
@@ -159,26 +159,32 @@ void pom::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuf
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Uniform Buffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
 		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vUniformDS[imageIndex].GetHandle(), 0, nullptr);
 
-		// -- Bind Model Data --
-		pScene->model.Bind(commandBuffer);
-
-		// -- Draw Opaque --
+		// -- Bind Pipeline --
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Depth PrePass)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
-		for (const Mesh& mesh : pScene->model.opaqueMeshes)
-		{
-			// -- Bind Push Constants --
-			Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
-			PCModelDataVS pcvs
-			{
-				.model = mesh.matrix
-			};
-			vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
-				sizeof(PCModelDataVS), &pcvs);
 
-			// -- Drawing Time! --
-			vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
-			Debugger::InsertDebugLabel(commandBuffer, "Draw Opaque Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
+		// -- Draw Models --
+		for (const Model& model : pScene->GetModels())
+		{
+			// -- Bind Model Data --
+			model.Bind(commandBuffer);
+
+			// -- Draw Opaque --
+			for (const Mesh& mesh : model.opaqueMeshes)
+			{
+				// -- Bind Push Constants --
+				Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
+				PCModelDataVS pcvs
+				{
+					.model = mesh.matrix
+				};
+				vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+					sizeof(PCModelDataVS), &pcvs);
+
+				// -- Drawing Time! --
+				vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
+				Debugger::InsertDebugLabel(commandBuffer, "Draw Opaque Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
+			}
 		}
 	}
 	vkCmdEndRendering(vCmdBuffer);

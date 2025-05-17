@@ -14,7 +14,7 @@ namespace pom
 	class LightingPass;
 	class GeometryPass;
 	class DescriptorPool;
-	struct Scene;
+	class Scene;
 	class ShadowPass;
 	class Camera;
 	class CommandBuffer;

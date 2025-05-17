@@ -16,7 +16,7 @@ namespace pom
 {
 	class SwapChain;
 	class DescriptorPool;
-	struct Scene;
+	class Scene;
 	class ShadowPass;
 	class FrameBuffer;
 	class Camera;

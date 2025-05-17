@@ -18,7 +18,7 @@ void pom::Renderer::Initialize(Camera* pCamera, Window* pWindow)
 {
 	m_pWindow = pWindow;
 	m_pCamera = pCamera;
-	m_pScene = new Scene();
+	m_pScene = new SponzaScene();
 	m_Context.deletionQueue.Push([&] {delete m_pScene; });
 	InitializeVulkan();
 }
@@ -107,7 +107,7 @@ void pom::Renderer::Render()
 void pom::Renderer::InitializeVulkan()
 {
 	// -- Start Loading Scene on CPU --
-	std::jthread sceneLoader{ &Scene::Load, m_pScene, "models/FlightHelmet.gltf" };
+	std::jthread sceneLoader{ &Scene::Initialize, m_pScene};
 
 
 	// -- Enable Debugger - Requirements - [Debug Mode]
@@ -154,6 +154,12 @@ void pom::Renderer::InitializeVulkan()
 	// -- Vulkan API 1.2 Features --
 	VkPhysicalDeviceVulkan12Features vulkan12Features{};
 	vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+	vulkan12Features.runtimeDescriptorArray = VK_TRUE;
+	vulkan12Features.descriptorBindingPartiallyBound = VK_TRUE;
+	vulkan12Features.descriptorBindingVariableDescriptorCount = VK_TRUE;
+	vulkan12Features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+	vulkan12Features.descriptorIndexing = VK_TRUE;
+	vulkan12Features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
 	vulkan12Features.pNext = &vulkan11Features;  // Chain Vulkan API 1.1 Features
 
 	// -- Vulkan API 1.3 Features --
@@ -234,7 +240,7 @@ void pom::Renderer::InitializeVulkan()
 	// -- Allocate Scene - Requirements - []
 	{
 		sceneLoader.join();
-		m_pScene->Allocate(m_Context, m_CommandPool, false);
+		m_pScene->AllocateGPU(m_Context, m_CommandPool, false);
 		m_Context.deletionQueue.Push([&] { m_pScene->Destroy(); });
 	}
 
@@ -244,7 +250,10 @@ void pom::Renderer::InitializeVulkan()
 			.SetDebugName("Descriptor Pool (Default)")
 			.SetMaxSets(100)
 			.AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100)
+			.AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100)
 			.AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100)
+			.AddFlags(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT)
+			.AddFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
 			.Create(m_Context);
 		m_Context.deletionQueue.Push([&] {m_DescriptorPool.Destroy(m_Context); });
 	}

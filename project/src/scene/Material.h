@@ -26,7 +26,7 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		Texture() = default;
-		void LoadFromFile(const std::string& path, VkFormat format);
+		void LoadFromFile(const std::string& path, VkFormat format, bool incIdx = true);
 		void FreePixels() const;
 
 
@@ -37,6 +37,8 @@ namespace pom
 		uint32_t GetMemorySize() const;
 		glm::ivec2 GetExtent() const;
 		VkFormat GetFormat() const;
+		uint32_t GetLocalIndex() const;
+		static uint32_t GetStaticIndex();
 
 	private:
 		stbi_uc* m_pPixels;
@@ -44,6 +46,9 @@ namespace pom
 		int m_Height;
 		int m_Channels;
 		VkFormat m_Format;
+		uint32_t m_Index{};
+
+		inline static uint32_t index{0};
 	};
 
 

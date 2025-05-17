@@ -44,18 +44,28 @@ pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::NewLayoutBindi
 	m_vLayoutBindings.back().binding = static_cast<uint32_t>(m_vLayoutBindings.size() - 1);
 	m_vLayoutBindings.back().descriptorCount = 1;
 	m_vLayoutBindings.back().pImmutableSamplers = nullptr;
+
+	m_vBindingFlags.emplace_back();
 	return *this;
 }
-pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetType(VkDescriptorType type)			{ m_vLayoutBindings.back().descriptorType = type; return *this; }
-pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetCount(uint32_t count)					{ m_vLayoutBindings.back().descriptorCount = count; return *this; }
-pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetShaderStages(VkShaderStageFlags flags) { m_vLayoutBindings.back().stageFlags = flags; return *this; }
-
+pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetType(VkDescriptorType type)						{ m_vLayoutBindings.back().descriptorType = type; return *this; }
+pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetCount(uint32_t count)								{ m_vLayoutBindings.back().descriptorCount = count; return *this; }
+pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetShaderStages(VkShaderStageFlags flags)				{ m_vLayoutBindings.back().stageFlags = flags; return *this; }
+pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::AddLayoutFlag(VkDescriptorSetLayoutCreateFlags flags) { m_LayoutFlags |= flags; return *this; }
+pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::AddBindingFlags(VkDescriptorBindingFlags flags)		{ m_vBindingFlags.back() |= flags; return *this; }
 void pom::DescriptorSetLayoutBuilder::Build(const Context& context, DescriptorSetLayout& descriptorSetLayout)
 {
+	VkDescriptorSetLayoutBindingFlagsCreateInfo flagsInfo{};
+	flagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+	flagsInfo.bindingCount = static_cast<uint32_t>(m_vBindingFlags.size());
+	flagsInfo.pBindingFlags = m_vBindingFlags.data();
+
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	layoutInfo.bindingCount = static_cast<uint32_t>(m_vLayoutBindings.size());
 	layoutInfo.pBindings = m_vLayoutBindings.data();
+	layoutInfo.flags = m_LayoutFlags;
+	layoutInfo.pNext = &flagsInfo;
 
 	descriptorSetLayout.m_vLayoutBindings = m_vLayoutBindings;
 
@@ -69,6 +79,8 @@ void pom::DescriptorSetLayoutBuilder::Build(const Context& context, DescriptorSe
 
 	m_pName = nullptr;
 	m_vLayoutBindings.clear();
+	m_vBindingFlags.clear();
+	m_LayoutFlags = {};
 }
 
 
@@ -81,7 +93,7 @@ void pom::DescriptorSetLayoutBuilder::Build(const Context& context, DescriptorSe
 //    Accessors & Mutators
 //--------------------------------------------------
 const VkDescriptorSet& pom::DescriptorSet::GetHandle() const { return m_DescriptorSet; }
-const pom::DescriptorSetLayout& pom::DescriptorSet::GetLayout() const {	return m_Layout; }
+const pom::DescriptorSetLayout& pom::DescriptorSet::GetLayout() const { return m_Layout; }
 
 
 
@@ -104,7 +116,7 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddBufferInfo(const Buffer& 
 
 	return *this;
 }
-pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteBuffers(const DescriptorSet& set, uint32_t binding)
+pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteBuffers(const DescriptorSet& set, uint32_t binding, uint32_t count)
 {
 	VkWriteDescriptorSet write{};
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -112,7 +124,7 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteBuffers(const Descripto
 	write.dstBinding = binding;
 	write.dstArrayElement = 0;
 	write.descriptorType = set.GetLayout().GetBindings()[binding].descriptorType;
-	write.descriptorCount = set.GetLayout().GetBindings()[binding].descriptorCount;
+	write.descriptorCount = count == 0xFFFFFFFF ? set.GetLayout().GetBindings()[binding].descriptorCount : count;
 	write.pBufferInfo = m_vBufferInfos.data();
 	write.pImageInfo = nullptr;
 	write.pTexelBufferView = nullptr;
@@ -131,15 +143,15 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddImageInfo(const Image& im
 
 	return *this;
 }
-pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteImages(const DescriptorSet& set, uint32_t binding)
+pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteImages(const DescriptorSet& set, uint32_t binding, uint32_t count, uint32_t arraySlot)
 {
 	VkWriteDescriptorSet write{};
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.dstSet = set.GetHandle();
 	write.dstBinding = binding;
-	write.dstArrayElement = 0;
+	write.dstArrayElement = arraySlot;
 	write.descriptorType = set.GetLayout().GetBindings()[binding].descriptorType;
-	write.descriptorCount = set.GetLayout().GetBindings()[binding].descriptorCount;
+	write.descriptorCount = count == 0xFFFFFFFF ? set.GetLayout().GetBindings()[binding].descriptorCount : count;
 	write.pImageInfo = m_vImageInfos.data();
 	write.pBufferInfo = nullptr;
 	write.pTexelBufferView = nullptr;

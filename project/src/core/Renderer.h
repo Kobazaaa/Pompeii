@@ -85,9 +85,6 @@ namespace pom
 		LightingPass				m_LightingPass			{ };
 		BlitPass					m_BlitPass				{ };
 
-		// -- Scene --
-		Scene*						m_pScene{ };
-
 		//--------------------------------------------------
 		//    Helpers
 		//--------------------------------------------------
@@ -96,9 +93,10 @@ namespace pom
 		void CreateRenderTargetResources(const Context& context, VkExtent2D extent);
 		void RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex);
 
-		// -- Window --
+		// -- Other --
 		Window*				m_pWindow			{ };
 		Camera*				m_pCamera			{ };
+		Scene*				m_pScene			{ };
 
 		// -- Frame Counter --
 		uint32_t			m_CurrentFrame		{ 0 };

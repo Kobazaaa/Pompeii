@@ -66,12 +66,16 @@ namespace pom
 		DescriptorSetLayoutBuilder& SetCount(uint32_t count);
 		//! REQUIRED
 		DescriptorSetLayoutBuilder& SetShaderStages(VkShaderStageFlags flags);
+		DescriptorSetLayoutBuilder& AddLayoutFlag(VkDescriptorSetLayoutCreateFlags flags);
+		DescriptorSetLayoutBuilder& AddBindingFlags(VkDescriptorBindingFlags flags);
 
 		void Build(const Context& context, DescriptorSetLayout& descriptorSetLayout);
 
 	private:
 		const char* m_pName{ };
 		std::vector<VkDescriptorSetLayoutBinding> m_vLayoutBindings;
+		std::vector<VkDescriptorBindingFlags> m_vBindingFlags;
+		VkDescriptorSetLayoutCreateFlags m_LayoutFlags{};
 	};
 
 
@@ -112,10 +116,10 @@ namespace pom
 		//    Writing
 		//--------------------------------------------------
 		DescriptorSetWriter& AddBufferInfo(const Buffer& buffer, uint32_t offset, uint32_t range);
-		DescriptorSetWriter& WriteBuffers(const DescriptorSet& set, uint32_t binding);
+		DescriptorSetWriter& WriteBuffers(const DescriptorSet& set, uint32_t binding, uint32_t count = 0xFFFFFFFF);
 
 		DescriptorSetWriter& AddImageInfo(const Image& image, VkImageLayout layout, const Sampler& sampler);
-		DescriptorSetWriter& WriteImages(const DescriptorSet& set, uint32_t binding);
+		DescriptorSetWriter& WriteImages(const DescriptorSet& set, uint32_t binding, uint32_t count = 0xFFFFFFFF, uint32_t arraySlot = 0);
 
 		void Execute(const Context& context);
 

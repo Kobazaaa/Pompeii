@@ -176,7 +176,7 @@ void pom::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene, const g
 }
 void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const glm::mat4& transform)
 {
-	opaqueMeshes.emplace_back();
+	opaqueMeshes.push_back(Mesh());
 	opaqueMeshes.back().name = pMesh->mName.C_Str();
 	opaqueMeshes.back().matrix = transform;
 
@@ -184,7 +184,7 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 	opaqueMeshes.back().vertexOffset = static_cast<uint32_t>(vertices.size());
 	for (uint32_t vIdx{}; vIdx < pMesh->mNumVertices; ++vIdx)
 	{
-		Vertex vertex;
+		Vertex vertex{};
 
 		vertex.position = glm::vec3(pMesh->mVertices[vIdx].x,
 									pMesh->mVertices[vIdx].y,
@@ -235,7 +235,7 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const g
 				material->GetTexture(type, mIdx, &texturePath);
 				std::string fullPath = "textures/" + std::string(texturePath.C_Str());
 
-				uint32_t idx = static_cast<uint32_t>(textures.size());
+				uint32_t idx = Texture::GetStaticIndex();
 				auto [it, succeeded] = pathToIdx.insert({ fullPath, idx });
 				targetIdx = it->second;
 
@@ -309,7 +309,6 @@ void pom::Model::CreateIndexBuffer(const Context& context, CommandPool& cmdPool)
 }
 void pom::Model::CreateImages(const Context& context, CommandPool& cmdPool)
 {
-	uint32_t index = 0;
 	for (Texture& tex : textures)
 	{
 		images.emplace_back();
@@ -324,7 +323,7 @@ void pom::Model::CreateImages(const Context& context, CommandPool& cmdPool)
 
 		ImageBuilder builder{};
 		builder
-			.SetDebugName(std::ranges::find_if(pathToIdx, [&](auto& keyVal) { return keyVal.second == index; })->first.c_str())
+			.SetDebugName(std::ranges::find_if(pathToIdx, [&](auto& keyVal) { return keyVal.second == tex.GetLocalIndex(); })->first.c_str())
 			.SetWidth(texW)
 			.SetHeight(texH)
 			.SetFormat(tex.GetFormat())
@@ -335,7 +334,6 @@ void pom::Model::CreateImages(const Context& context, CommandPool& cmdPool)
 			.InitialData(tex.GetPixels(), 0, texW, texH, tex.GetMemorySize(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, cmdPool)
 			.Build(context, images.back());
 		images.back().CreateView(context, tex.GetFormat(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, mipLevels, 0, 1);
-		++index;
 	}
 	deletionQueue.Push([&] { for (Image& image : images) image.Destroy(context); });
 }

@@ -30,6 +30,12 @@ pom::DescriptorPool& pom::DescriptorPool::AddPoolSize(VkDescriptorType type, uin
 	m_vPoolSizes.emplace_back(type, count);
 	return *this;
 }
+pom::DescriptorPool& pom::DescriptorPool::AddFlags(VkDescriptorPoolCreateFlags flags)
+{
+	m_CreateFlags |= flags;
+	return *this;
+}
+
 void pom::DescriptorPool::Create(const Context& context)
 {
 	VkDescriptorPoolCreateInfo poolInfo{};
@@ -37,7 +43,7 @@ void pom::DescriptorPool::Create(const Context& context)
 	poolInfo.poolSizeCount = static_cast<uint32_t>(m_vPoolSizes.size());
 	poolInfo.pPoolSizes = m_vPoolSizes.data();
 	poolInfo.maxSets = m_MaxSets;
-	poolInfo.flags = 0;
+	poolInfo.flags = m_CreateFlags;
 
 	if (vkCreateDescriptorPool(context.device.GetHandle(), &poolInfo, nullptr, &m_Pool) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Descriptor Pool!");
@@ -48,6 +54,7 @@ void pom::DescriptorPool::Create(const Context& context)
 	}
 
 	m_pName = nullptr;
+	m_CreateFlags = {};
 }
 void pom::DescriptorPool::Destroy(const Context& context) const
 {
@@ -58,7 +65,7 @@ void pom::DescriptorPool::Destroy(const Context& context) const
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-std::vector<pom::DescriptorSet> pom::DescriptorPool::AllocateSets(const Context& context, const DescriptorSetLayout& layout, uint32_t count, const char* name) const
+std::vector<pom::DescriptorSet> pom::DescriptorPool::AllocateSets(const Context& context, const DescriptorSetLayout& layout, uint32_t count, const char* name, const void* pNext) const
 {
 	std::vector<pom::DescriptorSet> results;
 	std::vector<VkDescriptorSet> sets;
@@ -71,6 +78,7 @@ std::vector<pom::DescriptorSet> pom::DescriptorPool::AllocateSets(const Context&
 	allocInfo.descriptorPool = m_Pool;
 	allocInfo.descriptorSetCount = count;
 	allocInfo.pSetLayouts = layouts.data();
+	allocInfo.pNext = pNext;
 
 	if (vkAllocateDescriptorSets(context.device.GetHandle(), &allocInfo, sets.data()) != VK_SUCCESS)
 		throw std::runtime_error("Failed to allocate Descriptor Sets!");

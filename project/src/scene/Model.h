@@ -80,6 +80,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
+		explicit Model() = default;
 		void LoadModel(const std::string& path);
 		void AllocateResources(const Context& context, CommandPool& cmdPool, bool keepHostData = false);
 		void Destroy();
@@ -94,20 +95,20 @@ namespace pom
 		//    Data
 		//--------------------------------------------------
 		// -- CPU --
-		std::vector<Vertex> vertices;
-		std::vector<uint32_t> indices;
-		std::vector<Texture> textures;
-		std::unordered_map<std::string, uint32_t> pathToIdx;
+		std::vector<Vertex> vertices{};
+		std::vector<uint32_t> indices{};
+		std::vector<Texture> textures{};
+		std::unordered_map<std::string, uint32_t> pathToIdx{};
 		DeletionQueue deletionQueue{};
 
 		// -- GPU --
 		Buffer vertexBuffer;
 		Buffer indexBuffer;
-		std::vector<Image> images;
+		std::vector<Image> images{};
 
 		// -- Meshes --
-		std::vector<Mesh> opaqueMeshes;
-		std::vector<Mesh> transparentMeshes;
+		std::vector<Mesh> opaqueMeshes{};
+		std::vector<Mesh> transparentMeshes{};
 
 	private:
 		//--------------------------------------------------

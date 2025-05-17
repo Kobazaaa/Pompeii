@@ -17,7 +17,7 @@ namespace pom
 {
 	class GeometryPass;
 	class DescriptorPool;
-	struct Scene;
+	class Scene;
 	class ShadowPass;
 	class Camera;
 	class CommandBuffer;
@@ -48,7 +48,7 @@ namespace pom
 		void Initialize(const Context& context, const LightingPassCreateInfo& createInfo);
 		void Destroy();
 		void UpdateDescriptors(const Context& context, const GeometryPass& pGeometryPass) const;
-		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const Scene* pScene, Camera* pCamera) const;
+		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, Scene* pScene, Camera* pCamera) const;
 
 		//--------------------------------------------------
 		//    Shader Infos

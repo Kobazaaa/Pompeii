@@ -205,7 +205,7 @@ void pom::LightingPass::UpdateDescriptors(const Context& context, const Geometry
 	}
 }
 
-void pom::LightingPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const Scene* pScene, Camera* pCamera) const
+void pom::LightingPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, Scene* pScene, Camera* pCamera) const
 {
 	// -- Update DS --
 	struct cam
@@ -221,9 +221,9 @@ void pom::LightingPass::Record(const Context& context, CommandBuffer& commandBuf
 		glm::vec3 color;
 		float intensity;
 	} l{};
-	l.dirpostype = glm::vec4(pScene->vLights.front().GetDirection(), 0);
-	l.color = pScene->vLights.front().GetColor();
-	l.intensity = pScene->vLights.front().GetIntensity();
+	l.dirpostype = glm::vec4(pScene->GetLights().front().GetDirection(), 0);
+	l.color = pScene->GetLights().front().GetColor();
+	l.intensity = pScene->GetLights().front().GetIntensity();
 	vmaCopyMemoryToAllocation(context.allocator, &l, m_vSSBOLights[imageIndex].GetMemoryHandle(), 0, sizeof(l));
 
 	// -- Setup Attachment --
@@ -260,7 +260,7 @@ void pom::LightingPass::Record(const Context& context, CommandBuffer& commandBuf
 		vkCmdSetViewport(vCmdBuffer, 0, 1, &viewport);
 
 		// -- Set Dynamic Scissors --
-		VkRect2D scissor;
+		VkRect2D scissor{};
 		scissor.offset = { .x = 0, .y = 0 };
 		scissor.extent = renderImage.GetExtent2D();
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Scissor", glm::vec4(1.f, 1.f, 0.2f, 1.f));

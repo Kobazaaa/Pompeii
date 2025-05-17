@@ -31,12 +31,19 @@ void pom::GeometryPass::Initialize(const Context& context, const GeometryPassCre
 		m_DeletionQueue.Push([&] { m_UniformDSL.Destroy(context); });
 
 		// -- Texture Array Descriptor --
+		constexpr uint32_t textureCount = 256;
+		assert(textureCount <= context.physicalDevice.GetProperties().limits.maxDescriptorSetSampledImages && "GPU can't support this many sampled images!");
+		assert(textureCount >= createInfo.pScene->GetImageCount() && "Scene has more images than can be allocated!");
 		builder
 			.SetDebugName("Texture Array DS Layout")
 			.NewLayoutBinding()
-			.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-			.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
-			.SetCount(static_cast<uint32_t>(createInfo.pScene->model.images.size()))
+				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
+				.SetCount(textureCount)
+				.AddLayoutFlag(VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT)
+				.AddBindingFlags(VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT)
+				.AddBindingFlags(VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT)
+				.AddBindingFlags(VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT)
 			.Build(context, m_TextureDSL);
 		m_DeletionQueue.Push([&] { m_TextureDSL.Destroy(context); });
 	}
@@ -68,7 +75,6 @@ void pom::GeometryPass::Initialize(const Context& context, const GeometryPassCre
 		ShaderModule fragShader;
 		shaderLoader.Load(context, "shaders/deferred.vert.spv", vertShader);
 		shaderLoader.Load(context, "shaders/deferred.frag.spv", fragShader);
-		uint32_t arraySize = static_cast<uint32_t>(createInfo.pScene->model.images.size());
 
 		// Setup dynamic rendering info
 		VkPipelineRenderingCreateInfo renderingCreateInfo{};
@@ -88,7 +94,6 @@ void pom::GeometryPass::Initialize(const Context& context, const GeometryPassCre
 			.AddDynamicState(VK_DYNAMIC_STATE_SCISSOR)
 			.AddShader(vertShader, VK_SHADER_STAGE_VERTEX_BIT)
 			.AddShader(fragShader, VK_SHADER_STAGE_FRAGMENT_BIT)
-			.SetShaderSpecialization(0, 0, sizeof(uint32_t), &arraySize)
 			.EnableSampleShading(0.2f)
 			.SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 			.SetCullMode(VK_CULL_MODE_BACK_BIT)
@@ -137,7 +142,6 @@ void pom::GeometryPass::Initialize(const Context& context, const GeometryPassCre
 	// -- Buffers --
 	{
 		m_vUniformDS = createInfo.pDescriptorPool->AllocateSets(context, m_UniformDSL, createInfo.maxFramesInFlight, "Uniform Buffer DS");
-		m_TextureDS = createInfo.pDescriptorPool->AllocateSets(context, m_TextureDSL, 1, "Texture Array DS").front();
 
 		// -- Write UBO --
 		DescriptorSetWriter writer{};
@@ -150,11 +154,7 @@ void pom::GeometryPass::Initialize(const Context& context, const GeometryPassCre
 		}
 
 		// -- Write Textures --
-		for (Image& image : createInfo.pScene->model.images)
-		{
-			writer.AddImageInfo(image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_TextureSampler);
-		}
-		writer.WriteImages(m_TextureDS, 0).Execute(context);
+		UpdateTextureDescriptor(context, *createInfo.pDescriptorPool, createInfo.pScene);
 	}
 }
 
@@ -168,7 +168,30 @@ void pom::GeometryPass::Resize(const Context& context, VkExtent2D extent)
 	for (GBuffer& gBuffer : m_vGBuffers)
 		gBuffer.Resize(context, extent);
 }
+void pom::GeometryPass::UpdateTextureDescriptor(const Context& context, DescriptorPool& pool, const Scene* pScene)
+{
+	if (m_TextureDS.GetHandle())
+		vkFreeDescriptorSets(context.device.GetHandle(), pool.GetHandle(), 1, &m_TextureDS.GetHandle());
 
+	const uint32_t variableCount = pScene->GetImageCount();
+	VkDescriptorSetVariableDescriptorCountAllocateInfo variableCountInfo{};
+	variableCountInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
+	variableCountInfo.descriptorSetCount = 1;
+	variableCountInfo.pDescriptorCounts = &variableCount;
+	m_TextureDS = pool.AllocateSets(context, m_TextureDSL, 1, "Texture Array DS", &variableCountInfo).front();
+
+	// -- Write Textures --
+	DescriptorSetWriter writer{};
+	for (const Model& model : pScene->GetModels())
+	{
+		for (const Image& image : model.images)
+		{
+			writer.AddImageInfo(image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_TextureSampler);
+		}
+	}
+	writer.WriteImages(m_TextureDS, 0, pScene->GetImageCount()).Execute(context);
+	m_TextureCount = pScene->GetImageCount();
+}
 void pom::GeometryPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Image& depthImage, Scene* pScene, Camera* pCamera)
 {
 	// Update VS UBO
@@ -231,64 +254,73 @@ void pom::GeometryPass::Record(const Context& context, CommandBuffer& commandBuf
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Textures", glm::vec4(0.f, 1.f, 1.f, 1.f));
 		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 1, 1, &m_TextureDS.GetHandle(), 0, nullptr);
 
-		// -- Bind Model Data --
-		pScene->model.Bind(commandBuffer);
-
-		// -- Draw Opaque --
+		// -- Bind Pipeline --
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (GBuffer)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
-		for (const Mesh& mesh : pScene->model.opaqueMeshes)
+
+		// -- Draw Models --
+		for (const Model& model : pScene->GetModels())
 		{
-			// -- Bind Push Constants --
-			Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
-			PCModelDataVS pcvs
-			{
-				.model = mesh.matrix
-			};
-			vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
-				sizeof(PCModelDataVS), &pcvs);
+			// -- Bind Model Data --
+			model.Bind(commandBuffer);
 
-			PCMaterialDataFS pcfs
+			// -- Draw Opaque --
+			for (const Mesh& mesh : model.opaqueMeshes)
 			{
-				.diffuseIdx = mesh.material.albedoIdx,
-				.opacityIdx = mesh.material.opacityIdx,
-				.normalIdx = mesh.material.normalIdx,
-				.roughnessIdx = mesh.material.roughnessIdx,
-				.metallicIdx = mesh.material.metalnessIdx,
-			};
-			vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(PCModelDataVS),
-				sizeof(PCMaterialDataFS), &pcfs);
+				// -- Bind Push Constants --
+				Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
+				PCModelDataVS pcvs
+				{
+					.model = mesh.matrix
+				};
+				vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+					sizeof(PCModelDataVS), &pcvs);
 
-			// -- Drawing Time! --
-			vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
-			Debugger::InsertDebugLabel(commandBuffer, "Draw Opaque Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
-		}
-		// -- Draw Transparent using Alpha Cut-Off --
-		for (const Mesh& mesh : pScene->model.transparentMeshes)
-		{
-			// -- Bind Push Constants --
-			Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
-			PCModelDataVS pcvs
+				PCMaterialDataFS pcfs
+				{
+					.diffuseIdx = mesh.material.albedoIdx,
+					.opacityIdx = mesh.material.opacityIdx,
+					.normalIdx = mesh.material.normalIdx,
+					.roughnessIdx = mesh.material.roughnessIdx,
+					.metallicIdx = mesh.material.metalnessIdx,
+					.textureCount = m_TextureCount,
+				};
+				vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(PCModelDataVS),
+					sizeof(PCMaterialDataFS), &pcfs);
+
+				// -- Drawing Time! --
+				vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
+				Debugger::InsertDebugLabel(commandBuffer, "Draw Opaque Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
+			}
+
+			// -- Draw Transparent using Alpha Cut-Off --
+			for (const Mesh& mesh : model.transparentMeshes)
 			{
-				.model = mesh.matrix
-			};
-			vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
-				sizeof(PCModelDataVS), &pcvs);
+				// -- Bind Push Constants --
+				Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
+				PCModelDataVS pcvs
+				{
+					.model = mesh.matrix
+				};
+				vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+					sizeof(PCModelDataVS), &pcvs);
 
-			PCMaterialDataFS pcfs
-			{
-				.diffuseIdx = mesh.material.albedoIdx,
-				.opacityIdx = mesh.material.opacityIdx,
-				.normalIdx = mesh.material.normalIdx,
-				.roughnessIdx = mesh.material.roughnessIdx,
-				.metallicIdx = mesh.material.metalnessIdx,
-			};
-			vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(PCModelDataVS),
-				sizeof(PCMaterialDataFS), &pcfs);
+				PCMaterialDataFS pcfs
+				{
+					.diffuseIdx = mesh.material.albedoIdx,
+					.opacityIdx = mesh.material.opacityIdx,
+					.normalIdx = mesh.material.normalIdx,
+					.roughnessIdx = mesh.material.roughnessIdx,
+					.metallicIdx = mesh.material.metalnessIdx,
+					.textureCount = m_TextureCount,
+				};
+				vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(PCModelDataVS),
+					sizeof(PCMaterialDataFS), &pcfs);
 
-			// -- Drawing Time! --
-			vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
-			Debugger::InsertDebugLabel(commandBuffer, "Draw Transparent Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
+				// -- Drawing Time! --
+				vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
+				Debugger::InsertDebugLabel(commandBuffer, "Draw Transparent Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
+			}
 		}
 	}
 	vkCmdEndRendering(vCmdBuffer);

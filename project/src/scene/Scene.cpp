@@ -1,15 +1,57 @@
-
 // -- Pompeii Includes --
 #include "Scene.h"
 
-//--------------------------------------------------
-//    Constructor & Destructor
-//--------------------------------------------------
-void pom::Scene::Load(const std::string& path)
-{
-	model.LoadModel(path);
+// -- Standard Library --
+#include <numeric>
+#include <ranges>
 
-	vLights.emplace_back(DirectionalLight
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  Base Scene	
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void pom::Scene::AllocateGPU(const Context& context, CommandPool& cmdPool, bool keepHostData)
+{
+	for (auto& model : m_vModels)
+		model.AllocateResources(context, cmdPool, keepHostData);
+}
+void pom::Scene::Destroy()
+{
+	for (auto& model : std::ranges::reverse_view(m_vModels))
+		model.Destroy();
+}
+
+const std::vector<pom::Model>& pom::Scene::GetModels() const
+{
+	return m_vModels;
+}
+pom::Model& pom::Scene::AddModel(const std::string& path)
+{
+	m_vModels.emplace_back();
+	m_vModels.back().LoadModel(path);
+	return m_vModels.back();
+}
+uint32_t pom::Scene::GetImageCount() const
+{
+	return std::accumulate(m_vModels.begin(), m_vModels.end(), 0u, [](uint32_t res, const Model& m2)
+		{
+			return res + static_cast<uint32_t>(m2.images.size());
+		});
+}
+
+std::vector<pom::DirectionalLight>& pom::Scene::GetLights()
+{
+	return m_vLights;
+}
+
+
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  Sponza Scene	
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void pom::SponzaScene::Initialize()
+{
+	m_vModels.reserve(5);
+	AddModel("models/Sponza.gltf");
+
+	m_vLights.emplace_back(DirectionalLight
 		{ /* direction */	{ 0.577f, -0.577f, 0.577f },
 		/* color */		{ 1.f, 1.f, 1.f },
 		/* intensity */	1.f,
@@ -17,11 +59,13 @@ void pom::Scene::Load(const std::string& path)
 		/* near-far */	{ 0.1f, 11000.f },
 		/* distance */	10000.f });
 }
-void pom::Scene::Allocate(const Context& context, CommandPool& cmdPool, bool keepHostData)
+
+
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  FlightHelmet Scene	
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void pom::FlightHelmetScene::Initialize()
 {
-	model.AllocateResources(context, cmdPool, keepHostData);
+	AddModel("models/FlightHelmet.gltf");
 }
-void pom::Scene::Destroy()
-{
-	model.Destroy();
-}
+

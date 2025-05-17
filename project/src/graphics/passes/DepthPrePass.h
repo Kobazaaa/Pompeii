@@ -15,7 +15,7 @@
 namespace pom
 {
 	class DescriptorPool;
-	struct Scene;
+	class Scene;
 	class Camera;
 	class CommandBuffer;
 }
@@ -44,7 +44,7 @@ namespace pom
 		//--------------------------------------------------
 		void Initialize(const Context& context, const DepthPrePassCreateInfo& createInfo);
 		void Destroy();
-		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, const Scene* pScene, Camera* pCamera) const;
+		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, Scene* pScene, Camera* pCamera) const;
 
 		//--------------------------------------------------
 		//    Shader Infos
