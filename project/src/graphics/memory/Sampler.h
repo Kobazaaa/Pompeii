@@ -18,7 +18,12 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		Sampler() = default;
+		explicit Sampler() = default;
+		~Sampler() = default;
+		Sampler(const Sampler& other) = delete;
+		Sampler(Sampler&& other) noexcept = delete;
+		Sampler& operator=(const Sampler& other) = delete;
+		Sampler& operator=(Sampler&& other) noexcept = delete;
 		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
