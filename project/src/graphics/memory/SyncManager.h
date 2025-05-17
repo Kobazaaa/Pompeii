@@ -38,7 +38,13 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		SyncManager() = default;
+		explicit SyncManager() = default;
+		~SyncManager() = default;
+		SyncManager(const SyncManager& other) = delete;
+		SyncManager(SyncManager&& other) noexcept = delete;
+		SyncManager& operator=(const SyncManager& other) = delete;
+		SyncManager& operator=(SyncManager&& other) noexcept = delete;
+
 		void Create(const Context& context, uint32_t maxFramesInFlight);
 		void Cleanup(const Context& context);
 
