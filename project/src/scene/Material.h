@@ -25,10 +25,13 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		Texture() = default;
-		void LoadFromFile(const std::string& path, VkFormat format, bool incIdx = true);
-		void FreePixels() const;
-
+		explicit Texture(const std::string& path, VkFormat format, bool incIdx = true);
+		~Texture();
+		Texture(const Texture& other) = delete;
+		Texture(Texture&& other) noexcept;
+		Texture& operator=(const Texture& other) = delete;
+		Texture& operator=(Texture&& other) noexcept;
+		void FreePixels();
 
 		//--------------------------------------------------
 		//    Accessors & Mutators

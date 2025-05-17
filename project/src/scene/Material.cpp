@@ -12,7 +12,7 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::Texture::LoadFromFile(const std::string& path, VkFormat format, bool incIdx)
+pom::Texture::Texture(const std::string& path, VkFormat format, bool incIdx)
 {
 	m_Index = 0xFFFFFFFF;
 	if (incIdx)
@@ -25,9 +25,43 @@ void pom::Texture::LoadFromFile(const std::string& path, VkFormat format, bool i
 	if (!m_pPixels)
 		throw std::runtime_error("Failed to load Texture: " + path);
 }
-void pom::Texture::FreePixels() const
+pom::Texture::~Texture()
 {
-	stbi_image_free(m_pPixels);
+	FreePixels();
+}
+pom::Texture::Texture(Texture&& other) noexcept
+{
+	m_pPixels = other.m_pPixels;
+	other.m_pPixels = nullptr;
+	m_Width = other.m_Width;
+	m_Height = other.m_Height;
+	m_Channels = other.m_Channels;
+	m_Format = other.m_Format;
+	other.m_Format = VK_FORMAT_UNDEFINED;
+	m_Index = other.m_Index;
+}
+pom::Texture& pom::Texture::operator=(Texture&& other) noexcept
+{
+	if (this == &other)
+		return *this;
+	m_pPixels = other.m_pPixels;
+	other.m_pPixels = nullptr;
+	m_Width = other.m_Width;
+	m_Height = other.m_Height;
+	m_Channels = other.m_Channels;
+	m_Format = other.m_Format;
+	other.m_Format = VK_FORMAT_UNDEFINED;
+	m_Index = other.m_Index;
+	return *this;
+}
+
+void pom::Texture::FreePixels()
+{
+	if (m_pPixels)
+	{
+		stbi_image_free(m_pPixels);
+		m_pPixels = nullptr;
+	}
 }
 
 //--------------------------------------------------

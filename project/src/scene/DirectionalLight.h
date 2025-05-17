@@ -18,7 +18,6 @@ namespace pom
 		DirectionalLight() = default;
 		DirectionalLight(const glm::vec3& dir, const glm::vec3& col, float intensity, const glm::vec2& size, const glm::vec2& nearFar, float distance);
 
-
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------

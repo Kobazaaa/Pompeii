@@ -9,7 +9,6 @@
 // -- Forward Declarations --
 namespace pom { class Window; }
 
-
 namespace pom
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
