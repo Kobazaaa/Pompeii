@@ -15,7 +15,6 @@ namespace pom
 	struct Context;
 }
 
-
 namespace pom
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -27,7 +26,13 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		DescriptorPool() = default;
+		explicit DescriptorPool() = default;
+		~DescriptorPool() = default;
+		DescriptorPool(const DescriptorPool& other) = delete;
+		DescriptorPool(DescriptorPool&& other) noexcept = delete;
+		DescriptorPool& operator=(const DescriptorPool& other) = delete;
+		DescriptorPool& operator=(DescriptorPool&& other) noexcept = delete;
+
 		DescriptorPool& SetDebugName(const char* name);
 		DescriptorPool& SetMaxSets(uint32_t count);
 		DescriptorPool& AddPoolSize(VkDescriptorType type, uint32_t count);
