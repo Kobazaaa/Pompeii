@@ -3,7 +3,6 @@
 
 // -- Pompeii Includes --
 #include "DeletionQueue.h"
-#include "DescriptorPool.h"
 #include "GraphicsPipeline.h"
 #include "Sampler.h"
 #include "DescriptorSet.h"
@@ -11,12 +10,7 @@
 // -- Forward Declarations --
 namespace pom
 {
-	class LightingPass;
-	class GeometryPass;
 	class DescriptorPool;
-	class Scene;
-	class ShadowPass;
-	class Camera;
 	class CommandBuffer;
 }
 
@@ -34,11 +28,21 @@ namespace pom
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  Lighting Pass	
+	//? ~~	  Blit Pass	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	class BlitPass
 	{
 	public:
+		//--------------------------------------------------
+		//    Constructor & Destructor
+		//--------------------------------------------------
+		explicit BlitPass() = default;
+		~BlitPass() = default;
+		BlitPass(const BlitPass& other) = delete;
+		BlitPass(BlitPass&& other) noexcept = delete;
+		BlitPass& operator=(const BlitPass& other) = delete;
+		BlitPass& operator=(BlitPass&& other) noexcept = delete;
+
 		void Initialize(const Context& context, const BlitPassCreateInfo& createInfo);
 		void Destroy();
 		void UpdateDescriptors(const Context& context, const std::vector<Image>& renderImages) const;

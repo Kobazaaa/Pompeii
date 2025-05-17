@@ -2,7 +2,7 @@
 #include "BlitPass.h"
 #include "Context.h"
 #include "Debugger.h"
-#include "GBuffer.h"
+#include "DescriptorPool.h"
 #include "GeometryPass.h"
 #include "Shader.h"
 #include "Scene.h"

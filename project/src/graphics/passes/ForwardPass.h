@@ -14,11 +14,9 @@
 // -- Forward Declarations --
 namespace pom
 {
-	class SwapChain;
 	class DescriptorPool;
 	class Scene;
 	class ShadowPass;
-	class FrameBuffer;
 	class Camera;
 	class CommandBuffer;
 }
@@ -49,6 +47,13 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
+		explicit ForwardPass() = default;
+		~ForwardPass() = default;
+		ForwardPass(const ForwardPass& other) = delete;
+		ForwardPass(ForwardPass&& other) noexcept = delete;
+		ForwardPass& operator=(const ForwardPass& other) = delete;
+		ForwardPass& operator=(ForwardPass&& other) noexcept = delete;
+
 		void Initialize(const Context& context, const ForwardPassCreateInfo& createInfo);
 		void Destroy();
 		void Resize(const Context& context, VkExtent2D extent, VkFormat format);

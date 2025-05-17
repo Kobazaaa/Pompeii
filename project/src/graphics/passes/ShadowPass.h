@@ -7,11 +7,9 @@
 // -- Pompeii Includes --
 #include "DeletionQueue.h"
 #include "DescriptorSet.h"
-#include "FrameBuffer.h"
 #include "GraphicsPipeline.h"
 #include "Image.h"
 #include "Scene.h"
-#include "RenderPass.h"
 #include "Sampler.h"
 
 namespace pom
@@ -35,6 +33,13 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
+		explicit ShadowPass() = default;
+		~ShadowPass() = default;
+		ShadowPass(const ShadowPass& other) = delete;
+		ShadowPass(ShadowPass&& other) noexcept = delete;
+		ShadowPass& operator=(const ShadowPass& other) = delete;
+		ShadowPass& operator=(ShadowPass&& other) noexcept = delete;
+
 		void Initialize(const Context& context, const ShadowPassCreateInfo& createInfo);
 		void Destroy();
 		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Scene* pScene);

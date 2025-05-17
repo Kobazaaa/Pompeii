@@ -18,7 +18,6 @@ namespace pom
 	class GeometryPass;
 	class DescriptorPool;
 	class Scene;
-	class ShadowPass;
 	class Camera;
 	class CommandBuffer;
 }
@@ -45,6 +44,13 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
+		explicit LightingPass() = default;
+		~LightingPass() = default;
+		LightingPass(const LightingPass& other) = delete;
+		LightingPass(LightingPass&& other) noexcept = delete;
+		LightingPass& operator=(const LightingPass& other) = delete;
+		LightingPass& operator=(LightingPass&& other) noexcept = delete;
+
 		void Initialize(const Context& context, const LightingPassCreateInfo& createInfo);
 		void Destroy();
 		void UpdateDescriptors(const Context& context, const GeometryPass& pGeometryPass) const;

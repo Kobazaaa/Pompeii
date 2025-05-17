@@ -8,7 +8,6 @@
 #include "DeletionQueue.h"
 #include "DescriptorSet.h"
 #include "GraphicsPipeline.h"
-#include "Sampler.h"
 #include "Image.h"
 
 // -- Forward Declarations --
@@ -42,6 +41,13 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
+		explicit DepthPrePass() = default;
+		~DepthPrePass() = default;
+		DepthPrePass(const DepthPrePass& other) = delete;
+		DepthPrePass(DepthPrePass&& other) noexcept = delete;
+		DepthPrePass& operator=(const DepthPrePass& other) = delete;
+		DepthPrePass& operator=(DepthPrePass&& other) noexcept = delete;
+
 		void Initialize(const Context& context, const DepthPrePassCreateInfo& createInfo);
 		void Destroy();
 		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, Scene* pScene, Camera* pCamera) const;

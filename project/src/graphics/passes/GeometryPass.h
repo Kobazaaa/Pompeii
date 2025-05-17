@@ -15,7 +15,6 @@
 // -- Forward Declarations --
 namespace pom
 {
-	struct Model;
 	class DescriptorPool;
 	class Scene;
 	class Camera;
@@ -46,6 +45,13 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
+		explicit GeometryPass() = default;
+		~GeometryPass() = default;
+		GeometryPass(const GeometryPass& other) = delete;
+		GeometryPass(GeometryPass&& other) noexcept = delete;
+		GeometryPass& operator=(const GeometryPass& other) = delete;
+		GeometryPass& operator=(GeometryPass&& other) noexcept = delete;
+
 		void Initialize(const Context& context, const GeometryPassCreateInfo& createInfo);
 		void Destroy();
 		void Resize(const Context& context, VkExtent2D extent);
