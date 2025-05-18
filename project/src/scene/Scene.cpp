@@ -82,5 +82,12 @@ void pom::SponzaScene::Initialize()
 void pom::FlightHelmetScene::Initialize()
 {
 	AddModel("models/FlightHelmet.gltf");
+
+	AddLight(Light
+		{
+			/* direction */	{ 0.577f, -0.577f, 0.577f },
+			/* color */		{ 1.f, 1.f, 1.f },
+			/* intensity */	1.f, Light::Type::Directional
+		});
 }
 
