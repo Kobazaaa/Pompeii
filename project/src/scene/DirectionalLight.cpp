@@ -8,14 +8,15 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::DirectionalLight::DirectionalLight(const glm::vec3& dir, const glm::vec3& col, float intensity, const glm::vec2& size, const glm::vec2& nearFar, float distance)
+pom::DirectionalLight::DirectionalLight(const glm::vec3& dir, const glm::vec3& col, float intensity)
 	: m_Direction(normalize(dir))
 	, m_Color(col)
 	, m_Intensity(intensity)
-	, m_Size(size)
-	, m_NearFarPlane(nearFar)
-	, m_Distance(distance)
-{}
+	, m_LightSpaceMatrix(), m_Size()
+	, m_NearFarPlane()
+	, m_Distance()
+{
+}
 
 
 //--------------------------------------------------

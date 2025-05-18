@@ -37,7 +37,15 @@ namespace pom
 		Model& AddModel(const std::string& path);
 		uint32_t GetImageCount() const;
 
-		std::vector<DirectionalLight>& GetLights();
+		std::vector<DirectionalLight>& GetDirectionalLights();
+		struct alignas(16) GPULight
+		{
+			glm::vec4 dirPosType;
+			glm::vec3 color;
+			float intensity;
+		};
+		std::vector<GPULight> GetLightsGPU();
+		uint32_t GetLightsCount() const;
 
 	protected:
 		std::vector<Model> m_vModels;

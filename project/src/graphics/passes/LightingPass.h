@@ -7,6 +7,7 @@
 #include "GraphicsPipeline.h"
 #include "Sampler.h"
 #include "DescriptorSet.h"
+#include "Buffer.h"
 
 // -- Math Includes --
 #include "glm/vec3.hpp"
@@ -33,6 +34,7 @@ namespace pom
 		VkFormat format{};
 		DescriptorPool* pDescriptorPool{};
 		GeometryPass* pGeometryPass;
+		Scene* pScene;
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -53,18 +55,9 @@ namespace pom
 
 		void Initialize(const Context& context, const LightingPassCreateInfo& createInfo);
 		void Destroy();
-		void UpdateDescriptors(const Context& context, const GeometryPass& pGeometryPass) const;
+		void UpdateGBufferDescriptors(const Context& context, const GeometryPass& pGeometryPass) const;
+		void UpdateLightDescriptors(const Context& context, Scene* pScene);
 		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, Scene* pScene, Camera* pCamera) const;
-
-		//--------------------------------------------------
-		//    Shader Infos
-		//--------------------------------------------------
-		struct alignas(16) SSBOFrag
-		{
-			glm::vec4 dirPosType;
-			glm::vec3 color;
-			float intensity;
-		};
 
 	private:
 		// -- Pipeline --
@@ -80,11 +73,11 @@ namespace pom
 		DescriptorSetLayout			m_GBufferTexturesDSL	{ };
 
 		std::vector<DescriptorSet>	m_vCameraMatricesDS		{ };
-		std::vector<DescriptorSet>	m_vSSBOLightDS			{ };
+		DescriptorSet				m_SSBOLightDS			{ };
 		std::vector<DescriptorSet>	m_vGBufferTexturesDS	{ };
 
 		std::vector<Buffer>			m_vCameraMatrices		{ };
-		std::vector<Buffer>			m_vSSBOLights			{ };
+		Buffer						m_SSBOLights			{ };
 
 		// -- DQ --
 		DeletionQueue				m_DeletionQueue			{ };

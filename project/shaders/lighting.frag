@@ -20,7 +20,8 @@ struct Light
 };
 layout(std430, set = 1, binding = 0) readonly buffer LightBuffer
 {
-    Light lights[1];
+	uint lightCount;
+    Light lights[];
 } lights;
 
 // -- GBuffer --
@@ -54,7 +55,7 @@ void main()
 	outColor = vec4(1.0, 0.0, 1.0, 1.0);
 	
 	vec3 Lo = vec3(0);
-	for(int lightIdx = 0; lightIdx < 1; ++lightIdx)
+	for(int lightIdx = 0; lightIdx < lights.lightCount; ++lightIdx)
 	{
 		// -- Extract Light Type --
 		Light light = lights.lights[lightIdx];

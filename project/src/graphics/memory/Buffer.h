@@ -37,6 +37,7 @@ namespace pom
 		//--------------------------------------------------
 		const VkBuffer& GetHandle() const;
 		const VmaAllocation& GetMemoryHandle() const;
+		VkDeviceSize Size() const;
 
 		//--------------------------------------------------
 		//    Commands
@@ -47,6 +48,7 @@ namespace pom
 	private:
 		VmaAllocation m_Memory;
 		VkBuffer m_Buffer;
+		VkDeviceSize m_Size;
 
 		friend class BufferAllocator;
 	};

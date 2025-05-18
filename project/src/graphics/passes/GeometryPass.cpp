@@ -168,7 +168,7 @@ void pom::GeometryPass::Resize(const Context& context, VkExtent2D extent)
 	for (GBuffer& gBuffer : m_vGBuffers)
 		gBuffer.Resize(context, extent);
 }
-void pom::GeometryPass::UpdateTextureDescriptor(const Context& context, DescriptorPool& pool, const Scene* pScene)
+void pom::GeometryPass::UpdateTextureDescriptor(const Context& context, const DescriptorPool& pool, const Scene* pScene)
 {
 	if (m_TextureDS.GetHandle())
 		vkFreeDescriptorSets(context.device.GetHandle(), pool.GetHandle(), 1, &m_TextureDS.GetHandle());

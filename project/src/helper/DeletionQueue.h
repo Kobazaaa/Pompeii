@@ -28,8 +28,9 @@ namespace pom
 		//--------------------------------------------------
 		//    Queue
 		//--------------------------------------------------
-		void Push(const std::function<void()>& dtor);
+		uint32_t Push(const std::function<void()>& dtor);
 		void Flush();
+		void Erase(uint32_t idx);
 
 	private:
 		std::vector<std::function<void()>> m_Destructors;

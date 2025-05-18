@@ -37,9 +37,25 @@ uint32_t pom::Scene::GetImageCount() const
 		});
 }
 
-std::vector<pom::DirectionalLight>& pom::Scene::GetLights()
+std::vector<pom::DirectionalLight>& pom::Scene::GetDirectionalLights()
 {
 	return m_vLights;
+}
+std::vector<pom::Scene::GPULight> pom::Scene::GetLightsGPU()
+{
+	std::vector<GPULight> gpuLights;
+	gpuLights.reserve(m_vLights.size());
+	std::ranges::transform(m_vLights,
+	                       std::back_inserter(gpuLights),
+	                       [](const DirectionalLight& light) {
+		                       return GPULight{ .dirPosType = glm::vec4(light.GetDirection(), 0.f), .color = light.GetColor(), .intensity = light.GetIntensity() };
+	                       }
+	);
+	return gpuLights;
+}
+uint32_t pom::Scene::GetLightsCount() const
+{
+	return static_cast<uint32_t>(m_vLights.size());
 }
 
 
@@ -50,13 +66,15 @@ void pom::SponzaScene::Initialize()
 {
 	AddModel("models/Sponza.gltf");
 
-	m_vLights.emplace_back(DirectionalLight
-		{ /* direction */	{ 0.577f, -0.577f, 0.577f },
+	m_vLights.emplace_back(DirectionalLight{
+		/* direction */	{ 0.577f, -0.577f, 0.577f },
 		/* color */		{ 1.f, 1.f, 1.f },
-		/* intensity */	1.f,
-		/* size */		{ 5000.f, 5000.f },
-		/* near-far */	{ 0.1f, 11000.f },
-		/* distance */	10000.f });
+		/* intensity */	1.f });
+	m_vLights.emplace_back(DirectionalLight{
+		/* direction */	{ -0.577f, -0.577f, -0.577f },
+		/* color */		{ 1.f, 1.f, 1.f },
+		/* intensity */	1.f
+});
 }
 
 

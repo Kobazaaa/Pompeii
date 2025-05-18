@@ -42,6 +42,7 @@ void pom::Buffer::Destroy(const Context& context) const
 //--------------------------------------------------
 const VkBuffer& pom::Buffer::GetHandle() const { return m_Buffer; }
 const VmaAllocation& pom::Buffer::GetMemoryHandle() const { return m_Memory; }
+VkDeviceSize pom::Buffer::Size() const { return m_Size; }
 
 
 //--------------------------------------------------
@@ -157,6 +158,7 @@ pom::BufferAllocator& pom::BufferAllocator::InitialData(void* data, uint32_t off
 void pom::BufferAllocator::Allocate(const Context& context, Buffer& buffer) const
 {
 	vmaCreateBuffer(context.allocator, &m_CreateInfo, &m_AllocCreateInfo, &buffer.m_Buffer, &buffer.m_Memory, nullptr);
+	buffer.m_Size = m_CreateInfo.size;
 
 	if (m_UseInitialData)
 	{

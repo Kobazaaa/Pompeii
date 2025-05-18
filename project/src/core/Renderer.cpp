@@ -34,15 +34,6 @@ pom::Renderer::~Renderer()
 //--------------------------------------------------
 void pom::Renderer::Update()
 {
-	static bool b = true;
-	if (b && Timer::GetTotalTimeSeconds() >= 5.f)
-	{
-		m_Context.device.WaitIdle();
-		auto& m = m_pScene->AddModel("models/Viking Room.fbx");
-		m.AllocateResources(m_Context, m_CommandPool, false);
-		m_GeometryPass.UpdateTextureDescriptor(m_Context, m_DescriptorPool, m_pScene);
-		b = false;
-	}
 }
 void pom::Renderer::Render()
 {
@@ -335,6 +326,7 @@ void pom::Renderer::InitializeVulkan()
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
 		createInfo.pGeometryPass = &m_GeometryPass;
 		createInfo.format = m_SwapChain.GetFormat();
+		createInfo.pScene = m_pScene;
 
 		m_LightingPass.Initialize(m_Context, createInfo);
 		m_Context.deletionQueue.Push([&] { m_LightingPass.Destroy(); });
@@ -391,7 +383,7 @@ void pom::Renderer::RecreateSwapChain()
 	// -- Resize Passes if needed --
 	m_ForwardPass.Resize(m_Context, m_SwapChain.GetExtent(), m_SwapChain.GetFormat());
 	m_GeometryPass.Resize(m_Context, m_SwapChain.GetExtent());
-	m_LightingPass.UpdateDescriptors(m_Context, m_GeometryPass);
+	m_LightingPass.UpdateGBufferDescriptors(m_Context, m_GeometryPass);
 	m_BlitPass.UpdateDescriptors(m_Context, m_vRenderTargets);
 
 	// -- Update Camera Settings --
