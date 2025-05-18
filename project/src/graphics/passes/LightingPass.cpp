@@ -191,7 +191,7 @@ void pom::LightingPass::UpdateLightDescriptors(const Context& context, Scene* pS
 {
 	const auto gpuLights = pScene->GetLightsGPU();
 	const uint32_t lightCount = static_cast<uint32_t>(gpuLights.size());
-	const VkDeviceSize totalSize = /*uint + 3padding*/4 * sizeof(uint32_t) + sizeof(Scene::GPULight) * lightCount;
+	const VkDeviceSize totalSize = /*uint + 3padding*/4 * sizeof(uint32_t) + sizeof(GPULight) * lightCount;
 
 	if (m_SSBOLights.Size() < totalSize)
 	{
@@ -211,7 +211,7 @@ void pom::LightingPass::UpdateLightDescriptors(const Context& context, Scene* pS
 
 	vmaCopyMemoryToAllocation(context.allocator, &lightCount, m_SSBOLights.GetMemoryHandle(), 0, sizeof(uint32_t));
 	vmaCopyMemoryToAllocation(context.allocator, gpuLights.data(), m_SSBOLights.GetMemoryHandle(),
-								/*uint + 3padding*/4 * sizeof(uint32_t),sizeof(Scene::GPULight) * lightCount);
+								/*uint + 3padding*/4 * sizeof(uint32_t),sizeof(GPULight) * lightCount);
 
 	DescriptorSetWriter writer{};
 	writer

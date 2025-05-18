@@ -3,7 +3,7 @@
 
 // -- Pom Includes --
 #include "Camera.h"
-#include "DirectionalLight.h"
+#include "Light.h"
 #include "Model.h"
 
 namespace pom
@@ -37,19 +37,15 @@ namespace pom
 		Model& AddModel(const std::string& path);
 		uint32_t GetImageCount() const;
 
-		std::vector<DirectionalLight>& GetDirectionalLights();
-		struct alignas(16) GPULight
-		{
-			glm::vec4 dirPosType;
-			glm::vec3 color;
-			float intensity;
-		};
+		std::vector<Light>& GetLights();
 		std::vector<GPULight> GetLightsGPU();
 		uint32_t GetLightsCount() const;
+		Light& AddLight(const Light& light);
 
-	protected:
+	private:
 		std::vector<Model> m_vModels;
-		std::vector<DirectionalLight> m_vLights;
+		std::vector<Light> m_vLights;
+		std::vector<GPULight> m_vGPULights;
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

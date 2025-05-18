@@ -37,25 +37,14 @@ uint32_t pom::Scene::GetImageCount() const
 		});
 }
 
-std::vector<pom::DirectionalLight>& pom::Scene::GetDirectionalLights()
+std::vector<pom::Light>& pom::Scene::GetLights()		{ return m_vLights; }
+std::vector<pom::GPULight> pom::Scene::GetLightsGPU()	{ return m_vGPULights; }
+uint32_t pom::Scene::GetLightsCount() const				{ return static_cast<uint32_t>(m_vLights.size()); }
+pom::Light& pom::Scene::AddLight(const Light& light)
 {
-	return m_vLights;
-}
-std::vector<pom::Scene::GPULight> pom::Scene::GetLightsGPU()
-{
-	std::vector<GPULight> gpuLights;
-	gpuLights.reserve(m_vLights.size());
-	std::ranges::transform(m_vLights,
-	                       std::back_inserter(gpuLights),
-	                       [](const DirectionalLight& light) {
-		                       return GPULight{ .dirPosType = glm::vec4(light.GetDirection(), 0.f), .color = light.GetColor(), .intensity = light.GetIntensity() };
-	                       }
-	);
-	return gpuLights;
-}
-uint32_t pom::Scene::GetLightsCount() const
-{
-	return static_cast<uint32_t>(m_vLights.size());
+	m_vLights.push_back(light);
+	m_vGPULights.push_back(light.GetGPULight());
+	return m_vLights.back();
 }
 
 
@@ -66,15 +55,24 @@ void pom::SponzaScene::Initialize()
 {
 	AddModel("models/Sponza.gltf");
 
-	m_vLights.emplace_back(DirectionalLight{
+	AddLight(Light
+		{
 		/* direction */	{ 0.577f, -0.577f, 0.577f },
 		/* color */		{ 1.f, 1.f, 1.f },
-		/* intensity */	1.f });
-	m_vLights.emplace_back(DirectionalLight{
+		/* intensity */	1.f, Light::Type::Directional
+		});
+	AddLight(Light
+		{
 		/* direction */	{ -0.577f, -0.577f, -0.577f },
-		/* color */		{ 1.f, 1.f, 1.f },
-		/* intensity */	1.f
-});
+		/* color */		{ 1.f, 0.f, 1.f },
+		/* intensity */	1.f, Light::Type::Directional
+		});
+	AddLight(Light
+		{
+		/* position */	{ 0.f, 0.1f, 0.f },
+		/* color */		{ 0.f, 0.f, 1.f },
+		/* intensity */	0.01f, Light::Type::Point
+		});
 }
 
 

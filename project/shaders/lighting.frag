@@ -67,7 +67,7 @@ void main()
 		if(type == 0)
 		{
 			l = -normalize(light.dirpostype.xyz);
-			radiance = light.color;
+			radiance = light.color * light.intensity;
 		}
 
 		// 1 == Point Light
@@ -76,7 +76,7 @@ void main()
 			l = normalize(light.dirpostype.xyz - worldPos);
 			float dst = length(light.dirpostype.xyz - worldPos);
 			float attenuation = 1.0 / (dst * dst);
-			radiance = attenuation * light.color;
+			radiance = attenuation * light.color * light.intensity;
 		}
 		vec3 h = normalize(v + l);
 

@@ -263,15 +263,15 @@ void pom::ForwardPass::Record(const Context& context, CommandBuffer& commandBuff
 	ubo.view = pCamera->GetViewMatrix();
 	ubo.proj = pCamera->GetProjectionMatrix();
 	// todo only takes front light and assumes its dir
-	ubo.lightSpace = pScene->GetDirectionalLights().front().GetLightSpaceMatrix();
+	ubo.lightSpace = glm::mat4(1.f)/*pScene->GetLightsGPU().front().GetLightSpaceMatrix()*/;
 	vmaCopyMemoryToAllocation(context.allocator, &ubo, m_vUniformBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(ubo));
 
 	// Update FS UBO
 	// todo only takes front light and assumes its dir
 	UniformBufferFS ubofs;
-	ubofs.intensity = pScene->GetDirectionalLights().front().GetIntensity();
-	ubofs.color = pScene->GetDirectionalLights().front().GetColor();
-	ubofs.dir = pScene->GetDirectionalLights().front().GetDirection();
+	ubofs.intensity = pScene->GetLights().front().GetIntensity();
+	ubofs.color = pScene->GetLights().front().GetColor();
+	ubofs.dir = pScene->GetLights().front().GetDirPos();
 	vmaCopyMemoryToAllocation(context.allocator, &ubofs, m_vLightBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(ubofs));
 
 	// todo is this needed? I don't think the layout ever changes?
