@@ -36,13 +36,19 @@ int main()
 			.nearPlane = 0.001f,
 			.farPlane = 10000.f
 		};
-		ExposureSettings expSettings
+		ExposureSettings sunny16
 		{
-			.aperture = 1.f,
-			.shutterSpeed = 1.f,
-			.iso = 1.f,
+			.aperture = 16.f,
+			.shutterSpeed = 1.f / 100.f,
+			.iso = 100.f,
 		};
-		Camera* pCamera = new Camera(settings, expSettings, pWindow);
+		ExposureSettings indoor
+		{
+			.aperture = 1.4f,
+			.shutterSpeed = 1.f / 60.f,
+			.iso = 1600.f,
+		};
+		Camera* pCamera = new Camera(settings, indoor, pWindow);
 
 		// -- Create Renderer --
 		Renderer* pRenderer = new Renderer(pCamera, pWindow);

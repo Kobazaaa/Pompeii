@@ -24,6 +24,7 @@ float GeometrySchlickGGX(in vec3 n, in vec3 v, in float k)
 	return nDotv / (nDotv * (1-k) + k);
 }
 
+// -- World Position --
 vec3 GetWorldPositionFromDepth(in float depth, in vec2 fragCoords, in vec2 resolution, in mat4 invProj, in mat4 invView)
 {
 	vec2 ndc = vec2(
@@ -40,6 +41,7 @@ vec3 GetWorldPositionFromDepth(in float depth, in vec2 fragCoords, in vec2 resol
 	return worldPos.xyz;
 }
 
+// -- Tone Mappers --
 vec3 ACESFilmToneMapping(in vec3 color)
 {
 	const float a = 2.51;
@@ -69,4 +71,22 @@ vec3 Uncharted2ToneMapping(in vec3 color)
 	const vec3 curvedColor = Uncharted2ToneMappingCurve(color);
 	float whiteScale = 1.0 / Uncharted2ToneMappingCurve(vec3(W)).r;
 	return clamp(curvedColor * whiteScale, 0.0, 1.0);
+}
+
+// -- Camera Exposure --
+float CalculateEV100(in float aperture, in float shutterspeed, in float ISO)
+{
+	// EV100 = log2(N * N / t * 100 / S)
+	// N: relative aperture (in f-stops)
+	// t: shutter speed (in seconds)
+	// S: sensor sensitivity (in ISO)
+
+	// Sunny 16 rule (simulate a sunny day, using ISO 100)
+	// N = 16, ISO = 100, t = 1 / ISO
+	return log2(pow(aperture, 2) / shutterspeed * 100 / ISO);
+}
+float EV100ToExposure(in float EV100)
+{
+	const float maxLuminance = 1.2 * pow(2.0, EV100);
+	return 1.0 / max(maxLuminance, 0.0001);
 }
