@@ -59,19 +59,19 @@ void pom::SponzaScene::Initialize()
 		{
 		/* direction */	{ 0.577f, -0.577f, 0.577f },
 		/* color */		{ 1.f, 1.f, 1.f },
-		/* intensity */	1.f, Light::Type::Directional
+		/* lux */		1.f, Light::Type::Directional
 		});
 	AddLight(Light
 		{
 		/* direction */	{ -0.577f, -0.577f, -0.577f },
 		/* color */		{ 1.f, 0.f, 1.f },
-		/* intensity */	1.f, Light::Type::Directional
+		/* lux */		1.f, Light::Type::Directional
 		});
 	AddLight(Light
 		{
 		/* position */	{ 0.f, 1.f, 0.f },
 		/* color */		{ 0.f, 0.f, 1.f },
-		/* intensity */	2.f, Light::Type::Point
+		/* lumen */		1000.f, Light::Type::Point
 		});
 }
 
@@ -87,7 +87,7 @@ void pom::FlightHelmetScene::Initialize()
 		{
 			/* direction */	{ 0.577f, -0.577f, 0.577f },
 			/* color */		{ 1.f, 1.f, 1.f },
-			/* intensity */	1.f, Light::Type::Directional
+			/* lux */		1.f, Light::Type::Directional
 		});
 }
 

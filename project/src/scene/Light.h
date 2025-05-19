@@ -30,7 +30,7 @@ namespace pom
 			Directional, Point
 		};
 		Light() = default;
-		Light(const glm::vec3& dirPos, const glm::vec3& col, float intensity, Type type);
+		Light(const glm::vec3& dirPos, const glm::vec3& col, float luxLumen, Type type);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
@@ -44,15 +44,15 @@ namespace pom
 		glm::vec3 GetColor() const;
 		void SetColor(const glm::vec3& col);
 		
-		float GetIntensity() const;
-		void SetIntensity(float intensity);
+		float GetLuxLumen() const;
+		void SetLuxLumen(float luxLumen);
 
 	private:
 		// -- Data --
 		Type m_Type;
 		glm::vec3 m_DirPos;
 		glm::vec3 m_Color;
-		float m_Intensity;
+		float m_LuxLumen;
 
 		GPULight m_GPULight;
 	};

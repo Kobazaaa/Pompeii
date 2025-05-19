@@ -16,7 +16,7 @@ struct Light
 {
     vec4 dirpostype;
     vec3 color;
-    float intensity;
+    float luxLumen;
 };
 layout(std430, set = 1, binding = 0) readonly buffer LightBuffer
 {
@@ -61,22 +61,26 @@ void main()
 		Light light = lights.lights[lightIdx];
 		int type = int(round(light.dirpostype.w));
 		vec3 l = vec3(0);
-		vec3 radiance = vec3(0);
+		vec3 irradiance = vec3(0);
 
 		// 0 == Directional Light
 		if(type == 0)
 		{
 			l = -normalize(light.dirpostype.xyz);
-			radiance = light.color * light.intensity;
+			float illuminance = light.luxLumen;
+			irradiance = illuminance * light.color;
 		}
 
 		// 1 == Point Light
 		else if(type == 1)
 		{
 			l = normalize(light.dirpostype.xyz - worldPos);
+
+			float luminousIntensity = light.luxLumen / (4.0 * PI);
 			float dst = length(light.dirpostype.xyz - worldPos);
-			float attenuation = 1.0 / (dst * dst);
-			radiance = attenuation * light.color * light.intensity;
+			float attenuation = 1.0 / max((dst * dst), 0.0001);
+			float illuminance = attenuation * luminousIntensity;
+			irradiance = illuminance * light.color;
 		}
 		vec3 h = normalize(v + l);
 
@@ -86,7 +90,7 @@ void main()
 		vec3 F = FresnelSchlick(h, l, F0);
 		float G = GeometrySchlickGGX(n, v, k) * GeometrySchlickGGX(n, l, k);
 		vec3 num = D * F * G;
-		float denom = 4.0 * max(dot(n, v), 0.0) * max(dot(n, l), 0.0) + 0.0001;
+		float denom = 4.0 * max(dot(n, v), 0.0001) * max(dot(n, l), 0.0001);
 		vec3 spec = num / denom;
 
 		// -- Lambertian Diffuse BRDF --
@@ -97,7 +101,7 @@ void main()
 		float oa = max(dot(l, n), 0);
 
 		// -- Add to outgoing light --
-		Lo += (diff + spec) * radiance * oa;
+		Lo += (diff + spec) * irradiance * oa;
 	}
 
 	vec3 ambient = vec3(0.03) * albedo;

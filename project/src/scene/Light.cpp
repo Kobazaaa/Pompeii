@@ -8,17 +8,17 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::Light::Light(const glm::vec3& dirPos, const glm::vec3& col, float intensity, Type type)
+pom::Light::Light(const glm::vec3& dirPos, const glm::vec3& col, float luxLumen, Type type)
 	: m_Type(type)
 	, m_DirPos(type == Type::Directional ? glm::normalize(dirPos) : dirPos)
 	, m_Color(col)
-	, m_Intensity(intensity)
+	, m_LuxLumen(luxLumen)
 {
 	m_GPULight =
 	{
 		.dirPosType = {m_DirPos, static_cast<int>(m_Type)},
 		.color = m_Color,
-		.intensity = m_Intensity
+		.intensity = m_LuxLumen
 	};
 }
 
@@ -35,5 +35,5 @@ void pom::Light::SetDirPos(const glm::vec3& dirPos)			{ m_DirPos = m_Type == Typ
 glm::vec3 pom::Light::GetColor()					const	{ return m_Color; }
 void pom::Light::SetColor(const glm::vec3& col)				{ m_Color = col; m_GPULight.color = m_Color;}
 
-float pom::Light::GetIntensity()					const	{ return m_Intensity; }
-void pom::Light::SetIntensity(float intensity)				{ m_Intensity = intensity; m_GPULight.intensity = m_Intensity;}
+float pom::Light::GetLuxLumen()						const	{ return m_LuxLumen; }
+void pom::Light::SetLuxLumen(float luxLumen)				{ m_LuxLumen = luxLumen; m_GPULight.intensity = m_LuxLumen;}
