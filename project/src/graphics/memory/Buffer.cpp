@@ -48,11 +48,11 @@ VkDeviceSize pom::Buffer::Size() const { return m_Size; }
 //--------------------------------------------------
 //    Commands
 //--------------------------------------------------
-void pom::Buffer::CopyToBuffer(const CommandBuffer& cmd, const Buffer& dst, VkDeviceSize size) const
+void pom::Buffer::CopyToBuffer(const CommandBuffer& cmd, const Buffer& dst, VkDeviceSize size, VkDeviceSize srcOffset, VkDeviceSize dstOffset) const
 {
 	VkBufferCopy copyRegion{};
-	copyRegion.srcOffset = 0;
-	copyRegion.dstOffset = 0;
+	copyRegion.srcOffset = srcOffset;
+	copyRegion.dstOffset = dstOffset;
 	copyRegion.size = size;
 	vkCmdCopyBuffer(cmd.GetHandle(), m_Buffer, dst.GetHandle(), 1, &copyRegion);
 }
@@ -93,11 +93,8 @@ pom::BufferAllocator::BufferAllocator()
 	m_AllocCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;	//? CAN CHANGE
 
 	m_UseInitialData = false;												//? CAN CHANGE
-	m_pData = nullptr;														//? CAN CHANGE
-	m_InitDataSize = 0;														//? CAN CHANGE
-	m_InitDataOffset = 0;													//? CAN CHANGE
+	m_vInitialData.clear();													//? CAN CHANGE
 	m_pName = nullptr;														//? CAN CHANGE
-	m_pCmdPool = nullptr;													//? CAN CHANGE
 }
 
 
@@ -144,14 +141,11 @@ pom::BufferAllocator& pom::BufferAllocator::HostAccess(bool access)
 
 	return *this;
 }
-pom::BufferAllocator& pom::BufferAllocator::InitialData(void* data, uint32_t offset, uint32_t size, CommandPool& cmdPool)
+pom::BufferAllocator& pom::BufferAllocator::AddInitialData(void* data, VkDeviceSize dstOffset, uint32_t size, CommandPool& cmdPool)
 {
 	m_UseInitialData = true;
-	m_pData = data;
-	m_InitDataOffset = offset;
-	m_InitDataSize = size;
+	m_vInitialData.emplace_back(data, size, dstOffset, &cmdPool);
 	m_CreateInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-	m_pCmdPool = &cmdPool;
 	return *this;
 }
 
@@ -162,25 +156,28 @@ void pom::BufferAllocator::Allocate(const Context& context, Buffer& buffer) cons
 
 	if (m_UseInitialData)
 	{
-		Buffer stagingBuffer;
-		BufferAllocator stagingAllocator{};
-		stagingAllocator
-			.SetUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
-			.HostAccess(true)
-			.SetSize(m_InitDataSize)
-			.Allocate(context, stagingBuffer);
-		vmaCopyMemoryToAllocation(context.allocator, m_pData, stagingBuffer.m_Memory, m_InitDataOffset, m_InitDataSize);
-
-
-		CommandBuffer& cmd = m_pCmdPool->AllocateCmdBuffers(1);
-		cmd.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+		for (const InitData& data : m_vInitialData)
 		{
-			stagingBuffer.CopyToBuffer(cmd, buffer, m_InitDataSize);
+			Buffer stagingBuffer;
+			BufferAllocator stagingAllocator{};
+			stagingAllocator
+				.SetUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
+				.HostAccess(true)
+				.SetSize(data.initDataSize)
+				.Allocate(context, stagingBuffer);
+			vmaCopyMemoryToAllocation(context.allocator, data.pData, stagingBuffer.m_Memory, 0, data.initDataSize);
+
+
+			CommandBuffer& cmd = data.pCmdPool->AllocateCmdBuffers(1);
+			cmd.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+			{
+				stagingBuffer.CopyToBuffer(cmd, buffer, data.initDataSize, 0, data.dstOffset);
+			}
+			cmd.End();
+			cmd.Submit(context.device.GetGraphicQueue(), true);
+			cmd.Free(context.device);
+			stagingBuffer.Destroy(context);
 		}
-		cmd.End();
-		cmd.Submit(context.device.GetGraphicQueue(), true);
-		cmd.Free(context.device);
-		stagingBuffer.Destroy(context);
 	}
 	if (m_pName)
 	{

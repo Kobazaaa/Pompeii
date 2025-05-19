@@ -325,6 +325,7 @@ void pom::Renderer::InitializeVulkan()
 		createInfo.pDescriptorPool = &m_DescriptorPool;
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
 		createInfo.pGeometryPass = &m_GeometryPass;
+		createInfo.pCommandPool = &m_CommandPool;
 		createInfo.format = m_vRenderTargets.front().GetFormat();
 		createInfo.pScene = m_pScene;
 

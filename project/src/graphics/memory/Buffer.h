@@ -2,6 +2,7 @@
 #define BUFFER_H
 
 // -- Vulkan Includes --
+#include <vector>
 #include <vma/vk_mem_alloc.h>
 
 // -- Forward Declarations --
@@ -42,7 +43,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Commands
 		//--------------------------------------------------
-		void CopyToBuffer(const CommandBuffer& cmd, const Buffer& dst, VkDeviceSize size) const;
+		void CopyToBuffer(const CommandBuffer& cmd, const Buffer& dst, VkDeviceSize size, VkDeviceSize srcOffset, VkDeviceSize dstOffset) const;
 		void CopyToImage(const CommandBuffer& cmd, const Image& dst, VkExtent3D extent, uint32_t mip, uint32_t baseLayer, uint32_t layerCount) const;
 
 	private:
@@ -73,16 +74,20 @@ namespace pom
 		BufferAllocator& SetMemUsage(VmaMemoryUsage usage);
 		BufferAllocator& SetSharingMode(VkSharingMode sharingMode);
 		BufferAllocator& HostAccess(bool access);
-		BufferAllocator& InitialData(void* data, uint32_t offset, uint32_t size, CommandPool& cmdPool);
+		BufferAllocator& AddInitialData(void* data, VkDeviceSize dstOffset, uint32_t size, CommandPool& cmdPool);
 
 		void Allocate(const Context& context, Buffer& buffer) const;
 
 	private:
 		bool m_UseInitialData;
-		void* m_pData;
-		uint32_t m_InitDataSize;
-		uint32_t m_InitDataOffset;
-		CommandPool* m_pCmdPool;
+		struct InitData
+		{
+			void* pData;
+			uint32_t initDataSize;
+			VkDeviceSize dstOffset;
+			CommandPool* pCmdPool;
+		};
+		std::vector<InitData> m_vInitialData{};
 
 		const char* m_pName{};
 

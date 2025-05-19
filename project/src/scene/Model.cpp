@@ -329,7 +329,7 @@ void pom::Model::CreateVertexBuffer(const Context& context, CommandPool& cmdPool
 		.SetSize(bufferSize)
 		.SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
 		.HostAccess(false)
-		.InitialData(vertices.data(), 0, bufferSize, cmdPool)
+		.AddInitialData(vertices.data(), 0, bufferSize, cmdPool)
 		.Allocate(context, vertexBuffer);
 }
 void pom::Model::CreateIndexBuffer(const Context& context, CommandPool& cmdPool)
@@ -341,7 +341,7 @@ void pom::Model::CreateIndexBuffer(const Context& context, CommandPool& cmdPool)
 		.SetSize(bufferSize)
 		.SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
 		.HostAccess(false)
-		.InitialData(indices.data(), 0, bufferSize, cmdPool)
+		.AddInitialData(indices.data(), 0, bufferSize, cmdPool)
 		.Allocate(context, indexBuffer);
 }
 void pom::Model::CreateImages(const Context& context, CommandPool& cmdPool)

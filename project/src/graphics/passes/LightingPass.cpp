@@ -137,7 +137,7 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 		m_SSBOLightDS = createInfo.pDescriptorPool->AllocateSets(context, m_SSBOLightDSL, 1, "Light SSBO DS").front();
 		m_vCameraMatricesDS = createInfo.pDescriptorPool->AllocateSets(context, m_CameraMatricesDSL, createInfo.maxFramesInFlight, "Camera Matrices DS");
 		UpdateGBufferDescriptors(context, *createInfo.pGeometryPass);
-		UpdateLightDescriptors(context ,createInfo.pScene);
+		UpdateLightDescriptors(context, *createInfo.pCommandPool, createInfo.pScene);
 
 		DescriptorSetWriter writer{};
 		for (uint32_t i{}; i < createInfo.maxFramesInFlight; ++i)
@@ -187,10 +187,9 @@ void pom::LightingPass::UpdateGBufferDescriptors(const Context& context, const G
 			.Execute(context);
 	}
 }
-void pom::LightingPass::UpdateLightDescriptors(const Context& context, Scene* pScene)
+void pom::LightingPass::UpdateLightDescriptors(const Context& context, CommandPool& commandPool, Scene* pScene)
 {
-	const auto gpuLights = pScene->GetLightsGPU();
-	const uint32_t lightCount = static_cast<uint32_t>(gpuLights.size());
+	uint32_t lightCount = pScene->GetLightsCount();
 	const VkDeviceSize totalSize = /*uint + 3padding*/4 * sizeof(uint32_t) + sizeof(GPULight) * lightCount;
 
 	if (m_SSBOLights.Size() < totalSize)
@@ -201,17 +200,14 @@ void pom::LightingPass::UpdateLightDescriptors(const Context& context, Scene* pS
 			.SetDebugName("SSBO (Light)")
 			.SetUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
 			.SetSize(static_cast<uint32_t>(totalSize))
-			.HostAccess(true)
+			.AddInitialData(&lightCount, 0, sizeof(uint32_t), commandPool)
+			.AddInitialData(pScene->GetLightsGPU().data(), 4 * sizeof(uint32_t), sizeof(GPULight) * lightCount, commandPool)
 			.Allocate(context, m_SSBOLights);
 
 		static uint32_t prevIdx = 0xFFFFFFFF;
 		m_DeletionQueue.Erase(prevIdx);
 		prevIdx = m_DeletionQueue.Push([&] { m_SSBOLights.Destroy(context); });
 	}
-
-	vmaCopyMemoryToAllocation(context.allocator, &lightCount, m_SSBOLights.GetMemoryHandle(), 0, sizeof(uint32_t));
-	vmaCopyMemoryToAllocation(context.allocator, gpuLights.data(), m_SSBOLights.GetMemoryHandle(),
-								/*uint + 3padding*/4 * sizeof(uint32_t),sizeof(GPULight) * lightCount);
 
 	DescriptorSetWriter writer{};
 	writer
