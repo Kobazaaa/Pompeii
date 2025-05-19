@@ -36,7 +36,13 @@ int main()
 			.nearPlane = 0.001f,
 			.farPlane = 10000.f
 		};
-		Camera* pCamera = new Camera(settings, pWindow);
+		ExposureSettings expSettings
+		{
+			.aperture = 1.f,
+			.shutterSpeed = 1.f,
+			.iso = 1.f,
+		};
+		Camera* pCamera = new Camera(settings, expSettings, pWindow);
 
 		// -- Create Renderer --
 		Renderer* pRenderer = new Renderer(pCamera, pWindow);

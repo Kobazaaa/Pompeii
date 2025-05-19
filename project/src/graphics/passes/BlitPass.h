@@ -10,6 +10,7 @@
 // -- Forward Declarations --
 namespace pom
 {
+	class Camera;
 	class DescriptorPool;
 	class CommandBuffer;
 }
@@ -46,7 +47,7 @@ namespace pom
 		void Initialize(const Context& context, const BlitPassCreateInfo& createInfo);
 		void Destroy();
 		void UpdateDescriptors(const Context& context, const std::vector<Image>& renderImages) const;
-		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage) const;
+		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const Camera* pCamera) const;
 
 	private:
 		// -- Pipeline --
@@ -57,8 +58,9 @@ namespace pom
 		Sampler						m_Sampler{ };
 
 		// -- Descriptors --
-		DescriptorSetLayout			m_TextureDSL{ };
-		std::vector<DescriptorSet>	m_vTexturesDS{ };
+		DescriptorSetLayout			m_FragmentDSL{ };
+		std::vector<DescriptorSet>	m_vFragmentDS{ };
+		std::vector<Buffer>			m_vCameraSettings{ };
 
 		// -- DQ --
 		DeletionQueue				m_DeletionQueue{ };

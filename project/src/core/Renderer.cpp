@@ -518,7 +518,7 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 				0, 1, 0, 1);
 
 			// The blit pass will blit the rendered image to the swapchain and potentially do post-processing.
-			m_BlitPass.Record(m_Context, commandBuffer, imageIndex, presentImage);
+			m_BlitPass.Record(m_Context, commandBuffer, imageIndex, presentImage, m_pCamera);
 
 			// At last, transition the current Present Image to be presented
 			presentImage.TransitionLayout(commandBuffer,

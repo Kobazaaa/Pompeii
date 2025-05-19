@@ -13,12 +13,15 @@ void pom::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo&
 	{
 		DescriptorSetLayoutBuilder builder{};
 		builder
-			.SetDebugName("Rendered Texture")
+			.SetDebugName("Rendered Texture | Camera Settings")
 			.NewLayoutBinding()
 				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
-			.Build(context, m_TextureDSL);
-		m_DeletionQueue.Push([&] { m_TextureDSL.Destroy(context); });
+			.NewLayoutBinding()
+				.SetType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
+			.Build(context, m_FragmentDSL);
+		m_DeletionQueue.Push([&] { m_FragmentDSL.Destroy(context); });
 	}
 
 	// -- Pipeline Layout --
@@ -26,7 +29,7 @@ void pom::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo&
 		GraphicsPipelineLayoutBuilder builder{};
 
 		builder
-			.AddLayout(m_TextureDSL)
+			.AddLayout(m_FragmentDSL)
 			.Build(context, m_PipelineLayout);
 		m_DeletionQueue.Push([&] {m_PipelineLayout.Destroy(context); });
 	}
@@ -83,14 +86,34 @@ void pom::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo&
 
 	// -- Buffers --
 	{
-		m_vTexturesDS = createInfo.pDescriptorPool->AllocateSets(context, m_TextureDSL, createInfo.maxFramesInFlight, "Render Texture DS");
+		m_vCameraSettings.resize(createInfo.maxFramesInFlight);
+		for (size_t i{}; i < createInfo.maxFramesInFlight; ++i)
+		{
+			BufferAllocator bufferAlloc{};
+			bufferAlloc
+				.SetDebugName("Camera Settings UBO")
+				.SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+				.SetSize(sizeof(ExposureSettings))
+				.HostAccess(true)
+				.Allocate(context, m_vCameraSettings[i]);
+		}
+		m_DeletionQueue.Push([&] { for (auto& ubo : m_vCameraSettings) ubo.Destroy(context); });
+	}
+
+	// -- Descriptors --
+	{
+		m_vFragmentDS = createInfo.pDescriptorPool->AllocateSets(context, m_FragmentDSL, createInfo.maxFramesInFlight, "Render Texture DS");
 		DescriptorSetWriter writer{};
-		for (uint32_t i{}; i < m_vTexturesDS.size(); ++i)
+		for (uint32_t i{}; i < m_vFragmentDS.size(); ++i)
 		{
 			writer
 				.AddImageInfo((*createInfo.renderImages)[i],
 					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_Sampler)
-				.WriteImages(m_vTexturesDS[i], 0)
+				.WriteImages(m_vFragmentDS[i], 0)
+				.Execute(context);
+			writer
+				.AddBufferInfo(m_vCameraSettings[i], 0, sizeof(ExposureSettings))
+				.WriteBuffers(m_vFragmentDS[i], 1)
 				.Execute(context);
 		}
 	}
@@ -104,18 +127,22 @@ void pom::BlitPass::Destroy()
 void pom::BlitPass::UpdateDescriptors(const Context& context, const std::vector<Image>& renderImages) const
 {
 	DescriptorSetWriter writer{};
-	for (uint32_t i{}; i < m_vTexturesDS.size(); ++i)
+	for (uint32_t i{}; i < m_vFragmentDS.size(); ++i)
 	{
 		writer
 			.AddImageInfo(renderImages[i],
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_Sampler)
-			.WriteImages(m_vTexturesDS[i], 0)
+			.WriteImages(m_vFragmentDS[i], 0)
 			.Execute(context);
 	}
 }
 
-void pom::BlitPass::Record(const Context&, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage) const
+void pom::BlitPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const Camera* pCamera) const
 {
+	// -- Update Camera Settings --
+	//todo really? every frame? camera exposure settings don't often change i feel ike, maybe this can be optimized using some dirty flag
+	vmaCopyMemoryToAllocation(context.allocator, &pCamera->GetExposureSettings(), m_vCameraSettings[imageIndex].GetMemoryHandle(), 0, sizeof(ExposureSettings));
+
 	// -- Set Up Attachment --
 	VkRenderingAttachmentInfo colorAttachment{};
 	colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -157,8 +184,8 @@ void pom::BlitPass::Record(const Context&, CommandBuffer& commandBuffer, uint32_
 		vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
 
 		// -- Bind Descriptor Sets --
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Rendered Image", glm::vec4(0.f, 1.f, 1.f, 1.f));
-		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vTexturesDS[imageIndex].GetHandle(), 0, nullptr);
+		Debugger::InsertDebugLabel(commandBuffer, "Bind Rendered Image | Camera Settings", glm::vec4(0.f, 1.f, 1.f, 1.f));
+		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vFragmentDS[imageIndex].GetHandle(), 0, nullptr);
 
 		// -- Draw Triangle --
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Blitting)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));

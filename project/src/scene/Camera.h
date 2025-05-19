@@ -21,6 +21,12 @@ namespace pom
 		float nearPlane;
 		float farPlane;
 	};
+	struct ExposureSettings
+	{
+		float aperture;
+		float shutterSpeed;
+		float iso;
+	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Camera	
@@ -32,7 +38,7 @@ namespace pom
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		Camera() = default;
-		explicit Camera(const CameraSettings& settings, const Window* pWindow);
+		explicit Camera(const CameraSettings& settings, const ExposureSettings& exposureSettings, const Window* pWindow);
 
 		//--------------------------------------------------
 		//    Update
@@ -48,6 +54,8 @@ namespace pom
 		// -- Settings --
 		void ChangeSettings(const CameraSettings& settings);
 		const CameraSettings& GetSettings() const;
+		void ChangeExposureSettings(const ExposureSettings& settings);
+		const ExposureSettings& GetExposureSettings() const;
 
 		void SetSpeed(float speed);
 		void SetSensitivity(float sensitivity);
@@ -64,34 +72,35 @@ namespace pom
 		void UpdateCameraVectors();
 
 		// -- Data --
-		glm::vec3 m_Position			{ 0.f, 0.f, 0.f };
-		glm::vec3 m_Forward				{ 0.f, 0.f, 1.f };
-		glm::vec3 m_Right				{ 1.f, 0.f, 1.f };
-		glm::vec3 m_Up					{ 0.f, 1.f, 0.f };
+		glm::vec3 m_Position				{ 0.f, 0.f, 0.f };
+		glm::vec3 m_Forward					{ 0.f, 0.f, 1.f };
+		glm::vec3 m_Right					{ 1.f, 0.f, 1.f };
+		glm::vec3 m_Up						{ 0.f, 1.f, 0.f };
 
-		glm::mat4 m_ViewMatrix			{ };
-		glm::mat4 m_ProjectionMatrix	{ };
+		glm::mat4 m_ViewMatrix				{ };
+		glm::mat4 m_ProjectionMatrix		{ };
 
 		// -- Settings --
-		CameraSettings m_Settings		{ };
+		CameraSettings	 m_Settings			{ };
+		ExposureSettings m_ExposureSettings	{ };
 
-		float m_Pitch					{ };
-		float m_Yaw						{ };
-		float m_Roll					{ };
+		float m_Pitch						{ };
+		float m_Yaw							{ };
+		float m_Roll						{ };
 
-		float m_Speed					{ 1.f };
-		float m_Sensitivity				{ 0.1f };
+		float m_Speed						{ 1.f };
+		float m_Sensitivity					{ 0.1f };
 
-		bool m_IsDragging				{ false };
-		float m_LastX					{ 0.f };
-		float m_LastY					{ 0.f };
+		bool m_IsDragging					{ false };
+		float m_LastX						{ 0.f };
+		float m_LastY						{ 0.f };
 
 		// -- Dirty Flags
-		bool m_CameraDirty				{ true };
-		bool m_SettingsDirty			{ true };
+		bool m_CameraDirty					{ true };
+		bool m_SettingsDirty				{ true };
 
 		// -- Window --
-		GLFWwindow* m_pWindow			{ nullptr };
+		GLFWwindow* m_pWindow				{ nullptr };
 	};
 }
 

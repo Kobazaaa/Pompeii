@@ -18,8 +18,9 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::Camera::Camera(const CameraSettings& settings, const Window* pWindow)
+pom::Camera::Camera(const CameraSettings& settings, const ExposureSettings& exposureSettings, const Window* pWindow)
 	: m_Settings(settings)
+	, m_ExposureSettings(exposureSettings)
 	, m_pWindow(pWindow->GetHandle())
 {}
 
@@ -41,14 +42,16 @@ void pom::Camera::Update()
 //    Accessors & Mutators
 //--------------------------------------------------
 // -- Data --
-glm::vec3 pom::Camera::GetPosition()						const	{ return m_Position; }
+glm::vec3 pom::Camera::GetPosition()										const	{ return m_Position; }
 
 // -- Settings --
-void pom::Camera::ChangeSettings(const CameraSettings& settings)	{ m_Settings = settings; m_SettingsDirty = true; }
-const pom::CameraSettings& pom::Camera::GetSettings()		const	{ return m_Settings; }
+void pom::Camera::ChangeSettings(const CameraSettings& settings)					{ m_Settings = settings; m_SettingsDirty = true; }
+const pom::CameraSettings& pom::Camera::GetSettings()						const	{ return m_Settings; }
+void pom::Camera::ChangeExposureSettings(const ExposureSettings& settings)			{ m_ExposureSettings = settings; }
+const pom::ExposureSettings& pom::Camera::GetExposureSettings()				const	{ return m_ExposureSettings; }
 
-void pom::Camera::SetSpeed(float speed)								{ m_Speed = speed; }
-void pom::Camera::SetSensitivity(float sensitivity)					{ m_Sensitivity = sensitivity; }
+void pom::Camera::SetSpeed(float speed)												{ m_Speed = speed; }
+void pom::Camera::SetSensitivity(float sensitivity)									{ m_Sensitivity = sensitivity; }
 
 // -- Matrices --
 glm::mat4 pom::Camera::GetViewMatrix()
