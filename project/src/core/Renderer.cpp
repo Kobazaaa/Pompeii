@@ -325,7 +325,7 @@ void pom::Renderer::InitializeVulkan()
 		createInfo.pDescriptorPool = &m_DescriptorPool;
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
 		createInfo.pGeometryPass = &m_GeometryPass;
-		createInfo.format = m_SwapChain.GetFormat();
+		createInfo.format = m_vRenderTargets.front().GetFormat();
 		createInfo.pScene = m_pScene;
 
 		m_LightingPass.Initialize(m_Context, createInfo);
@@ -432,11 +432,11 @@ void pom::Renderer::CreateRenderTargetResources(const Context& context, VkExtent
 			.SetHeight(extent.height)
 			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
 			//.SetSampleCount(context.physicalDevice.GetMaxSampleCount())
-			.SetFormat(VK_FORMAT_B8G8R8A8_SRGB)
+			.SetFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
 			.SetUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
 			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 			.Build(context, image);
-		image.CreateView(context, VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
+		image.CreateView(context, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
 	}
 }
 

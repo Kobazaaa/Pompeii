@@ -55,23 +55,23 @@ void pom::SponzaScene::Initialize()
 {
 	AddModel("models/Sponza.gltf");
 
+	//AddLight(Light
+	//	{
+	//	/* direction */	{ 0.577f, -0.577f, 0.577f },
+	//	/* color */		{ 1.f, 1.f, 1.f },
+	//	/* lux */		1.f, Light::Type::Directional
+	//	});
+	//AddLight(Light
+	//	{
+	//	/* direction */	{ -0.577f, -0.577f, -0.577f },
+	//	/* color */		{ 1.f, 0.f, 1.f },
+	//	/* lux */		1.f, Light::Type::Directional
+	//	});
 	AddLight(Light
 		{
-		/* direction */	{ 0.577f, -0.577f, 0.577f },
-		/* color */		{ 1.f, 1.f, 1.f },
-		/* lux */		1.f, Light::Type::Directional
-		});
-	AddLight(Light
-		{
-		/* direction */	{ -0.577f, -0.577f, -0.577f },
-		/* color */		{ 1.f, 0.f, 1.f },
-		/* lux */		1.f, Light::Type::Directional
-		});
-	AddLight(Light
-		{
-		/* position */	{ 0.f, 1.f, 0.f },
-		/* color */		{ 0.f, 0.f, 1.f },
-		/* lumen */		1000.f, Light::Type::Point
+		/* position */	{ 7.f, 0.5f, 0.f },
+		/* color */		{ 1.f, 0.651f, 0.f},
+		/* lumen */		100.f, Light::Type::Point
 		});
 }
 

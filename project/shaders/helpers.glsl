@@ -39,3 +39,34 @@ vec3 GetWorldPositionFromDepth(in float depth, in vec2 fragCoords, in vec2 resol
 	vec4 worldPos = invView * viewPos;
 	return worldPos.xyz;
 }
+
+vec3 ACESFilmToneMapping(in vec3 color)
+{
+	const float a = 2.51;
+	const float b = 0.03;
+	const float c = 2.43;
+	const float d = 0.59;
+	const float e = 0.14;
+	return clamp((color * (a * color + b)) / (color * (c * color + d) + e), 0.0, 1.0);
+}
+vec3 ReinhardToneMapping(in vec3 color)
+{
+	return color / (color + vec3(1.0));
+}
+vec3 Uncharted2ToneMappingCurve(in vec3 color)
+{
+	const float a = 0.15;
+	const float b = 0.50;
+	const float c = 0.10;
+	const float d = 0.20;
+	const float e = 0.02;
+	const float f = 0.30;
+	return ((color * (a * color + c * b) + d * e) / (color * (a * color + b) + d * f)) - e / f;
+}
+vec3 Uncharted2ToneMapping(in vec3 color)
+{
+	const float W = 11.2;
+	const vec3 curvedColor = Uncharted2ToneMappingCurve(color);
+	float whiteScale = 1.0 / Uncharted2ToneMappingCurve(vec3(W)).r;
+	return clamp(curvedColor * whiteScale, 0.0, 1.0);
+}
