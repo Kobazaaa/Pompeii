@@ -144,7 +144,7 @@ void pom::Model::LoadModel(const std::string& path)
 		return;
 	}
 
-	ProcessNode(pScene->mRootNode, pScene, ConvertAssimpMatrix(pScene->mRootNode->mTransformation));
+	ProcessNode(pScene->mRootNode, pScene);
 }
 void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool, bool keepHostData)
 {
@@ -205,25 +205,22 @@ void pom::Model::Bind(CommandBuffer& cmdBuffer) const
 //--------------------------------------------------
 //    Helpers
 //--------------------------------------------------
-void pom::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene, const glm::mat4& parentTransform)
+void pom::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene)
 {
-	glm::mat4 nodeTransform = ConvertAssimpMatrix(pNode->mTransformation);
-	glm::mat4 globalTransform = parentTransform * nodeTransform;
-
 	for (uint32_t index{}; index < pNode->mNumMeshes; ++index)
 	{
 		aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[index]];
-		ProcessMesh(pMesh, pScene, globalTransform);
+		ProcessMesh(pMesh, pScene);
 	}
 
 	for (uint32_t cIdx{}; cIdx < pNode->mNumChildren; ++cIdx)
-		ProcessNode(pNode->mChildren[cIdx], pScene, globalTransform);
+		ProcessNode(pNode->mChildren[cIdx], pScene);
 }
-void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const glm::mat4& transform)
+void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene)
 {
 	opaqueMeshes.push_back(Mesh());
 	opaqueMeshes.back().name = pMesh->mName.C_Str();
-	opaqueMeshes.back().matrix = transform;
+	opaqueMeshes.back().matrix = ConvertAssimpMatrix(pScene->mRootNode->mTransformation);
 
 	// -- Process Vertices --
 	opaqueMeshes.back().vertexOffset = static_cast<uint32_t>(vertices.size());

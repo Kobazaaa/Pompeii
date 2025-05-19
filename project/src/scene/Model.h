@@ -117,8 +117,8 @@ namespace pom
 		//--------------------------------------------------
 		//    Helpers
 		//--------------------------------------------------
-		void ProcessNode(const aiNode* pNode, const aiScene* pScene, const glm::mat4& parentTransform);
-		void ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, const glm::mat4& transform);
+		void ProcessNode(const aiNode* pNode, const aiScene* pScene);
+		void ProcessMesh(const aiMesh* pMesh, const aiScene* pScene);
 
 		static glm::mat4 ConvertAssimpMatrix(const aiMatrix4x4& mat);
 

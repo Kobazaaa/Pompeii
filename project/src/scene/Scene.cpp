@@ -69,9 +69,9 @@ void pom::SponzaScene::Initialize()
 		});
 	AddLight(Light
 		{
-		/* position */	{ 0.f, 0.1f, 0.f },
+		/* position */	{ 0.f, 1.f, 0.f },
 		/* color */		{ 0.f, 0.f, 1.f },
-		/* intensity */	0.01f, Light::Type::Point
+		/* intensity */	2.f, Light::Type::Point
 		});
 }
 

@@ -79,7 +79,7 @@ namespace pom
 		float m_Yaw						{ };
 		float m_Roll					{ };
 
-		float m_Speed					{ 0.1f };
+		float m_Speed					{ 1.f };
 		float m_Sensitivity				{ 0.1f };
 
 		bool m_IsDragging				{ false };
