@@ -26,15 +26,14 @@ void pom::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo&
 
 	// -- Pipeline Layout --
 	{
-		GraphicsPipelineLayoutBuilder builder{};
-
+		PipelineLayoutBuilder builder{};
 		builder
 			.AddLayout(m_FragmentDSL)
 			.Build(context, m_PipelineLayout);
 		m_DeletionQueue.Push([&] {m_PipelineLayout.Destroy(context); });
 	}
 
-	// -- Pipelines --
+	// -- Graphics Pipeline --
 	{
 		// Load in shaders
 		ShaderLoader shaderLoader{};

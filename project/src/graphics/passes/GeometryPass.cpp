@@ -50,7 +50,7 @@ void pom::GeometryPass::Initialize(const Context& context, const GeometryPassCre
 
 	// -- Pipeline Layout --
 	{
-		GraphicsPipelineLayoutBuilder builder{};
+		PipelineLayoutBuilder builder{};
 
 		builder
 			.NewPushConstantRange()

@@ -7,7 +7,7 @@
 // -- Pompeii Includes --
 #include "DeletionQueue.h"
 #include "DescriptorSet.h"
-#include "GraphicsPipeline.h"
+#include "Pipeline.h"
 #include "Image.h"
 #include "Scene.h"
 #include "Sampler.h"
@@ -65,8 +65,8 @@ namespace pom
 
 	private:
 		// -- Pipeline --
-		GraphicsPipelineLayout		m_ShadowPipelineLayout	{ };
-		GraphicsPipeline			m_ShadowPipeline		{ };
+		PipelineLayout		m_ShadowPipelineLayout	{ };
+		Pipeline			m_ShadowPipeline		{ };
 
 		// -- Image --
 		std::vector<Image>			m_vShadowMaps			{ };

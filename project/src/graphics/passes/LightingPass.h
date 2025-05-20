@@ -4,7 +4,7 @@
 // -- Pompeii Includes --
 #include "DeletionQueue.h"
 #include "DescriptorPool.h"
-#include "GraphicsPipeline.h"
+#include "Pipeline.h"
 #include "Sampler.h"
 #include "DescriptorSet.h"
 #include "Buffer.h"
@@ -62,8 +62,8 @@ namespace pom
 
 	private:
 		// -- Pipeline --
-		GraphicsPipelineLayout		m_PipelineLayout		{ };
-		GraphicsPipeline			m_Pipeline				{ };
+		PipelineLayout		m_PipelineLayout		{ };
+		Pipeline			m_Pipeline				{ };
 
 		// -- Image --
 		Sampler						m_GBufferSampler		{ };

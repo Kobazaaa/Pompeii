@@ -55,7 +55,7 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 
 	// -- Pipeline Layout --
 	{
-		GraphicsPipelineLayoutBuilder builder{};
+		PipelineLayoutBuilder builder{};
 
 		builder
 			.AddLayout(m_CameraMatricesDSL)

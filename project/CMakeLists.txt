@@ -48,7 +48,7 @@ set(SOURCES
 	"${SOURCE_DIR}/graphics/pipeline/DescriptorPool.h"		"${SOURCE_DIR}/graphics/pipeline/DescriptorPool.cpp"
 	"${SOURCE_DIR}/graphics/pipeline/DescriptorSet.h"		"${SOURCE_DIR}/graphics/pipeline/DescriptorSet.cpp"
 	"${SOURCE_DIR}/graphics/pipeline/FrameBuffer.h"			"${SOURCE_DIR}/graphics/pipeline/FrameBuffer.cpp"
-	"${SOURCE_DIR}/graphics/pipeline/GraphicsPipeline.h"	"${SOURCE_DIR}/graphics/pipeline/GraphicsPipeline.cpp"
+	"${SOURCE_DIR}/graphics/pipeline/Pipeline.h"			"${SOURCE_DIR}/graphics/pipeline/Pipeline.cpp"
 	"${SOURCE_DIR}/graphics/pipeline/RenderPass.h"			"${SOURCE_DIR}/graphics/pipeline/RenderPass.cpp"
 	"${SOURCE_DIR}/graphics/pipeline/Shader.h"				"${SOURCE_DIR}/graphics/pipeline/Shader.cpp"
 

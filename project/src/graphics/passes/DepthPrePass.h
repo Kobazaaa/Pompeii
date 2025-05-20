@@ -7,7 +7,7 @@
 // -- Pompeii Includes --
 #include "DeletionQueue.h"
 #include "DescriptorSet.h"
-#include "GraphicsPipeline.h"
+#include "Pipeline.h"
 #include "Image.h"
 
 // -- Forward Declarations --
@@ -67,8 +67,8 @@ namespace pom
 
 	private:
 		// -- Pipeline --
-		GraphicsPipelineLayout		m_PipelineLayout{ };
-		GraphicsPipeline			m_Pipeline{ };
+		PipelineLayout		m_PipelineLayout{ };
+		Pipeline			m_Pipeline{ };
 
 		// -- Descriptors --
 		DescriptorSetLayout			m_UniformDSL{ };

@@ -65,7 +65,7 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 
 	// -- Pipeline Layout --
 	{
-		GraphicsPipelineLayoutBuilder builder{};
+		PipelineLayoutBuilder builder{};
 
 		builder
 			.NewPushConstantRange()

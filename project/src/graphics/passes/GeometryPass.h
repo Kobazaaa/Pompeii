@@ -8,7 +8,7 @@
 #include "DeletionQueue.h"
 #include "DescriptorSet.h"
 #include "GBuffer.h"
-#include "GraphicsPipeline.h"
+#include "Pipeline.h"
 #include "Sampler.h"
 #include "Image.h"
 
@@ -90,8 +90,8 @@ namespace pom
 
 	private:
 		// -- Pipeline --
-		GraphicsPipelineLayout		m_PipelineLayout{ };
-		GraphicsPipeline			m_Pipeline{ };
+		PipelineLayout		m_PipelineLayout{ };
+		Pipeline			m_Pipeline{ };
 
 		// -- Descriptors --
 		DescriptorSetLayout			m_UniformDSL{ };

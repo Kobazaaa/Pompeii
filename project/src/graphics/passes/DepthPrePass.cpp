@@ -25,7 +25,7 @@ void pom::DepthPrePass::Initialize(const Context& context, const DepthPrePassCre
 
 	// -- Pipeline Layout --
 	{
-		GraphicsPipelineLayoutBuilder builder{};
+		PipelineLayoutBuilder builder{};
 		builder
 			.NewPushConstantRange()
 				.SetPCOffset(0)

@@ -7,7 +7,7 @@
 
 // -- Pompeii Includes --
 #include "Model.h"
-#include "GraphicsPipeline.h"
+#include "Pipeline.h"
 #include "Context.h"
 #include "CommandBuffer.h"
 #include "Debugger.h"

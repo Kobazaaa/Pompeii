@@ -28,7 +28,7 @@ namespace pom
 {
 	class CommandPool;
 	class CommandBuffer;
-	class GraphicsPipelineLayout;
+	class PipelineLayout;
 	struct Context;
 }
 

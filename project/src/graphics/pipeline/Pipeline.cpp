@@ -2,7 +2,7 @@
 #include <stdexcept>
 
 // -- Pompeii Includes --
-#include "GraphicsPipeline.h"
+#include "Pipeline.h"
 #include "Context.h"
 #include "Debugger.h"
 #include "Shader.h"
@@ -10,29 +10,29 @@
 #include "RenderPass.h"
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//? ~~	  GraphicsPipelineLayout	
+//? ~~	  PipelineLayout	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::GraphicsPipelineLayout::Destroy(const Context& context)	const { vkDestroyPipelineLayout(context.device.GetHandle(), m_Layout, nullptr); }
+void pom::PipelineLayout::Destroy(const Context& context)	const { vkDestroyPipelineLayout(context.device.GetHandle(), m_Layout, nullptr); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkPipelineLayout& pom::GraphicsPipelineLayout::GetHandle()	const { return m_Layout; }
+const VkPipelineLayout& pom::PipelineLayout::GetHandle()	const { return m_Layout; }
 
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//? ~~	  GraphicsPipelineLayoutBuilder	
+//? ~~	  PipelineLayoutBuilder	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::GraphicsPipelineLayoutBuilder::GraphicsPipelineLayoutBuilder()
+pom::PipelineLayoutBuilder::PipelineLayoutBuilder()
 {
 	m_PipelineLayoutInfo = {};
 
@@ -47,17 +47,17 @@ pom::GraphicsPipelineLayoutBuilder::GraphicsPipelineLayoutBuilder()
 //--------------------------------------------------
 //    Builder
 //--------------------------------------------------
-pom::GraphicsPipelineLayoutBuilder& pom::GraphicsPipelineLayoutBuilder::NewPushConstantRange()
+pom::PipelineLayoutBuilder& pom::PipelineLayoutBuilder::NewPushConstantRange()
 {
 	m_vPushConstantRanges.emplace_back();
 	m_vPushConstantRanges.back().offset = 0;
 	return *this;
 }
-pom::GraphicsPipelineLayoutBuilder& pom::GraphicsPipelineLayoutBuilder::SetPCStageFlags(VkShaderStageFlags flags) { m_vPushConstantRanges.back().stageFlags = flags; return *this; }
-pom::GraphicsPipelineLayoutBuilder& pom::GraphicsPipelineLayoutBuilder::SetPCOffset(uint32_t offset) { m_vPushConstantRanges.back().offset = offset; return *this; }
-pom::GraphicsPipelineLayoutBuilder& pom::GraphicsPipelineLayoutBuilder::SetPCSize(uint32_t size) { m_vPushConstantRanges.back().size = size; return *this; }
+pom::PipelineLayoutBuilder& pom::PipelineLayoutBuilder::SetPCStageFlags(VkShaderStageFlags flags) { m_vPushConstantRanges.back().stageFlags = flags; return *this; }
+pom::PipelineLayoutBuilder& pom::PipelineLayoutBuilder::SetPCOffset(uint32_t offset) { m_vPushConstantRanges.back().offset = offset; return *this; }
+pom::PipelineLayoutBuilder& pom::PipelineLayoutBuilder::SetPCSize(uint32_t size) { m_vPushConstantRanges.back().size = size; return *this; }
 
-pom::GraphicsPipelineLayoutBuilder& pom::GraphicsPipelineLayoutBuilder::AddLayout(const pom::DescriptorSetLayout& descriptorSetLayout)
+pom::PipelineLayoutBuilder& pom::PipelineLayoutBuilder::AddLayout(const pom::DescriptorSetLayout& descriptorSetLayout)
 {
 	m_vDescriptorLayouts.push_back(descriptorSetLayout.GetHandle());
 	m_PipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(m_vDescriptorLayouts.size());
@@ -65,7 +65,7 @@ pom::GraphicsPipelineLayoutBuilder& pom::GraphicsPipelineLayoutBuilder::AddLayou
 	return *this;
 }
 
-void pom::GraphicsPipelineLayoutBuilder::Build(const Context& context, GraphicsPipelineLayout& pipelineLayout)
+void pom::PipelineLayoutBuilder::Build(const Context& context, PipelineLayout& pipelineLayout)
 {
 	if (!m_vPushConstantRanges.empty())
 	{
@@ -80,18 +80,18 @@ void pom::GraphicsPipelineLayoutBuilder::Build(const Context& context, GraphicsP
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//? ~~	  GraphicsPipeline
+//? ~~	  Pipeline
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::GraphicsPipeline::Destroy(const Context& context) const { vkDestroyPipeline(context.device.GetHandle(), m_Pipeline, nullptr); }
+void pom::Pipeline::Destroy(const Context& context) const { vkDestroyPipeline(context.device.GetHandle(), m_Pipeline, nullptr); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkPipeline& pom::GraphicsPipeline::GetHandle() const { return m_Pipeline; }
+const VkPipeline& pom::Pipeline::GetHandle() const { return m_Pipeline; }
 
 
 
@@ -329,7 +329,7 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::AddDynamicState(VkDy
 }
 
 // Pipeline & Render Pass
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetPipelineLayout(const GraphicsPipelineLayout& layout)
+pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetPipelineLayout(const PipelineLayout& layout)
 {
 	m_PipelineLayout = layout.GetHandle();
 	return *this;
@@ -385,7 +385,7 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetupDynamicRenderin
 }
 
 // Build
-void pom::GraphicsPipelineBuilder::Build(const Context& context, GraphicsPipeline& pipeline)
+void pom::GraphicsPipelineBuilder::Build(const Context& context, Pipeline& pipeline)
 {
 	m_ColorBlendCreateInfo.attachmentCount = static_cast<uint32_t>(m_vColorBlendAttachmentState.size());
 	m_ColorBlendCreateInfo.pAttachments = m_vColorBlendAttachmentState.data();
@@ -410,6 +410,92 @@ void pom::GraphicsPipelineBuilder::Build(const Context& context, GraphicsPipelin
 
 	if (vkCreateGraphicsPipelines(context.device.GetHandle(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline.m_Pipeline) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Graphics Pipeline!");
+
+	if (m_pName)
+	{
+		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(pipeline.GetHandle()), VK_OBJECT_TYPE_PIPELINE, m_pName);
+	}
+}
+
+
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  ComputePipelineBuilder	
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+//--------------------------------------------------
+//    Constructor & Destructor
+//--------------------------------------------------
+
+pom::ComputePipelineBuilder::ComputePipelineBuilder()
+{
+	m_PipelineLayout = VK_NULL_HANDLE;									//! REQUIRED CHANGE										
+	m_pName = nullptr;													//? CAN CHANGE
+	m_ShaderInfo = {};													//! REQUIRED CHANGE
+	m_ShaderSpecializationEntry = {};									//? CAN CHANGE
+	m_SpecializationInfo = {};											//? CAN CHANGE
+}
+
+//--------------------------------------------------
+//    Builder
+//--------------------------------------------------
+pom::ComputePipelineBuilder& pom::ComputePipelineBuilder::SetDebugName(const char* name)
+{
+	m_pName = name;
+	return *this;
+}
+
+pom::ComputePipelineBuilder& pom::ComputePipelineBuilder::SetShader(const ShaderModule& shader)
+{
+	m_ShaderInfo = {};
+	m_ShaderInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	m_ShaderInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+	m_ShaderInfo.module = shader.GetHandle();
+	m_ShaderInfo.pName = "main";
+	m_ShaderInfo.pSpecializationInfo = nullptr;
+
+	return *this;
+}
+
+pom::ComputePipelineBuilder& pom::ComputePipelineBuilder::SetShaderSpecialization(uint32_t constID, uint32_t offset, uint32_t size, const void* data)
+{
+	// -- Create Entry --
+	m_ShaderSpecializationEntry = {};
+	m_ShaderSpecializationEntry.constantID = constID;
+	m_ShaderSpecializationEntry.offset = offset;
+	m_ShaderSpecializationEntry.size = size;
+
+	// -- Create Info --
+	m_SpecializationInfo = {};
+	m_SpecializationInfo.mapEntryCount = 1;
+	m_SpecializationInfo.pMapEntries = &m_ShaderSpecializationEntry;
+	m_SpecializationInfo.dataSize = size;
+	m_SpecializationInfo.pData = data;
+
+	// -- Set Info --
+	m_ShaderInfo.pSpecializationInfo = &m_SpecializationInfo;
+
+	return *this;
+}
+
+pom::ComputePipelineBuilder& pom::ComputePipelineBuilder::SetPipelineLayout(const PipelineLayout& layout)
+{
+	m_PipelineLayout = layout.GetHandle();
+	return *this;
+}
+
+void pom::ComputePipelineBuilder::Build(const Context& context, Pipeline& pipeline) const
+{
+	VkComputePipelineCreateInfo pipelineInfo{};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+	pipelineInfo.layout = m_PipelineLayout;
+	pipelineInfo.stage = m_ShaderInfo;
+	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	pipelineInfo.basePipelineIndex = 0;
+	pipelineInfo.flags = 0;
+	pipelineInfo.pNext = nullptr;
+
+	if (vkCreateComputePipelines(context.device.GetHandle(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline.m_Pipeline) != VK_SUCCESS)
+		throw std::runtime_error("Failed to create Compute Pipeline!");
 
 	if (m_pName)
 	{

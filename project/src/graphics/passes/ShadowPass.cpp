@@ -22,7 +22,7 @@ void pom::ShadowPass::Initialize(const Context& context, const ShadowPassCreateI
 
 	// -- Pipeline Layout --
 	{
-		GraphicsPipelineLayoutBuilder builder{};
+		PipelineLayoutBuilder builder{};
 		builder
 			.NewPushConstantRange()
 				.SetPCOffset(0)

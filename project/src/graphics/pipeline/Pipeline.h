@@ -19,20 +19,20 @@ namespace pom
 namespace pom
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  GraphicsPipelineLayout	
+	//? ~~	  PipelineLayout	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	class GraphicsPipelineLayout final
+	class PipelineLayout final
 	{
 	public:
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit GraphicsPipelineLayout() = default;
-		~GraphicsPipelineLayout() = default;
-		GraphicsPipelineLayout(const GraphicsPipelineLayout& other) = delete;
-		GraphicsPipelineLayout(GraphicsPipelineLayout&& other) noexcept = delete;
-		GraphicsPipelineLayout& operator=(const GraphicsPipelineLayout& other) = delete;
-		GraphicsPipelineLayout& operator=(GraphicsPipelineLayout&& other) noexcept = delete;
+		explicit PipelineLayout() = default;
+		~PipelineLayout() = default;
+		PipelineLayout(const PipelineLayout& other) = delete;
+		PipelineLayout(PipelineLayout&& other) noexcept = delete;
+		PipelineLayout& operator=(const PipelineLayout& other) = delete;
+		PipelineLayout& operator=(PipelineLayout&& other) noexcept = delete;
 		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
@@ -42,38 +42,37 @@ namespace pom
 
 	private:
 		VkPipelineLayout m_Layout;
-		friend class GraphicsPipelineLayoutBuilder;
+		friend class PipelineLayoutBuilder;
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  GraphicsPipelineLayoutBuilder	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	class GraphicsPipelineLayoutBuilder final
+	class PipelineLayoutBuilder final
 	{
 	public:
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		GraphicsPipelineLayoutBuilder();
-
+		PipelineLayoutBuilder();
 
 		//--------------------------------------------------
 		//    Builder
 		//--------------------------------------------------
 
 		//? Optional
-		GraphicsPipelineLayoutBuilder& NewPushConstantRange();
+		PipelineLayoutBuilder& NewPushConstantRange();
 		//! REQUIRED IF PC
-		GraphicsPipelineLayoutBuilder& SetPCStageFlags(VkShaderStageFlags flags);
+		PipelineLayoutBuilder& SetPCStageFlags(VkShaderStageFlags flags);
 		// If not called, default of 0 assumed
-		GraphicsPipelineLayoutBuilder& SetPCOffset(uint32_t offset);
+		PipelineLayoutBuilder& SetPCOffset(uint32_t offset);
 		//! REQUIRED IF PC
-		GraphicsPipelineLayoutBuilder& SetPCSize(uint32_t size);
+		PipelineLayoutBuilder& SetPCSize(uint32_t size);
 
 		//! REQUIRED
-		GraphicsPipelineLayoutBuilder& AddLayout(const pom::DescriptorSetLayout& descriptorSetLayout);
+		PipelineLayoutBuilder& AddLayout(const pom::DescriptorSetLayout& descriptorSetLayout);
 
-		void Build(const Context& context, GraphicsPipelineLayout& pipelineLayout);
+		void Build(const Context& context, PipelineLayout& pipelineLayout);
 	private:
 		VkPipelineLayoutCreateInfo m_PipelineLayoutInfo{};
 		std::vector<VkPushConstantRange> m_vPushConstantRanges;
@@ -83,20 +82,20 @@ namespace pom
 
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  GraphicsPipeline
+	//? ~~	  Pipeline
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	class GraphicsPipeline final
+	class Pipeline final
 	{
 	public:
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit GraphicsPipeline() = default;
-		~GraphicsPipeline() = default;
-		GraphicsPipeline(const GraphicsPipeline& other) = delete;
-		GraphicsPipeline(GraphicsPipeline&& other) noexcept = delete;
-		GraphicsPipeline& operator=(const GraphicsPipeline& other) = delete;
-		GraphicsPipeline& operator=(GraphicsPipeline&& other) noexcept = delete;
+		explicit Pipeline() = default;
+		~Pipeline() = default;
+		Pipeline(const Pipeline& other) = delete;
+		Pipeline(Pipeline&& other) noexcept = delete;
+		Pipeline& operator=(const Pipeline& other) = delete;
+		Pipeline& operator=(Pipeline&& other) noexcept = delete;
 		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
@@ -107,6 +106,7 @@ namespace pom
 	private:
 		VkPipeline m_Pipeline;
 		friend class GraphicsPipelineBuilder;
+		friend class ComputePipelineBuilder;
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -177,13 +177,13 @@ namespace pom
 		GraphicsPipelineBuilder& AddDynamicState(VkDynamicState dynamicState);
 
 		//! REQUIRED
-		GraphicsPipelineBuilder& SetPipelineLayout(const GraphicsPipelineLayout& layout);
+		GraphicsPipelineBuilder& SetPipelineLayout(const PipelineLayout& layout);
 		// If not set, it is assumed dynamic rendering is taking place
 		GraphicsPipelineBuilder& SetRenderPass(const RenderPass& renderPass);
 		// If not set, it is assumed render pass rendering is taking place
 		GraphicsPipelineBuilder& SetupDynamicRendering(VkPipelineRenderingCreateInfo& dynamicRenderInfo);
 
-		void Build(const Context& context, GraphicsPipeline& pipeline);
+		void Build(const Context& context, Pipeline& pipeline);
 
 	private:
 		// wtf vulkan
@@ -207,6 +207,41 @@ namespace pom
 		std::vector<VkPipelineShaderStageCreateInfo> m_vShaderInfo;
 		std::vector<VkSpecializationMapEntry > m_vShaderSpecializationEntries;
 		std::vector<VkSpecializationInfo> m_vSpecializationInfo;
+	};
+
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//? ~~	  ComputePipelineBuilder	
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	class ComputePipelineBuilder final
+	{
+	public:
+		//--------------------------------------------------
+		//    Constructor & Destructor
+		//--------------------------------------------------
+		ComputePipelineBuilder();
+
+		//--------------------------------------------------
+		//    Builder
+		//--------------------------------------------------
+		// Debug Info
+		ComputePipelineBuilder& SetDebugName(const char* name);
+
+		// Shader Info
+		ComputePipelineBuilder& SetShader(const ShaderModule& shader);
+		ComputePipelineBuilder& SetShaderSpecialization(uint32_t constID, uint32_t offset, uint32_t size, const void* data);
+
+		//! REQUIRED
+		ComputePipelineBuilder& SetPipelineLayout(const PipelineLayout& layout);
+
+		void Build(const Context& context, Pipeline& pipeline) const;
+
+	private:
+		VkPipelineLayout	m_PipelineLayout;
+		const char*			m_pName;
+
+		VkPipelineShaderStageCreateInfo m_ShaderInfo;
+		VkSpecializationMapEntry m_ShaderSpecializationEntry;
+		VkSpecializationInfo m_SpecializationInfo;
 	};
 }
 
