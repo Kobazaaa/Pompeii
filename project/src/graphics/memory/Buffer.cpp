@@ -44,10 +44,42 @@ const VkBuffer& pom::Buffer::GetHandle() const { return m_Buffer; }
 const VmaAllocation& pom::Buffer::GetMemoryHandle() const { return m_Memory; }
 VkDeviceSize pom::Buffer::Size() const { return m_Size; }
 
-
 //--------------------------------------------------
 //    Commands
 //--------------------------------------------------
+void pom::Buffer::InsertBarrier(const CommandBuffer& cmd,
+								VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
+								VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage) const
+{
+	VkBufferMemoryBarrier2 barrier{};
+	barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+	barrier.pNext = nullptr;
+
+	barrier.buffer = m_Buffer;
+	barrier.size = VK_WHOLE_SIZE;
+	barrier.offset = 0;
+
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.srcAccessMask = srcAccess;
+	barrier.srcStageMask = srcStage;
+
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstAccessMask = dstAccess;
+	barrier.dstStageMask = dstStage;
+
+	VkDependencyInfo dependencyInfo{};
+	dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+	dependencyInfo.dependencyFlags = 0;
+	dependencyInfo.pNext = nullptr;
+	dependencyInfo.memoryBarrierCount = 0;
+	dependencyInfo.pMemoryBarriers = nullptr;
+	dependencyInfo.bufferMemoryBarrierCount = 1;
+	dependencyInfo.pBufferMemoryBarriers = &barrier;
+	dependencyInfo.imageMemoryBarrierCount = 0;
+	dependencyInfo.pImageMemoryBarriers = nullptr;
+
+	vkCmdPipelineBarrier2(cmd.GetHandle(), &dependencyInfo);
+}
 void pom::Buffer::CopyToBuffer(const CommandBuffer& cmd, const Buffer& dst, VkDeviceSize size, VkDeviceSize srcOffset, VkDeviceSize dstOffset) const
 {
 	VkBufferCopy copyRegion{};

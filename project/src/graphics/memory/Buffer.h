@@ -43,6 +43,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Commands
 		//--------------------------------------------------
+		void InsertBarrier(const CommandBuffer& cmd, VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage, VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage) const;
 		void CopyToBuffer(const CommandBuffer& cmd, const Buffer& dst, VkDeviceSize size, VkDeviceSize srcOffset, VkDeviceSize dstOffset) const;
 		void CopyToImage(const CommandBuffer& cmd, const Image& dst, VkExtent3D extent, uint32_t mip, uint32_t baseLayer, uint32_t layerCount) const;
 
