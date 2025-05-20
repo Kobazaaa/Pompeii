@@ -143,6 +143,16 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddImageInfo(const Image& im
 
 	return *this;
 }
+pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddImageInfo(const Image& image, VkImageLayout layout)
+{
+	VkDescriptorImageInfo imageInfo{};
+	imageInfo.imageLayout = layout;
+	imageInfo.imageView = image.GetViewHandle();
+	imageInfo.sampler = VK_NULL_HANDLE;
+	m_vImageInfos.push_back(imageInfo);
+
+	return *this;
+}
 pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteImages(const DescriptorSet& set, uint32_t binding, uint32_t count, uint32_t arraySlot)
 {
 	VkWriteDescriptorSet write{};

@@ -118,6 +118,7 @@ namespace pom
 		DescriptorSetWriter& WriteBuffers(const DescriptorSet& set, uint32_t binding, uint32_t count = 0xFFFFFFFF);
 
 		DescriptorSetWriter& AddImageInfo(const Image& image, VkImageLayout layout, const Sampler& sampler);
+		DescriptorSetWriter& AddImageInfo(const Image& image, VkImageLayout layout);
 		DescriptorSetWriter& WriteImages(const DescriptorSet& set, uint32_t binding, uint32_t count = 0xFFFFFFFF, uint32_t arraySlot = 0);
 
 		void Execute(const Context& context);
