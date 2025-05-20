@@ -178,6 +178,13 @@ void pom::Image::TransitionLayout(const CommandBuffer& cmd, VkImageLayout newLay
 	m_CurrentLayout = newLayout;
 }
 
+void pom::Image::InsertBarrier(const CommandBuffer& cmd,
+							   VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
+							   VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage)
+{
+	TransitionLayout(cmd, m_CurrentLayout, srcAccess, srcStage, dstAccess, dstStage, 0, GetMipLevels(), 0, GetLayerCount());
+}
+
 void pom::Image::GenerateMipMaps(const Context& context, const CommandBuffer& cmd, uint32_t texW, uint32_t texH, uint32_t mips, VkImageLayout finalLayout)
 {
 	// -- Support --

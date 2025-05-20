@@ -66,6 +66,9 @@ namespace pom
 							  VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
 							  VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage,
 							  uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount);
+		void InsertBarrier(const CommandBuffer& cmd,
+							  VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
+							  VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage);
 		void GenerateMipMaps(const Context& context, const CommandBuffer& cmd, uint32_t texW, uint32_t texH, uint32_t mips, VkImageLayout finalLayout);
 
 	private:
