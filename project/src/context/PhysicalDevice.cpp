@@ -303,6 +303,8 @@ pom::QueueFamilyIndices pom::PhysicalDevice::FindQueueFamilies(const VkSurfaceKH
 	{
 		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
 			m_QueueFamilyIndices.graphicsFamily = index;
+		if (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)
+			m_QueueFamilyIndices.computeFamily = index;
 
 		VkBool32 presentSupport = false;
 		vkGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalDevice, index, surface, &presentSupport);

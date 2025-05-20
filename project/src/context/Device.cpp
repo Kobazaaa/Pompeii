@@ -24,6 +24,7 @@ void pom::Device::Destroy() const				{ vkDestroyDevice(m_Device, nullptr); }
 const VkDevice& pom::Device::GetHandle()		const { return m_Device; }
 const VkQueue& pom::Device::GetGraphicQueue()	const { return m_GraphicsQueue; }
 const VkQueue& pom::Device::GetPresentQueue()	const { return m_PresentQueue; }
+const VkQueue& pom::Device::GetComputeQueue()	const { return m_ComputeQueue; }
 
 
 //--------------------------------------------------
@@ -52,8 +53,8 @@ void pom::DeviceBuilder::Build(Context& context) const
 	pom::QueueFamilyIndices indices = context.physicalDevice.GetQueueFamilies();
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
-	// The above line is done because Graphics and Present queue can be the same, doing this only passes the index once
+	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value(), indices.computeFamily.value() };
+	// The above line is done because Graphics, Present, or Compute queue can be the same, doing this only passes the index once
 
 	float queuePriority = 1.0f;
 	for (uint32_t queueFamily : uniqueQueueFamilies)
@@ -90,4 +91,5 @@ void pom::DeviceBuilder::Build(Context& context) const
 
 	vkGetDeviceQueue(context.device.GetHandle(), indices.graphicsFamily.value(), 0, &context.device.m_GraphicsQueue);
 	vkGetDeviceQueue(context.device.GetHandle(), indices.presentFamily.value(), 0, &context.device.m_PresentQueue);
+	vkGetDeviceQueue(context.device.GetHandle(), indices.computeFamily.value(), 0, &context.device.m_ComputeQueue);
 }

@@ -36,6 +36,7 @@ namespace pom
 		const VkDevice& GetHandle()		  const;
 		const VkQueue&  GetGraphicQueue() const;
 		const VkQueue&  GetPresentQueue() const;
+		const VkQueue&  GetComputeQueue() const;
 
 
 		//--------------------------------------------------
@@ -47,6 +48,7 @@ namespace pom
 		VkDevice	m_Device		{ VK_NULL_HANDLE };
 		VkQueue		m_GraphicsQueue	{ VK_NULL_HANDLE };
 		VkQueue		m_PresentQueue	{ VK_NULL_HANDLE };
+		VkQueue		m_ComputeQueue	{ VK_NULL_HANDLE };
 
 		friend class DeviceBuilder;
 	};
