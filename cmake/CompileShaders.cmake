@@ -24,6 +24,7 @@ file(MAKE_DIRECTORY ${SHADER_BINARY_DIR})
 file(GLOB SHADER_SOURCES
   ${SHADER_SOURCE_DIR}/*.vert
   ${SHADER_SOURCE_DIR}/*.frag
+  ${SHADER_SOURCE_DIR}/*.comp
 )
 
 # Compile the shaders

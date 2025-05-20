@@ -53,6 +53,8 @@ namespace pom
 		// -- Pipeline --
 		PipelineLayout		m_PipelineLayout{ };
 		Pipeline			m_Pipeline{ };
+		PipelineLayout		m_ComputePipelineLayout{ };
+		Pipeline			m_ComputePipeline{ };
 
 		// -- Image --
 		Sampler						m_Sampler{ };

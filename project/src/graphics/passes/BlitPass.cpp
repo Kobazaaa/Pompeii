@@ -31,6 +31,12 @@ void pom::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo&
 			.AddLayout(m_FragmentDSL)
 			.Build(context, m_PipelineLayout);
 		m_DeletionQueue.Push([&] {m_PipelineLayout.Destroy(context); });
+
+		builder = {};
+		builder
+			//.AddLayout(m_FragmentDSL)
+			.Build(context, m_ComputePipelineLayout);
+		m_DeletionQueue.Push([&] { m_ComputePipelineLayout.Destroy(context); });
 	}
 
 	// -- Graphics Pipeline --
@@ -69,6 +75,25 @@ void pom::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo&
 
 		fragShader.Destroy(context);
 		vertShader.Destroy(context);
+	}
+
+	// -- Compute Pipeline --
+	{
+		// Load in shaders
+		ShaderLoader shaderLoader{};
+		ShaderModule compShader;
+		shaderLoader.Load(context, "shaders/autoexposure.comp.spv", compShader);
+
+		// Create pipeline
+		ComputePipelineBuilder builder{};
+		builder
+			.SetDebugName("Compute Pipeline (Auto Exposure)")
+			.SetPipelineLayout(m_ComputePipelineLayout)
+			.SetShader(compShader)
+			.Build(context, m_ComputePipeline);
+		m_DeletionQueue.Push([&] { m_ComputePipeline.Destroy(context); });
+
+		compShader.Destroy(context);
 	}
 
 	// -- Sampler --
