@@ -78,13 +78,13 @@ void pom::SponzaScene::Initialize()
 	AddLight(Light
 		{
 		/* position */	{ 3.f, 0.5f, 0.f },
-		/* color */		{ 0.106f, 0.902f, 0.224f },
+		/* color */		{ 0.f, 1.f, 0.f },
 		/* lumen */		15.f, Light::Type::Point
 		});
 	AddLight(Light
 		{
 		/* position */	{ 7.f, 0.5f, 0.f },
-		/* color */		{ 1.f, 0.651f, 0.f},
+		/* color */		{ 1.f, 1.f, 0.f},
 		/* lumen */		100.f, Light::Type::Point
 		});
 }

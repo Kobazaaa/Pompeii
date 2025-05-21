@@ -41,7 +41,7 @@ void pom::Renderer::Update()
 		m_pScene->AddLight(Light
 			{
 				/* position */	{ 7.f, 0.5f, 0.f },
-				/* color */		{ 1.f, 0.651f, 0.f},
+				/* color */		{ 1.f, 1.f, 0.f},
 				/* lumen */		100.f, Light::Type::Point
 			});
 		m_Context.device.WaitIdle();

@@ -104,6 +104,7 @@ void main()
 		Lo += (diff + spec) * irradiance * oa;
 	}
 
-	vec3 color = Lo;
+	vec3 ambient = vec3(0.0005) * albedo;
+	vec3 color = ambient + Lo;
 	outColor = vec4(color, alpha);
 }

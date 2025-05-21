@@ -30,15 +30,16 @@ void main()
 	const float EV100 = CalculateEV100(camSettings.aperture, camSettings.shutterspeed, camSettings.iso);
 	const float exposure = EV100ToExposure(EV100);
 
-	const float autoEV100 = AverageLuminanceToEV100(texelFetch(AverageLum, ivec2(0,0), 0).x);
+	float averageLum = texelFetch(AverageLum, ivec2(0,0), 0).x;
+	const float autoEV100 = AverageLuminanceToEV100(averageLum);
 	const float autoExposure = EV100ToExposure(autoEV100);
-	hdrColor = hdrColor *autoExposure;
+	hdrColor = hdrColor * autoExposure;
 
 	// -- Tone Mapping --
 	const vec3 aces = ACESFilmToneMapping(hdrColor);
 	const vec3 reinhard = ReinhardToneMapping(hdrColor);
 	const vec3 uncharted2 = Uncharted2ToneMapping(hdrColor);
-	vec3 ldrColor = uncharted2;
+	vec3 ldrColor = reinhard;
 
 	// -- Output --
 	outColor = vec4(ldrColor, 1.0);
