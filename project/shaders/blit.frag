@@ -24,7 +24,7 @@ layout(location = 0) out vec4 outColor;
 void main()
 {
 	// -- Base Color --
-	vec3 ldrColor = texture(Render, fragTexCoord).rgb;
+	vec3 hdrColor = texture(Render, fragTexCoord).rgb;
 	
 	// -- Camera Exposure --
 	const float EV100 = CalculateEV100(camSettings.aperture, camSettings.shutterspeed, camSettings.iso);
@@ -32,13 +32,13 @@ void main()
 
 	const float autoEV100 = AverageLuminanceToEV100(texelFetch(AverageLum, ivec2(0,0), 0).x);
 	const float autoExposure = EV100ToExposure(autoEV100);
-	ldrColor *= autoExposure;
+	hdrColor = hdrColor *autoExposure;
 
 	// -- Tone Mapping --
-	const vec3 aces = ACESFilmToneMapping(ldrColor);
-	const vec3 reinhard = ReinhardToneMapping(ldrColor);
-	const vec3 uncharted2 = Uncharted2ToneMapping(ldrColor);
-	ldrColor = uncharted2;
+	const vec3 aces = ACESFilmToneMapping(hdrColor);
+	const vec3 reinhard = ReinhardToneMapping(hdrColor);
+	const vec3 uncharted2 = Uncharted2ToneMapping(hdrColor);
+	vec3 ldrColor = uncharted2;
 
 	// -- Output --
 	outColor = vec4(ldrColor, 1.0);

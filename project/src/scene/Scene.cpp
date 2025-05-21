@@ -65,9 +65,9 @@ void pom::SponzaScene::Initialize()
 
 	//AddLight(Light
 	//	{
-	//	/* direction */	{ 0.577f, -0.577f, 0.577f },
+	//	/* direction */	{ 0.f, -1.f, 0.f },
 	//	/* color */		{ 1.f, 1.f, 1.f },
-	//	/* lux */		1.f, Light::Type::Directional
+	//	/* lux */		1.f, Light::Type::Directional //todo sunlight at noon is about 100.000 lux
 	//	});
 	//AddLight(Light
 	//	{

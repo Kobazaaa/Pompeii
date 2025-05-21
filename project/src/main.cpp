@@ -48,7 +48,7 @@ int main()
 			.shutterSpeed = 1.f / 60.f,
 			.iso = 1600.f,
 		};
-		Camera* pCamera = new Camera(settings, indoor, pWindow);
+		Camera* pCamera = new Camera(settings, sunny16, pWindow);
 
 		// -- Create Renderer --
 		Renderer* pRenderer = new Renderer(pCamera, pWindow);
