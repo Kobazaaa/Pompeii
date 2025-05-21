@@ -41,6 +41,7 @@ namespace pom
 		std::vector<GPULight> GetLightsGPU();
 		uint32_t GetLightsCount() const;
 		Light& AddLight(const Light& light);
+		void PopLight();
 
 	private:
 		std::vector<Model> m_vModels;

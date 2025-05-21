@@ -47,22 +47,33 @@ namespace pom
 		void Initialize(const Context& context, const BlitPassCreateInfo& createInfo);
 		void Destroy();
 		void UpdateDescriptors(const Context& context, const std::vector<Image>& renderImages) const;
-		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const Camera* pCamera) const;
+		void RecordGraphic(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const Camera* pCamera);
+		void RecordCompute(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage);
 
 	private:
 		// -- Pipeline --
-		PipelineLayout		m_PipelineLayout{ };
-		Pipeline			m_Pipeline{ };
-		PipelineLayout		m_ComputePipelineLayout{ };
-		Pipeline			m_ComputePipeline{ };
+		PipelineLayout				m_PipelineLayout{ };
+		Pipeline					m_Pipeline{ };
+		PipelineLayout				m_ComputePipelineLayout{ };
+		Pipeline					m_CompPipeHistogram{ };
+		Pipeline					m_CompPipeAverageLuminance{ };
 
 		// -- Image --
 		Sampler						m_Sampler{ };
 
 		// -- Descriptors --
+		// Fragment
 		DescriptorSetLayout			m_FragmentDSL{ };
 		std::vector<DescriptorSet>	m_vFragmentDS{ };
 		std::vector<Buffer>			m_vCameraSettings{ };
+		// Compute share
+		DescriptorSetLayout			m_ComputeDSL{ };
+		// Compute 1
+		std::vector<DescriptorSet>	m_vComputeLumDS{ };
+		std::vector<Buffer>			m_vHistogram{ };
+		// Compute 2
+		std::vector<DescriptorSet>	m_vComputeAveDS{ };
+		std::vector<Image>			m_vAverageLuminance{ };
 
 		// -- DQ --
 		DeletionQueue				m_DeletionQueue{ };

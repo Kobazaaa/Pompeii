@@ -34,6 +34,31 @@ pom::Renderer::~Renderer()
 //--------------------------------------------------
 void pom::Renderer::Update()
 {
+	static bool pressX = false;
+	if (!pressX && glfwGetKey(m_pWindow->GetHandle(), GLFW_KEY_X) == GLFW_PRESS)
+	{
+		pressX = true;
+		m_pScene->AddLight(Light
+			{
+				/* position */	{ 7.f, 0.5f, 0.f },
+				/* color */		{ 1.f, 0.651f, 0.f},
+				/* lumen */		100.f, Light::Type::Point
+			});
+		m_Context.device.WaitIdle();
+		m_LightingPass.UpdateLightDescriptors(m_Context, m_CommandPool, m_pScene);
+	}
+	else if (glfwGetKey(m_pWindow->GetHandle(), GLFW_KEY_X) != GLFW_PRESS)
+		pressX = false;
+	static bool pressC = false;
+	if (!pressC && glfwGetKey(m_pWindow->GetHandle(), GLFW_KEY_C) == GLFW_PRESS)
+	{
+		pressC = true;
+		m_pScene->PopLight();
+		m_Context.device.WaitIdle();
+		m_LightingPass.UpdateLightDescriptors(m_Context, m_CommandPool, m_pScene);
+	}
+	else if (glfwGetKey(m_pWindow->GetHandle(), GLFW_KEY_C) != GLFW_PRESS)
+		pressC = false;
 }
 void pom::Renderer::Render()
 {
@@ -434,7 +459,7 @@ void pom::Renderer::CreateRenderTargetResources(const Context& context, VkExtent
 			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
 			//.SetSampleCount(context.physicalDevice.GetMaxSampleCount())
 			.SetFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
-			.SetUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+			.SetUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT)
 			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 			.Build(context, image);
 		image.CreateView(context, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
@@ -501,16 +526,26 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 			// The Lighting Pass calculates all the heavy lighting calculations using the data from the Geometry Pass
 			m_LightingPass.Record(m_Context, commandBuffer, imageIndex, renderImage, m_pScene, m_pCamera);
 
-			// Transition the current Render Image to be sampled from
+			// Transition the current Render Image to be used in the compute shader
 			renderImage.TransitionLayout(commandBuffer,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_IMAGE_LAYOUT_GENERAL,
 				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-				VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+				VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
 				0, 1, 0, 1);
 		}
 
 		// -- Blit Pass --
 		{
+			// The blit pass will blit the rendered image to the swapchain and potentially do post-processing.
+			m_BlitPass.RecordCompute(m_Context, commandBuffer, imageIndex, renderImage);
+
+
+			// Insert a barrier for the Render Image to be used in fragment
+			renderImage.TransitionLayout(commandBuffer,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+				VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+				0, 1, 0, 1);
 			// Transition the current Present Image to be written to
 			presentImage.TransitionLayout(commandBuffer,
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -518,8 +553,7 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
 				0, 1, 0, 1);
 
-			// The blit pass will blit the rendered image to the swapchain and potentially do post-processing.
-			m_BlitPass.Record(m_Context, commandBuffer, imageIndex, presentImage, m_pCamera);
+			m_BlitPass.RecordGraphic(m_Context, commandBuffer, imageIndex, presentImage, m_pCamera);
 
 			// At last, transition the current Present Image to be presented
 			presentImage.TransitionLayout(commandBuffer,

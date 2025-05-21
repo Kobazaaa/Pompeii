@@ -90,3 +90,27 @@ float EV100ToExposure(in float EV100)
 	const float maxLuminance = 1.2 * pow(2.0, EV100);
 	return 1.0 / max(maxLuminance, 0.0001);
 }
+float AverageLuminanceToEV100(in float averageLuminance)
+{
+	const float K = 12.5;
+	return log2((averageLuminance * 100.0) / K);
+}
+
+// -- Automatic Exposure --
+#define RGB_TO_LUM vec3(0.2125, 0.7154, 0.0721)
+uint ColorToBin(in vec3 hdrColor, in float minLogLum, in float inverseLogLumRange)
+{
+	// RGB to Lum
+	float lum = dot(hdrColor, RGB_TO_LUM);
+
+	// Avoid log of 0
+	float epsilon = 0.001;
+	if(lum < epsilon)
+		return 0;
+
+	// Calculate log2 luminance [0; 1], where 0 means minimum and 1 mean maximum luminance
+	float logLum = clamp((log2(lum) - minLogLum) * inverseLogLumRange, 0.0, 1.0);
+
+	// Map [0; 1] to [1, 255]. Bin 0 handled by epsilon check
+	return uint(logLum * 254.0 + 1.0);
+}

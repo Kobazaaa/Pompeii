@@ -12,6 +12,7 @@ layout(set = 0, binding = 1) uniform CameraSettings
 	float shutterspeed;
 	float iso;
 } camSettings;
+layout(set = 0, binding = 2) uniform sampler2D AverageLum;
 
 // -- Input --
 layout(location = 0) in vec2 fragTexCoord;
@@ -28,7 +29,10 @@ void main()
 	// -- Camera Exposure --
 	const float EV100 = CalculateEV100(camSettings.aperture, camSettings.shutterspeed, camSettings.iso);
 	const float exposure = EV100ToExposure(EV100);
-	ldrColor *= exposure;
+
+	const float autoEV100 = AverageLuminanceToEV100(texelFetch(AverageLum, ivec2(0,0), 0).x);
+	const float autoExposure = EV100ToExposure(autoEV100);
+	ldrColor *= autoExposure;
 
 	// -- Tone Mapping --
 	const vec3 aces = ACESFilmToneMapping(ldrColor);

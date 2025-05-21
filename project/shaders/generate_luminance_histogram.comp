@@ -1,0 +1,51 @@
+#version 450 core
+#extension GL_GOOGLE_include_directive : require
+// https://bruop.github.io/exposure/
+
+// -- Includes --
+#include "helpers.glsl"
+
+// -- Data --
+#define GROUP_SIZE 256
+#define THREADS_X 16
+#define THREADS_Y 16
+shared uint histogramShared[GROUP_SIZE];
+
+// -- Input --
+layout(push_constant) uniform Param  // some auto-exposure settings, only first 2 used
+{
+    float minLogLum;
+    float logLumRange;
+    float deltaS;
+    float numPixels;
+};
+layout(set = 0, binding = 0, rgba32f) uniform readonly image2D hdrBackBuffer;
+layout(set = 0, binding = 1, rgba32f) uniform readonly image2D averageLuminanceLastFrame; //unused
+layout(set = 0, binding = 2, std430) buffer Histogram
+{
+    uint histogram[];
+};
+
+// -- THREADS_X * THREADS_Y * 1 threads per group --
+layout(local_size_x = THREADS_X, local_size_y = THREADS_Y, local_size_z = 1) in;
+
+// -- Shader --
+void main()
+{
+    // Init bin for this thread to 0
+    histogramShared[gl_LocalInvocationIndex] = 0;
+    barrier(); // wait for all threads to finish
+
+    uvec2 imgDim = imageSize(hdrBackBuffer).xy;
+    // Ignore threads that map to areas beyond the HDR image
+    if(gl_GlobalInvocationID.x < imgDim.x && gl_GlobalInvocationID.y < imgDim.y)
+    {
+        vec3 hdrColor = imageLoad(hdrBackBuffer, ivec2(gl_GlobalInvocationID.xy)).xyz;
+        uint binIndex = ColorToBin(hdrColor, minLogLum, 1.0 / logLumRange);
+        atomicAdd(histogramShared[binIndex], 1);
+    }
+    barrier(); // wait for all threads to finish
+
+    // Technically no chance that two threads write to the same bin here, but different work groups might :D
+    atomicAdd(histogram[gl_LocalInvocationIndex], histogramShared[gl_LocalInvocationIndex]);
+}

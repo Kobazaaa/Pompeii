@@ -1,0 +1,69 @@
+#version 450 core
+// https://bruop.github.io/exposure/
+
+// -- Data --
+#define GROUP_SIZE 256
+#define THREADS_X 256
+#define THREADS_Y 1
+shared uint histogramShared[GROUP_SIZE];
+
+// -- Input --
+layout(push_constant) uniform Param
+{
+    float minLogLum;
+    float logLumRange;
+    float deltaS;
+    float numPixels;
+};
+layout(set = 0, binding = 0, rgba32f) uniform image2D averageLuminance;
+layout(set = 0, binding = 1, rgba32f) uniform readonly image2D averageLuminanceLastFrame;
+layout(set = 0, binding = 2, std430) buffer Histogram { uint histogram[]; };
+
+// THREADS_X * THREADS_Y * 1 threads per group
+layout(local_size_x = THREADS_X, local_size_y = THREADS_Y, local_size_z = 1) in;
+
+// -- Shader --
+void main()
+{
+    // Get the count from the histogram buffer
+    uint countForThisBin = histogram[gl_LocalInvocationIndex];
+    histogramShared[gl_LocalInvocationIndex] = countForThisBin * gl_LocalInvocationIndex;
+
+    barrier();
+
+    // Reset the count stored in the buffer in anticipation of the next pass
+    histogram[gl_LocalInvocationIndex] = 0;
+
+    // This loop will perform a weighted count of the luminance range
+    for (uint cutoff = (GROUP_SIZE >> 1); cutoff > 0; cutoff >>= 1)
+    {
+        if (uint(gl_LocalInvocationIndex) < cutoff)
+        {
+            histogramShared[gl_LocalInvocationIndex] += histogramShared[gl_LocalInvocationIndex + cutoff];
+        }
+        barrier();
+    }
+
+    // We only need to calculate this once, so only a single thread is needed.
+    if(gl_LocalInvocationIndex == 0)
+    {
+        // Calculate the weighted sum using some cool math
+        float weightedLogAverage = (histogramShared[0] / max(numPixels - countForThisBin, 1.0)) - 1.0;
+        float weightedAvgLum = exp2(((weightedLogAverage / 254.0) * logLumRange) + minLogLum);
+
+        // Get the average luminance from the last frame to interpolate it over time
+        float lumLastFrame = imageLoad(averageLuminanceLastFrame, ivec2(0, 0)).x;
+        float adaptedLum = weightedAvgLum;
+
+        // Prevent it happening on frame 1 (when not valid)
+        if(lumLastFrame > 0.0001)
+        {
+            const float tau = 1.1;
+            const float timeCoeff = 1.0 - exp(-deltaS * tau);
+            adaptedLum = lumLastFrame + (weightedAvgLum - lumLastFrame) * timeCoeff;
+        }
+
+        // Store the new Average Luminance in the 1x1 texture
+        imageStore(averageLuminance, ivec2(0, 0), vec4(adaptedLum, 0.0, 0.0, 0.0));
+    }
+}
