@@ -301,10 +301,21 @@ pom::QueueFamilyIndices pom::PhysicalDevice::FindQueueFamilies(const VkSurfaceKH
 	int index = 0;
 	for (const auto& queueFamily : queueFamilies)
 	{
-		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+		// This commented code looks for separate Graphics and Compute queues (which might still be the same). But in a scenario where they aren't
+		// This would cause the rest of the code to stop working, as I am submitting compute commands into a graphics queue, since as of now, they are both recorded in the same
+		// command buffer for ease of use. I think ideally this wouldn't be the case, and is potentially an improvement waiting to happen :)
+		// For now, the fix I am imposing is just enforcing the graphics and compute queue to be the same, as can be seen further below.
+		//if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+		//	m_QueueFamilyIndices.graphicsFamily = index;
+		//if (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)
+		//	m_QueueFamilyIndices.computeFamily = index;
+
+		// Look for shared Graphics and Compute Queue
+		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT && queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)
+		{
 			m_QueueFamilyIndices.graphicsFamily = index;
-		if (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)
 			m_QueueFamilyIndices.computeFamily = index;
+		}
 
 		VkBool32 presentSupport = false;
 		vkGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalDevice, index, surface, &presentSupport);
