@@ -277,12 +277,14 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene)
 				material->GetTexture(type, mIdx, &texturePath);
 				std::string fullPath = "textures/" + std::string(texturePath.C_Str());
 
-				uint32_t idx = Texture::GetStaticIndex();
-				auto [it, succeeded] = pathToIdx.insert({ fullPath, idx });
+				auto [it, succeeded] = pathToIdx.insert({ fullPath, globalTextureCounter });
 				targetIdx = it->second;
 
 				if (succeeded)
+				{
+					++globalTextureCounter;
 					textures.emplace_back(fullPath, format);
+				}
 			}
 		};
 
@@ -360,7 +362,7 @@ void pom::Model::CreateImages(const Context& context)
 
 		ImageBuilder builder{};
 		builder
-			.SetDebugName(std::ranges::find_if(pathToIdx, [&](auto& keyVal) { return keyVal.second == tex.GetLocalIndex(); })->first.c_str())
+			.SetDebugName(tex.GetPath().c_str())
 			.SetWidth(texW)
 			.SetHeight(texH)
 			.SetFormat(tex.GetFormat())

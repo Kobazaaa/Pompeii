@@ -12,15 +12,10 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::Texture::Texture(const std::string& path, VkFormat format, bool isHDR, bool incIdx)
+pom::Texture::Texture(const std::string& path, VkFormat format, bool isHDR)
 {
-	m_Index = 0xFFFFFFFF;
-	if (incIdx)
-	{
-		m_Index = index;
-		++index;
-	}
 	m_Format = format;
+	m_Path = path;
 
 	m_pPixels = isHDR ? static_cast<void*>(stbi_loadf(path.c_str(), &m_Width, &m_Height, &m_Channels, STBI_rgb_alpha)) :
 						static_cast<void*>(stbi_load(path.c_str(), &m_Width, &m_Height, &m_Channels, STBI_rgb_alpha));
@@ -43,7 +38,6 @@ pom::Texture::Texture(Texture&& other) noexcept
 	m_Channels = other.m_Channels;
 	m_Format = other.m_Format;
 	other.m_Format = VK_FORMAT_UNDEFINED;
-	m_Index = other.m_Index;
 }
 pom::Texture& pom::Texture::operator=(Texture&& other) noexcept
 {
@@ -57,7 +51,6 @@ pom::Texture& pom::Texture::operator=(Texture&& other) noexcept
 	m_Channels = other.m_Channels;
 	m_Format = other.m_Format;
 	other.m_Format = VK_FORMAT_UNDEFINED;
-	m_Index = other.m_Index;
 	return *this;
 }
 
@@ -79,7 +72,6 @@ uint32_t pom::Texture::GetMemorySize()	const
 	const int pixelSize = (m_DataType == TextureDataType::FLOAT32) ? sizeof(float) : sizeof(stbi_uc);
 	return m_Width * m_Height * m_Channels * pixelSize;
 }
-glm::ivec2 pom::Texture::GetExtent()	const { return {m_Width, m_Height}; }
-VkFormat pom::Texture::GetFormat()		const { return m_Format; }
-uint32_t pom::Texture::GetLocalIndex()  const { return m_Index; }
-uint32_t pom::Texture::GetStaticIndex()		  { return index; }
+glm::ivec2 pom::Texture::GetExtent()		const { return {m_Width, m_Height}; }
+VkFormat pom::Texture::GetFormat()			const { return m_Format; }
+const std::string& pom::Texture::GetPath()	const { return m_Path; }

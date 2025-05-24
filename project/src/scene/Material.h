@@ -25,7 +25,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit Texture(const std::string& path, VkFormat format, bool isHDR = false, bool incIdx = true);
+		explicit Texture(const std::string& path, VkFormat format, bool isHDR = false);
 		~Texture();
 		Texture(const Texture& other) = delete;
 		Texture(Texture&& other) noexcept;
@@ -40,8 +40,7 @@ namespace pom
 		uint32_t GetMemorySize() const;
 		glm::ivec2 GetExtent() const;
 		VkFormat GetFormat() const;
-		uint32_t GetLocalIndex() const;
-		static uint32_t GetStaticIndex();
+		const std::string& GetPath() const;
 
 	private:
 		enum class TextureDataType { UINT8, FLOAT32 };
@@ -52,9 +51,8 @@ namespace pom
 		int m_Height;
 		int m_Channels;
 		VkFormat m_Format;
-		uint32_t m_Index{};
 
-		inline static uint32_t index{0};
+		std::string m_Path{};
 	};
 
 

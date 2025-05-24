@@ -21,6 +21,9 @@ pom::Renderer::Renderer(Camera* pCamera, Window* pWindow)
 	m_pScene = new SponzaScene();
 	m_Context.deletionQueue.Push([&] {delete m_pScene; });
 	InitializeVulkan();
+
+	Texture test{ "textures/autumn_field_puresky_4k.hdr", VK_FORMAT_R32G32B32A32_SFLOAT, true };
+	test.FreePixels();
 }
 pom::Renderer::~Renderer()
 {
@@ -59,6 +62,16 @@ void pom::Renderer::Update()
 	}
 	else if (glfwGetKey(m_pWindow->GetHandle(), GLFW_KEY_C) != GLFW_PRESS)
 		pressC = false;
+
+	static bool pressM = false;
+	if (!pressM && glfwGetKey(m_pWindow->GetHandle(), GLFW_KEY_M) == GLFW_PRESS)
+	{
+		pressM = true;
+		auto& m = m_pScene->AddModel("models/FlightHelmet.gltf");
+		m.AllocateResources(m_Context, false);
+		m_Context.device.WaitIdle();
+		m_GeometryPass.UpdateTextureDescriptor(m_Context, m_pScene);
+	}
 }
 void pom::Renderer::Render()
 {

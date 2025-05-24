@@ -123,6 +123,8 @@ namespace pom
 		void CreateVertexBuffer(const Context& context);
 		void CreateIndexBuffer(const Context& context);
 		void CreateImages(const Context& context);
+
+		inline static uint32_t globalTextureCounter{ 0 };
 	};
 }
 
