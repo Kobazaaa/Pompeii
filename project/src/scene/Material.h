@@ -25,7 +25,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit Texture(const std::string& path, VkFormat format, bool incIdx = true);
+		explicit Texture(const std::string& path, VkFormat format, bool isHDR = false, bool incIdx = true);
 		~Texture();
 		Texture(const Texture& other) = delete;
 		Texture(Texture&& other) noexcept;
@@ -36,7 +36,7 @@ namespace pom
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		stbi_uc* GetPixels() const;
+		void* GetPixels() const;
 		uint32_t GetMemorySize() const;
 		glm::ivec2 GetExtent() const;
 		VkFormat GetFormat() const;
@@ -44,7 +44,10 @@ namespace pom
 		static uint32_t GetStaticIndex();
 
 	private:
-		stbi_uc* m_pPixels;
+		enum class TextureDataType { UINT8, FLOAT32 };
+		TextureDataType m_DataType;
+
+		void* m_pPixels;
 		int m_Width;
 		int m_Height;
 		int m_Channels;

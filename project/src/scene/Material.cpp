@@ -12,7 +12,7 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::Texture::Texture(const std::string& path, VkFormat format, bool incIdx)
+pom::Texture::Texture(const std::string& path, VkFormat format, bool isHDR, bool incIdx)
 {
 	m_Index = 0xFFFFFFFF;
 	if (incIdx)
@@ -21,7 +21,11 @@ pom::Texture::Texture(const std::string& path, VkFormat format, bool incIdx)
 		++index;
 	}
 	m_Format = format;
-	m_pPixels = stbi_load(path.c_str(), &m_Width, &m_Height, &m_Channels, STBI_rgb_alpha);
+
+	m_pPixels = isHDR ? static_cast<void*>(stbi_loadf(path.c_str(), &m_Width, &m_Height, &m_Channels, STBI_rgb_alpha)) :
+						static_cast<void*>(stbi_load(path.c_str(), &m_Width, &m_Height, &m_Channels, STBI_rgb_alpha));
+	m_DataType = isHDR ? TextureDataType::FLOAT32 : TextureDataType::UINT8;
+	m_Channels = 4;
 	if (!m_pPixels)
 		throw std::runtime_error("Failed to load Texture: " + path);
 }
@@ -33,6 +37,7 @@ pom::Texture::Texture(Texture&& other) noexcept
 {
 	m_pPixels = other.m_pPixels;
 	other.m_pPixels = nullptr;
+	m_DataType = other.m_DataType;
 	m_Width = other.m_Width;
 	m_Height = other.m_Height;
 	m_Channels = other.m_Channels;
@@ -46,6 +51,7 @@ pom::Texture& pom::Texture::operator=(Texture&& other) noexcept
 		return *this;
 	m_pPixels = other.m_pPixels;
 	other.m_pPixels = nullptr;
+	m_DataType = other.m_DataType;
 	m_Width = other.m_Width;
 	m_Height = other.m_Height;
 	m_Channels = other.m_Channels;
@@ -67,11 +73,12 @@ void pom::Texture::FreePixels()
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-stbi_uc* pom::Texture::GetPixels()		const
+void* pom::Texture::GetPixels()			const {	return m_pPixels; }
+uint32_t pom::Texture::GetMemorySize()	const
 {
-	return m_pPixels;
+	const int pixelSize = (m_DataType == TextureDataType::FLOAT32) ? sizeof(float) : sizeof(stbi_uc);
+	return m_Width * m_Height * m_Channels * pixelSize;
 }
-uint32_t pom::Texture::GetMemorySize()	const { return m_Width * m_Height * 4; }
 glm::ivec2 pom::Texture::GetExtent()	const { return {m_Width, m_Height}; }
 VkFormat pom::Texture::GetFormat()		const { return m_Format; }
 uint32_t pom::Texture::GetLocalIndex()  const { return m_Index; }
