@@ -305,17 +305,6 @@ void pom::Renderer::InitializeVulkan()
 		m_Context.deletionQueue.Push([&] {m_ShadowPass.Destroy(); });
 	}
 
-	// -- Depth PrePass --
-	{
-		DepthPrePassCreateInfo createInfo{};
-		createInfo.pDescriptorPool = &m_DescriptorPool;
-		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
-		createInfo.depthFormat = m_vDepthImages[0].GetFormat();
-
-		m_DepthPrePass.Initialize(m_Context, createInfo);
-		m_Context.deletionQueue.Push([&] {m_DepthPrePass.Destroy(); });
-	}
-
 	// -- Forward Pass --
 	{
 		ForwardPassCreateInfo createInfo{};
@@ -342,6 +331,18 @@ void pom::Renderer::InitializeVulkan()
 
 		m_GeometryPass.Initialize(m_Context, createInfo);
 		m_Context.deletionQueue.Push([&] {m_GeometryPass.Destroy(); });
+	}
+
+	// -- Depth PrePass --
+	{
+		DepthPrePassCreateInfo createInfo{};
+		createInfo.pDescriptorPool = &m_DescriptorPool;
+		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
+		createInfo.depthFormat = m_vDepthImages[0].GetFormat();
+		createInfo.pGeometryPass = &m_GeometryPass;
+
+		m_DepthPrePass.Initialize(m_Context, createInfo);
+		m_Context.deletionQueue.Push([&] {m_DepthPrePass.Destroy(); });
 	}
 
 	// -- Lighting Pass --
@@ -491,7 +492,7 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 				0, 1, 0, 1);
 
 			// The Depth Pre-Pass renders the entire scene to the provided depth buffer.
-			m_DepthPrePass.Record(m_Context, commandBuffer, imageIndex, depthImage, m_pScene, m_pCamera);
+			m_DepthPrePass.Record(m_Context, commandBuffer, m_GeometryPass, imageIndex, depthImage, m_pScene, m_pCamera);
 
 			// Transition the current Depth Image to be read from
 			depthImage.TransitionLayout(commandBuffer,

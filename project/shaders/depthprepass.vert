@@ -22,8 +22,12 @@ layout(location = 3) in vec3 inBitangent;
 layout(location = 4) in vec3 inColor;
 layout(location = 5) in vec2 inTexCoord;
 
+// -- Output --
+layout(location = 0) out vec2 fragTexCoord;
+
 // -- Shader --
 void main()
 {
     gl_Position = ubo.proj * ubo.view * modelData.model * vec4(inPosition, 1.0);
+	fragTexCoord = inTexCoord;
 }

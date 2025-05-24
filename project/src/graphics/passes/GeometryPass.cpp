@@ -333,5 +333,8 @@ void pom::GeometryPass::Record(const Context& context, CommandBuffer& commandBuf
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const std::vector<pom::GBuffer>& pom::GeometryPass::GetGBuffers() const { return m_vGBuffers; }
-const pom::GBuffer& pom::GeometryPass::GetGBuffer(uint32_t index) const { return m_vGBuffers.at(index); }
+const std::vector<pom::GBuffer>& pom::GeometryPass::GetGBuffers() const						{ return m_vGBuffers; }
+const pom::GBuffer& pom::GeometryPass::GetGBuffer(uint32_t index) const						{ return m_vGBuffers.at(index); }
+uint32_t pom::GeometryPass::GetBoundTextureCount() const									{ return m_TextureCount; }
+const pom::DescriptorSet& pom::GeometryPass::GetTexturesDescriptorSet() const				{ return m_TextureDS; }
+const pom::DescriptorSetLayout& pom::GeometryPass::GetTexturesDescriptorSetLayout() const	{ return m_TextureDSL; }

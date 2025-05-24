@@ -13,6 +13,7 @@
 // -- Forward Declarations --
 namespace pom
 {
+	class GeometryPass;
 	class DescriptorPool;
 	class Scene;
 	class Camera;
@@ -29,6 +30,7 @@ namespace pom
 		uint32_t maxFramesInFlight{};
 		VkFormat depthFormat{};
 		DescriptorPool* pDescriptorPool{};
+		GeometryPass* pGeometryPass{};
 	};
 
 
@@ -50,7 +52,7 @@ namespace pom
 
 		void Initialize(const Context& context, const DepthPrePassCreateInfo& createInfo);
 		void Destroy();
-		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, Scene* pScene, Camera* pCamera) const;
+		void Record(const Context& context, CommandBuffer& commandBuffer, const GeometryPass& gPass, uint32_t imageIndex, const Image& depthImage, const Scene* pScene, Camera* pCamera) const;
 
 		//--------------------------------------------------
 		//    Shader Infos

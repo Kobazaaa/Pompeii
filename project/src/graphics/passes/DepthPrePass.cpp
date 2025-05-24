@@ -5,6 +5,7 @@
 #include "DescriptorPool.h"
 #include "Context.h"
 #include "Camera.h"
+#include "GeometryPass.h"
 #include "Scene.h"
 
 void pom::DepthPrePass::Initialize(const Context& context, const DepthPrePassCreateInfo& createInfo)
@@ -31,7 +32,12 @@ void pom::DepthPrePass::Initialize(const Context& context, const DepthPrePassCre
 				.SetPCOffset(0)
 				.SetPCSize(sizeof(PCModelDataVS))
 				.SetPCStageFlags(VK_SHADER_STAGE_VERTEX_BIT)
+			.NewPushConstantRange()
+				.SetPCOffset(sizeof(PCModelDataVS))
+				.SetPCSize(sizeof(glm::uvec3))
+				.SetPCStageFlags(VK_SHADER_STAGE_FRAGMENT_BIT)
 			.AddLayout(m_UniformDSL)
+			.AddLayout(createInfo.pGeometryPass->GetTexturesDescriptorSetLayout())
 			.Build(context, m_PipelineLayout);
 		m_DeletionQueue.Push([&] {m_PipelineLayout.Destroy(context); });
 	}
@@ -41,7 +47,9 @@ void pom::DepthPrePass::Initialize(const Context& context, const DepthPrePassCre
 		// Load in shaders
 		ShaderLoader shaderLoader{};
 		ShaderModule vertShader;
+		ShaderModule fragShader;
 		shaderLoader.Load(context, "shaders/depthprepass.vert.spv", vertShader);
+		shaderLoader.Load(context, "shaders/depthprepass.frag.spv", fragShader);
 
 		// Setup dynamic rendering info
 		VkPipelineRenderingCreateInfo renderingCreateInfo{};
@@ -57,6 +65,7 @@ void pom::DepthPrePass::Initialize(const Context& context, const DepthPrePassCre
 			.AddDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
 			.AddDynamicState(VK_DYNAMIC_STATE_SCISSOR)
 			.AddShader(vertShader, VK_SHADER_STAGE_VERTEX_BIT)
+			.AddShader(fragShader, VK_SHADER_STAGE_FRAGMENT_BIT)
 			.SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 			.SetCullMode(VK_CULL_MODE_BACK_BIT)
 			.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
@@ -68,6 +77,7 @@ void pom::DepthPrePass::Initialize(const Context& context, const DepthPrePassCre
 			.Build(context, m_Pipeline);
 		m_DeletionQueue.Push([&] { m_Pipeline.Destroy(context); });
 
+		fragShader.Destroy(context);
 		vertShader.Destroy(context);
 	}
 
@@ -108,7 +118,7 @@ void pom::DepthPrePass::Destroy()
 	m_DeletionQueue.Flush();
 }
 
-void pom::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, Scene* pScene, Camera* pCamera) const
+void pom::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuffer, const GeometryPass& gPass, uint32_t imageIndex, const Image& depthImage, const Scene* pScene, Camera* pCamera) const
 {
 	// -- Update Vertex UBO --
 	UniformBufferVS ubo;
@@ -159,6 +169,9 @@ void pom::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuf
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Uniform Buffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
 		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vUniformDS[imageIndex].GetHandle(), 0, nullptr);
 
+		Debugger::InsertDebugLabel(commandBuffer, "Bind Textures", glm::vec4(0.f, 1.f, 1.f, 1.f));
+		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 1, 1, &gPass.GetTexturesDescriptorSet().GetHandle(), 0, nullptr);
+
 		// -- Bind Pipeline --
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Depth PrePass)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
@@ -180,6 +193,15 @@ void pom::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuf
 				};
 				vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
 					sizeof(PCModelDataVS), &pcvs);
+
+				glm::uvec3 pcfs
+				{
+					/*.diffuseIdx*/ mesh.material.albedoIdx,
+					/*.opacityIdx*/ mesh.material.opacityIdx,
+					/*.textureCount*/ gPass.GetBoundTextureCount(),
+				};
+				vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(PCModelDataVS),
+					sizeof(pcfs), &pcfs);
 
 				// -- Drawing Time! --
 				vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);

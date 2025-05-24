@@ -63,6 +63,9 @@ namespace pom
 		//--------------------------------------------------
 		const std::vector<GBuffer>& GetGBuffers() const;
 		const GBuffer& GetGBuffer(uint32_t index) const;
+		uint32_t GetBoundTextureCount() const;
+		const DescriptorSet& GetTexturesDescriptorSet() const;
+		const DescriptorSetLayout& GetTexturesDescriptorSetLayout() const;
 
 		//--------------------------------------------------
 		//    Shader Infos

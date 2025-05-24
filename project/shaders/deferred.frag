@@ -23,6 +23,7 @@ layout(location = 2) in vec3 fragTangent;
 layout(location = 3) in vec3 fragBitangent;
 layout(location = 4) in vec2 fragTexCoord;
 layout(location = 5) in vec3 fragWorldPos;
+layout(early_fragment_tests) in;
 
 // -- Output --
 layout(location = 0) out vec4 outAlbedo_Opacity;
@@ -38,10 +39,13 @@ void main()
 	
 	// -- Diffuse --
 	if(pushConstants.diffuseIdx < pushConstants.textureCount)
-		outAlbedo_Opacity.rgb = fragColor * texture(textures[nonuniformEXT(pushConstants.diffuseIdx)], fragTexCoord).rgb;
+		outAlbedo_Opacity = vec4(fragColor, 1.0) * texture(textures[nonuniformEXT(pushConstants.diffuseIdx)], fragTexCoord);
 	// -- Opacity --
 	if(pushConstants.opacityIdx < pushConstants.textureCount)
 		outAlbedo_Opacity.a = texture(textures[nonuniformEXT(pushConstants.opacityIdx)], fragTexCoord).r;
+	// -- Alpha Cutout --
+	if(outAlbedo_Opacity.a < 0.95)
+		discard;
 
 	// -- Normal --
 	vec3 normal = normalize(fragNormal);
