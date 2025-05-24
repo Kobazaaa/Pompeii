@@ -209,7 +209,7 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 				.Execute(context);
 
 			writer
-				.AddImageInfo(createInfo.pShadowPass->GetMap(static_cast<uint32_t>(i)),
+				.AddImageInfo(createInfo.pShadowPass->GetMap(static_cast<uint32_t>(i)).GetView(),
 					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, createInfo.pShadowPass->GetSampler())
 				.WriteImages(m_ShadowMapDS[i], 0)
 				.Execute(context);
@@ -226,7 +226,7 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 		{
 			for (const Image& image : model.images)
 			{
-				writer.AddImageInfo(image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_Sampler);
+				writer.AddImageInfo(image.GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_Sampler);
 				++count;
 			}
 		}
@@ -292,19 +292,19 @@ void pom::ForwardPass::Record(const Context& context, CommandBuffer& commandBuff
 	// Setup attachments
 	VkRenderingAttachmentInfo colorAttachment{};
 	colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-	colorAttachment.imageView = m_MSAAImage.GetViewHandle();
+	colorAttachment.imageView = m_MSAAImage.GetView().GetHandle();
 	colorAttachment.imageLayout = m_MSAAImage.GetCurrentLayout();
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	colorAttachment.clearValue.color = { {0.53f, 0.81f, 0.92f, 1.0f} };
 	colorAttachment.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
 	colorAttachment.resolveImageLayout = recordImage.GetCurrentLayout();
-	colorAttachment.resolveImageView = recordImage.GetViewHandle();
+	colorAttachment.resolveImageView = recordImage.GetView().GetHandle();
 
 
 	VkRenderingAttachmentInfo depthAttachment{};
 	depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-	depthAttachment.imageView = depthImage.GetViewHandle();
+	depthAttachment.imageView = depthImage.GetView().GetHandle();
 	depthAttachment.imageLayout = depthImage.GetCurrentLayout();
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -450,5 +450,5 @@ void pom::ForwardPass::CreateMSAAImage(const Context& context, VkExtent2D extent
 		.SetUsageFlags(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
 		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 		.Build(context, m_MSAAImage);
-	m_MSAAImage.CreateView(context, format, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
+	m_MSAAImage.CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
 }

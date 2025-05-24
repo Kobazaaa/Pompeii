@@ -10,8 +10,8 @@
 // -- Forward Declarations --
 namespace pom
 {
+	class ImageView;
 	class Buffer;
-	class Image;
 	class Sampler;
 	struct Context;
 }
@@ -117,8 +117,8 @@ namespace pom
 		DescriptorSetWriter& AddBufferInfo(const Buffer& buffer, uint32_t offset, uint32_t range);
 		DescriptorSetWriter& WriteBuffers(const DescriptorSet& set, uint32_t binding, uint32_t count = 0xFFFFFFFF);
 
-		DescriptorSetWriter& AddImageInfo(const Image& image, VkImageLayout layout, const Sampler& sampler);
-		DescriptorSetWriter& AddImageInfo(const Image& image, VkImageLayout layout);
+		DescriptorSetWriter& AddImageInfo(const ImageView& view, VkImageLayout layout, const Sampler& sampler);
+		DescriptorSetWriter& AddImageInfo(const ImageView& view, VkImageLayout layout);
 		DescriptorSetWriter& WriteImages(const DescriptorSet& set, uint32_t binding, uint32_t count = 0xFFFFFFFF, uint32_t arraySlot = 0);
 
 		void Execute(const Context& context);

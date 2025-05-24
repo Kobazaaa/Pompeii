@@ -183,7 +183,7 @@ void pom::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo&
 				.SetUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT)
 				.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 				.Build(context, image);
-			image.CreateView(context, VK_FORMAT_R32_SFLOAT, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
+			image.CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
 		}
 		m_DeletionQueue.Push([&] { for (auto& img : m_vAverageLuminance) img.Destroy(context); });
 	}
@@ -199,7 +199,7 @@ void pom::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo&
 			uint32_t prevI = (i + createInfo.maxFramesInFlight - 1) % createInfo.maxFramesInFlight;
 			// Fragment
 			writer // HDR Image
-				.AddImageInfo((*createInfo.renderImages)[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_Sampler)
+				.AddImageInfo((*createInfo.renderImages)[i].GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_Sampler)
 				.WriteImages(m_vFragmentDS[i], 0)
 				.Execute(context);
 			writer // Camera Settings
@@ -207,17 +207,17 @@ void pom::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo&
 				.WriteBuffers(m_vFragmentDS[i], 1)
 				.Execute(context);
 			writer // Average Luminance
-				.AddImageInfo(m_vAverageLuminance[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_Sampler)
+				.AddImageInfo(m_vAverageLuminance[i].GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_Sampler)
 				.WriteImages(m_vFragmentDS[i], 2)
 				.Execute(context);
 
 			// Compute Luminance
 			writer // HDR Image
-				.AddImageInfo((*createInfo.renderImages)[i], VK_IMAGE_LAYOUT_GENERAL)
+				.AddImageInfo((*createInfo.renderImages)[i].GetView(), VK_IMAGE_LAYOUT_GENERAL)
 				.WriteImages(m_vComputeLumDS[i], 0)
 				.Execute(context);
 			writer // Average Luminance Last Frame
-				.AddImageInfo(m_vAverageLuminance[prevI], VK_IMAGE_LAYOUT_GENERAL)
+				.AddImageInfo(m_vAverageLuminance[prevI].GetView(), VK_IMAGE_LAYOUT_GENERAL)
 				.WriteImages(m_vComputeLumDS[i], 1)
 				.Execute(context);
 			writer // Histogram
@@ -227,11 +227,11 @@ void pom::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo&
 
 			// Compute Average Luminance
 			writer // HDR Image
-				.AddImageInfo(m_vAverageLuminance[i], VK_IMAGE_LAYOUT_GENERAL)
+				.AddImageInfo(m_vAverageLuminance[i].GetView(), VK_IMAGE_LAYOUT_GENERAL)
 				.WriteImages(m_vComputeAveDS[i], 0)
 				.Execute(context);
 			writer // Average Luminance Last Frame
-				.AddImageInfo(m_vAverageLuminance[prevI], VK_IMAGE_LAYOUT_GENERAL)
+				.AddImageInfo(m_vAverageLuminance[prevI].GetView(), VK_IMAGE_LAYOUT_GENERAL)
 				.WriteImages(m_vComputeAveDS[i], 1)
 				.Execute(context);
 			writer // Histogram
@@ -255,13 +255,13 @@ void pom::BlitPass::UpdateDescriptors(const Context& context, const std::vector<
 	{
 		// Fragment
 		writer // HDR Image
-			.AddImageInfo(renderImages[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_Sampler)
+			.AddImageInfo(renderImages[i].GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_Sampler)
 			.WriteImages(m_vFragmentDS[i], 0)
 			.Execute(context);
 
 		// Compute Luminance
 		writer // HDR Image
-			.AddImageInfo(renderImages[i], VK_IMAGE_LAYOUT_GENERAL)
+			.AddImageInfo(renderImages[i].GetView(), VK_IMAGE_LAYOUT_GENERAL)
 			.WriteImages(m_vComputeLumDS[i], 0)
 			.Execute(context);
 	}
@@ -281,7 +281,7 @@ void pom::BlitPass::RecordGraphic(const Context& context, CommandBuffer& command
 	// -- Set Up Attachment --
 	VkRenderingAttachmentInfo colorAttachment{};
 	colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-	colorAttachment.imageView = renderImage.GetViewHandle();
+	colorAttachment.imageView = renderImage.GetView().GetHandle();
 	colorAttachment.imageLayout = renderImage.GetCurrentLayout();
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;

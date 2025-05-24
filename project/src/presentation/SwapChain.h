@@ -71,7 +71,7 @@ namespace pom
 		SwapChain& operator=(const SwapChain& other) = delete;
 		SwapChain& operator=(SwapChain&& other) noexcept = delete;
 
-		void Destroy(const Context& context) const;
+		void Destroy(const Context& context);
 		void Recreate(Context& context, const Window& window);
 
 		//--------------------------------------------------

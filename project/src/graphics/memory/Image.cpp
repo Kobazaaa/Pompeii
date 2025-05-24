@@ -10,6 +10,44 @@
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  Image View	
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+//--------------------------------------------------
+//    Constructor & Destructor
+//--------------------------------------------------
+pom::ImageView::ImageView(ImageView&& other) noexcept
+{
+	m_pOwnerImage = std::move(other.m_pOwnerImage);
+	other.m_pOwnerImage = nullptr;
+	m_ImageView = std::move(other.m_ImageView);
+	other.m_ImageView = VK_NULL_HANDLE;
+}
+pom::ImageView& pom::ImageView::operator=(ImageView&& other) noexcept
+{
+	if (this == &other)
+		return *this;
+	m_pOwnerImage = std::move(other.m_pOwnerImage);
+	other.m_pOwnerImage = nullptr;
+	m_ImageView = std::move(other.m_ImageView);
+	other.m_ImageView = VK_NULL_HANDLE;
+	return *this;
+}
+
+void pom::ImageView::Destroy(const Context& context) const
+{
+	if (m_ImageView)
+		vkDestroyImageView(context.device.GetHandle(), m_ImageView, nullptr);
+}
+
+
+//--------------------------------------------------
+//    Accessors & Mutators
+//--------------------------------------------------
+const VkImageView& pom::ImageView::GetHandle()	const { return m_ImageView; }
+const pom::Image& pom::ImageView::GetImage()	const { return *m_pOwnerImage; }
+
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Image	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -20,8 +58,8 @@ pom::Image::Image(Image&& other) noexcept
 {
 	m_Image = std::move(other.m_Image);
 	other.m_Image = VK_NULL_HANDLE;
-	m_ImageView = std::move(other.m_ImageView);
-	other.m_ImageView = VK_NULL_HANDLE;
+	m_vImageViews = std::move(other.m_vImageViews);
+	other.m_vImageViews.clear();
 	m_ImageMemory = std::move(other.m_ImageMemory);
 	other.m_ImageMemory = VK_NULL_HANDLE;
 	m_CurrentLayout = std::move(other.m_CurrentLayout);
@@ -35,8 +73,8 @@ pom::Image& pom::Image::operator=(Image&& other) noexcept
 		return *this;
 	m_Image = std::move(other.m_Image);
 	other.m_Image = VK_NULL_HANDLE;
-	m_ImageView = std::move(other.m_ImageView);
-	other.m_ImageView = VK_NULL_HANDLE;
+	m_vImageViews = std::move(other.m_vImageViews);
+	other.m_vImageViews.clear();
 	m_ImageMemory = std::move(other.m_ImageMemory);
 	other.m_ImageMemory = VK_NULL_HANDLE;
 	m_CurrentLayout = std::move(other.m_CurrentLayout);
@@ -46,31 +84,41 @@ pom::Image& pom::Image::operator=(Image&& other) noexcept
 	return *this;
 }
 
-void pom::Image::Destroy(const Context& context) const
+void pom::Image::Destroy(const Context& context)
 {
-	if (m_ImageView)
-		vkDestroyImageView(context.device.GetHandle(), m_ImageView, nullptr);
+	DestroyAllViews(context);
 	if (m_ImageMemory)
 		vmaDestroyImage(context.allocator, m_Image, m_ImageMemory);
 }
-VkImageView& pom::Image::CreateView(const Context& context, VkFormat format, VkImageAspectFlags aspectFlags, VkImageViewType viewType,
-									uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)
+void pom::Image::DestroyAllViews(const Context& context)
 {
+	for (auto& view : m_vImageViews)
+		view.Destroy(context);
+	m_vImageViews.clear();
+}
+
+pom::ImageView& pom::Image::CreateView(const Context& context, VkImageAspectFlags aspectFlags, VkImageViewType viewType,
+                                       uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)
+{
+	m_vImageViews.emplace_back();
+	m_vImageViews.back().m_pOwnerImage = this;
+
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	viewInfo.image = m_Image;
 	viewInfo.viewType = viewType;
-	viewInfo.format = format;
+	viewInfo.format = m_ImageInfo.format;
 	viewInfo.subresourceRange.aspectMask = aspectFlags;
 	viewInfo.subresourceRange.baseMipLevel = baseMip;
 	viewInfo.subresourceRange.levelCount = mipCount;
 	viewInfo.subresourceRange.baseArrayLayer = baseLayer;
 	viewInfo.subresourceRange.layerCount = layerCount;
+	m_vImageViews.back().m_Info = viewInfo;
 
-	if (vkCreateImageView(context.device.GetHandle(), &viewInfo, nullptr, &m_ImageView) != VK_SUCCESS)
+	if (vkCreateImageView(context.device.GetHandle(), &viewInfo, nullptr, &m_vImageViews.back().m_ImageView) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Image View!");
 
-	return m_ImageView;
+	return m_vImageViews.back();
 }
 VkFormat pom::Image::FindSupportedFormat(const PhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
 {
@@ -89,8 +137,10 @@ VkFormat pom::Image::FindSupportedFormat(const PhysicalDevice& physicalDevice, c
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkImage& pom::Image::GetHandle()			const		{ return m_Image; }
-const VkImageView& pom::Image::GetViewHandle()	const		{ return m_ImageView; }
+const VkImage& pom::Image::GetHandle()							const { return m_Image; }
+const pom::ImageView& pom::Image::GetView(uint32_t idx)			const { return m_vImageViews.at(idx); }
+uint32_t pom::Image::GetViewCount()								const { return static_cast<uint32_t>(m_vImageViews.size()); }
+const std::vector<pom::ImageView>& pom::Image::GetAllViews()	const { return m_vImageViews; }
 
 uint32_t pom::Image::GetMipLevels()				const		{ return m_ImageInfo.mipLevels; }
 uint32_t pom::Image::GetLayerCount()			const		{ return m_ImageInfo.arrayLayers; }

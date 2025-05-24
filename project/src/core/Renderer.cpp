@@ -300,13 +300,13 @@ void pom::Renderer::InitializeVulkan()
 	// -- Depth Resources --
 	{
 		CreateDepthResources(m_Context, m_SwapChain.GetExtent());
-		m_Context.deletionQueue.Push([&] { for (const Image& image : m_vDepthImages) image.Destroy(m_Context); });
+		m_Context.deletionQueue.Push([&] { for (Image& image : m_vDepthImages) image.Destroy(m_Context); });
 	}
 
 	// -- Target Resources --
 	{
 		CreateRenderTargetResources(m_Context, m_SwapChain.GetExtent());
-		m_Context.deletionQueue.Push([&] { for (const Image& image : m_vRenderTargets) image.Destroy(m_Context); });
+		m_Context.deletionQueue.Push([&] { for (Image& image : m_vRenderTargets) image.Destroy(m_Context); });
 	}
 
 	// -- Shadow Pass --
@@ -406,12 +406,12 @@ void pom::Renderer::RecreateSwapChain()
 	m_SwapChain.Recreate(m_Context, *m_pWindow);
 
 	// -- Recreate the Depth Resource --
-	for (const Image& image : m_vDepthImages)
+	for (Image& image : m_vDepthImages)
 		image.Destroy(m_Context);
 	CreateDepthResources(m_Context, m_SwapChain.GetExtent());
 
 	// -- Recreate the Render Targets --
-	for (const Image& image : m_vRenderTargets)
+	for (Image& image : m_vRenderTargets)
 		image.Destroy(m_Context);
 	CreateRenderTargetResources(m_Context, m_SwapChain.GetExtent());
 
@@ -452,7 +452,7 @@ void pom::Renderer::CreateDepthResources(const Context& context, VkExtent2D exte
 			.SetUsageFlags(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
 			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 			.Build(context, image);
-		image.CreateView(context, format, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
+		image.CreateView(context, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
 	}
 }
 void pom::Renderer::CreateRenderTargetResources(const Context& context, VkExtent2D extent)
@@ -471,7 +471,7 @@ void pom::Renderer::CreateRenderTargetResources(const Context& context, VkExtent
 			.SetUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT)
 			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 			.Build(context, image);
-		image.CreateView(context, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
+		image.CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
 	}
 }
 

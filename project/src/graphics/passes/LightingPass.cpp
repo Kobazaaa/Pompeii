@@ -163,25 +163,25 @@ void pom::LightingPass::UpdateGBufferDescriptors(const Context& context, const G
 		const GBuffer& gBuffer = pGeometryPass.GetGBuffer(i);
 
 		writer
-			.AddImageInfo(gBuffer.GetAlbedoOpacityImage(),
+			.AddImageInfo(gBuffer.GetAlbedoOpacityImage().GetView(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_GBufferSampler)
 			.WriteImages(m_vGBufferTexturesDS[i], 0)
 			.Execute(context);
 
 		writer
-			.AddImageInfo(gBuffer.GetNormalImage(),
+			.AddImageInfo(gBuffer.GetNormalImage().GetView(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_GBufferSampler)
 			.WriteImages(m_vGBufferTexturesDS[i], 1)
 			.Execute(context);
 
 		writer
-			.AddImageInfo(gBuffer.GetWorldPosImage(),
+			.AddImageInfo(gBuffer.GetWorldPosImage().GetView(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_GBufferSampler)
 			.WriteImages(m_vGBufferTexturesDS[i], 2)
 			.Execute(context);
 
 		writer
-			.AddImageInfo(gBuffer.GetRoughnessMetallicImage(),
+			.AddImageInfo(gBuffer.GetRoughnessMetallicImage().GetView(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_GBufferSampler)
 			.WriteImages(m_vGBufferTexturesDS[i], 3)
 			.Execute(context);
@@ -229,7 +229,7 @@ void pom::LightingPass::Record(const Context& context, CommandBuffer& commandBuf
 	// -- Setup Attachment --
 	VkRenderingAttachmentInfo colorAttachment{};
 	colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-	colorAttachment.imageView = renderImage.GetViewHandle();
+	colorAttachment.imageView = renderImage.GetView().GetHandle();
 	colorAttachment.imageLayout = renderImage.GetCurrentLayout();
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;

@@ -186,7 +186,7 @@ void pom::GeometryPass::UpdateTextureDescriptor(const Context& context, const Sc
 	{
 		for (const Image& image : model.images)
 		{
-			writer.AddImageInfo(image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_TextureSampler);
+			writer.AddImageInfo(image.GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_TextureSampler);
 		}
 	}
 	writer.WriteImages(m_TextureDS, 0, pScene->GetImageCount()).Execute(context);
@@ -208,7 +208,7 @@ void pom::GeometryPass::Record(const Context& context, CommandBuffer& commandBuf
 	uint32_t gBufferAttachmentCount = m_vGBuffers[imageIndex].GetAttachmentCount();
 	VkRenderingAttachmentInfo depthAttachment{};
 	depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-	depthAttachment.imageView = depthImage.GetViewHandle();
+	depthAttachment.imageView = depthImage.GetView().GetHandle();
 	depthAttachment.imageLayout = depthImage.GetCurrentLayout();
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;

@@ -13,6 +13,7 @@ namespace pom
 	class Camera;
 	class DescriptorPool;
 	class CommandBuffer;
+	class Image;
 }
 
 namespace pom

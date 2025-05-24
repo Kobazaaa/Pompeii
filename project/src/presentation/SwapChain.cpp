@@ -94,9 +94,7 @@ void pom::SwapChainBuilder::Build(Context& context, const Window& window, SwapCh
 			.SetFormat(swapChain.m_SwapChainImageFormat)
 			.SetPreMadeImage(swapChainImages[index])
 			.Build(context, swapChain.m_vSwapChainImages[index]);
-		swapChain.m_vSwapChainImages[index].CreateView(context, swapChain.GetFormat(),
-			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D,
-			0, 1, 0, 1);
+		swapChain.m_vSwapChainImages[index].CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
 	}
 }
 
@@ -154,10 +152,10 @@ VkPresentModeKHR pom::SwapChainBuilder::ChooseSwapPresentMode(const std::vector<
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::SwapChain::Destroy(const Context& context) const
+void pom::SwapChain::Destroy(const Context& context)
 {
-	for (const Image& image : m_vSwapChainImages)
-		vkDestroyImageView(context.device.GetHandle(), image.GetViewHandle(), nullptr);
+	for (Image& image : m_vSwapChainImages)
+		image.DestroyAllViews(context);
 
 	vkDestroySwapchainKHR(context.device.GetHandle(), m_SwapChain, nullptr);
 }

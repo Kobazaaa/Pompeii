@@ -133,21 +133,21 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteBuffers(const Descripto
 	return *this;
 }
 
-pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddImageInfo(const Image& image, VkImageLayout layout, const Sampler& sampler)
+pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddImageInfo(const ImageView& view, VkImageLayout layout, const Sampler& sampler)
 {
 	VkDescriptorImageInfo imageInfo{};
 	imageInfo.imageLayout = layout;
-	imageInfo.imageView = image.GetViewHandle();
+	imageInfo.imageView = view.GetHandle();
 	imageInfo.sampler = sampler.GetHandle();
 	m_vImageInfos.push_back(imageInfo);
 
 	return *this;
 }
-pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddImageInfo(const Image& image, VkImageLayout layout)
+pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddImageInfo(const ImageView& view, VkImageLayout layout)
 {
 	VkDescriptorImageInfo imageInfo{};
 	imageInfo.imageLayout = layout;
-	imageInfo.imageView = image.GetViewHandle();
+	imageInfo.imageView = view.GetHandle();
 	imageInfo.sampler = VK_NULL_HANDLE;
 	m_vImageInfos.push_back(imageInfo);
 

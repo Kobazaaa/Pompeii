@@ -129,7 +129,7 @@ void pom::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuf
 	// -- Set Up Attachments --
 	VkRenderingAttachmentInfo depthAttachment{};
 	depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-	depthAttachment.imageView = depthImage.GetViewHandle();
+	depthAttachment.imageView = depthImage.GetView().GetHandle();
 	depthAttachment.imageLayout = depthImage.GetCurrentLayout();
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;

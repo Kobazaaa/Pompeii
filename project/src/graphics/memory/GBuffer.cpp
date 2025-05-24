@@ -130,14 +130,14 @@ void pom::GBuffer::CreateImage(const Context& context, Image& image, VkExtent2D 
 		.SetUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
 		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 		.Build(context, image);
-	image.CreateView(context, format, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
+	image.CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
 	m_vAllImages.emplace_back(&image);
 }
 void pom::GBuffer::AddRenderingAttachment(const Image& image)
 {
 	VkRenderingAttachmentInfo attachmentInfo{};
 	attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-	attachmentInfo.imageView = image.GetViewHandle();
+	attachmentInfo.imageView = image.GetView().GetHandle();
 	attachmentInfo.imageLayout = image.GetCurrentLayout();
 	attachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	attachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
