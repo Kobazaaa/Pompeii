@@ -8,10 +8,10 @@
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Base Scene	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void pom::Scene::AllocateGPU(const Context& context, CommandPool& cmdPool, bool keepHostData)
+void pom::Scene::AllocateGPU(const Context& context, bool keepHostData)
 {
 	for (auto& model : m_vModels)
-		model.AllocateResources(context, cmdPool, keepHostData);
+		model.AllocateResources(context, keepHostData);
 }
 void pom::Scene::Destroy(const Context& context)
 {

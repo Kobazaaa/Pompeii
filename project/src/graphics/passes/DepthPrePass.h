@@ -29,7 +29,6 @@ namespace pom
 	{
 		uint32_t maxFramesInFlight{};
 		VkFormat depthFormat{};
-		DescriptorPool* pDescriptorPool{};
 		GeometryPass* pGeometryPass{};
 	};
 

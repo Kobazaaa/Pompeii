@@ -173,10 +173,10 @@ pom::BufferAllocator& pom::BufferAllocator::HostAccess(bool access)
 
 	return *this;
 }
-pom::BufferAllocator& pom::BufferAllocator::AddInitialData(void* data, VkDeviceSize dstOffset, uint32_t size, CommandPool& cmdPool)
+pom::BufferAllocator& pom::BufferAllocator::AddInitialData(void* data, VkDeviceSize dstOffset, uint32_t size)
 {
 	m_UseInitialData = true;
-	m_vInitialData.emplace_back(data, size, dstOffset, &cmdPool);
+	m_vInitialData.emplace_back(data, size, dstOffset);
 	m_CreateInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	return *this;
 }
@@ -200,7 +200,7 @@ void pom::BufferAllocator::Allocate(const Context& context, Buffer& buffer) cons
 			vmaCopyMemoryToAllocation(context.allocator, data.pData, stagingBuffer.m_Memory, 0, data.initDataSize);
 
 
-			CommandBuffer& cmd = data.pCmdPool->AllocateCmdBuffers(1);
+			CommandBuffer& cmd = context.commandPool->AllocateCmdBuffers(1);
 			cmd.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 			{
 				stagingBuffer.CopyToBuffer(cmd, buffer, data.initDataSize, 0, data.dstOffset);

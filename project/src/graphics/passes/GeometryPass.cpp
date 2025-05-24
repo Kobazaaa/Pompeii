@@ -141,7 +141,7 @@ void pom::GeometryPass::Initialize(const Context& context, const GeometryPassCre
 
 	// -- Buffers --
 	{
-		m_vUniformDS = createInfo.pDescriptorPool->AllocateSets(context, m_UniformDSL, createInfo.maxFramesInFlight, "Uniform Buffer DS");
+		m_vUniformDS = context.descriptorPool->AllocateSets(context, m_UniformDSL, createInfo.maxFramesInFlight, "Uniform Buffer DS");
 
 		// -- Write UBO --
 		DescriptorSetWriter writer{};
@@ -154,7 +154,7 @@ void pom::GeometryPass::Initialize(const Context& context, const GeometryPassCre
 		}
 
 		// -- Write Textures --
-		UpdateTextureDescriptor(context, *createInfo.pDescriptorPool, createInfo.pScene);
+		UpdateTextureDescriptor(context, createInfo.pScene);
 	}
 }
 
@@ -168,17 +168,17 @@ void pom::GeometryPass::Resize(const Context& context, VkExtent2D extent)
 	for (GBuffer& gBuffer : m_vGBuffers)
 		gBuffer.Resize(context, extent);
 }
-void pom::GeometryPass::UpdateTextureDescriptor(const Context& context, const DescriptorPool& pool, const Scene* pScene)
+void pom::GeometryPass::UpdateTextureDescriptor(const Context& context, const Scene* pScene)
 {
 	if (m_TextureDS.GetHandle())
-		vkFreeDescriptorSets(context.device.GetHandle(), pool.GetHandle(), 1, &m_TextureDS.GetHandle());
+		vkFreeDescriptorSets(context.device.GetHandle(), context.descriptorPool->GetHandle(), 1, &m_TextureDS.GetHandle());
 
 	const uint32_t variableCount = pScene->GetImageCount();
 	VkDescriptorSetVariableDescriptorCountAllocateInfo variableCountInfo{};
 	variableCountInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
 	variableCountInfo.descriptorSetCount = 1;
 	variableCountInfo.pDescriptorCounts = &variableCount;
-	m_TextureDS = pool.AllocateSets(context, m_TextureDSL, 1, "Texture Array DS", &variableCountInfo).front();
+	m_TextureDS = context.descriptorPool->AllocateSets(context, m_TextureDSL, 1, "Texture Array DS", &variableCountInfo).front();
 
 	// -- Write Textures --
 	DescriptorSetWriter writer{};

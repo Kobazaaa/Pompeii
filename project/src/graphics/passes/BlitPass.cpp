@@ -190,9 +190,9 @@ void pom::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo&
 
 	// -- Descriptors --
 	{
-		m_vFragmentDS = createInfo.pDescriptorPool->AllocateSets(context, m_FragmentDSL, createInfo.maxFramesInFlight, "Render Texture DS");
-		m_vComputeLumDS = createInfo.pDescriptorPool->AllocateSets(context, m_ComputeDSL, createInfo.maxFramesInFlight, "HDR Image | Average Luminance Last Frame | Histogram DS");
-		m_vComputeAveDS = createInfo.pDescriptorPool->AllocateSets(context, m_ComputeDSL, createInfo.maxFramesInFlight, "Average Luminance | Average Luminance Last Frame | Histogram DS");
+		m_vFragmentDS = context.descriptorPool->AllocateSets(context, m_FragmentDSL, createInfo.maxFramesInFlight, "Render Texture DS");
+		m_vComputeLumDS = context.descriptorPool->AllocateSets(context, m_ComputeDSL, createInfo.maxFramesInFlight, "HDR Image | Average Luminance Last Frame | Histogram DS");
+		m_vComputeAveDS = context.descriptorPool->AllocateSets(context, m_ComputeDSL, createInfo.maxFramesInFlight, "Average Luminance | Average Luminance Last Frame | Histogram DS");
 		DescriptorSetWriter writer{};
 		for (uint32_t i{}; i < createInfo.maxFramesInFlight; ++i)
 		{

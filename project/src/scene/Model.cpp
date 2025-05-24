@@ -146,14 +146,14 @@ void pom::Model::LoadModel(const std::string& path)
 
 	ProcessNode(pScene->mRootNode, pScene);
 }
-void pom::Model::AllocateResources(const Context& context, CommandPool& cmdPool, bool keepHostData)
+void pom::Model::AllocateResources(const Context& context, bool keepHostData)
 {
 	// -- Create Buffers --
-	CreateVertexBuffer(context, cmdPool);
-	CreateIndexBuffer(context, cmdPool);
+	CreateVertexBuffer(context);
+	CreateIndexBuffer(context);
 
 	// -- Build Image --
-	CreateImages(context, cmdPool);
+	CreateImages(context);
 
 	// -- Destroy Host Data --
 	if (!keepHostData)
@@ -320,7 +320,7 @@ glm::mat4 pom::Model::ConvertAssimpMatrix(const aiMatrix4x4& mat)
 	);
 }
 
-void pom::Model::CreateVertexBuffer(const Context& context, CommandPool& cmdPool)
+void pom::Model::CreateVertexBuffer(const Context& context)
 {
 	BufferAllocator alloc{};
 	const uint32_t bufferSize = static_cast<uint32_t>(vertices.size()) * sizeof(Vertex);
@@ -329,10 +329,10 @@ void pom::Model::CreateVertexBuffer(const Context& context, CommandPool& cmdPool
 		.SetSize(bufferSize)
 		.SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
 		.HostAccess(false)
-		.AddInitialData(vertices.data(), 0, bufferSize, cmdPool)
+		.AddInitialData(vertices.data(), 0, bufferSize)
 		.Allocate(context, vertexBuffer);
 }
-void pom::Model::CreateIndexBuffer(const Context& context, CommandPool& cmdPool)
+void pom::Model::CreateIndexBuffer(const Context& context)
 {
 	BufferAllocator alloc{};
 	const uint32_t bufferSize = static_cast<uint32_t>(indices.size()) * sizeof(uint32_t);
@@ -341,10 +341,10 @@ void pom::Model::CreateIndexBuffer(const Context& context, CommandPool& cmdPool)
 		.SetSize(bufferSize)
 		.SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
 		.HostAccess(false)
-		.AddInitialData(indices.data(), 0, bufferSize, cmdPool)
+		.AddInitialData(indices.data(), 0, bufferSize)
 		.Allocate(context, indexBuffer);
 }
-void pom::Model::CreateImages(const Context& context, CommandPool& cmdPool)
+void pom::Model::CreateImages(const Context& context)
 {
 	for (Texture& tex : textures)
 	{
@@ -368,7 +368,7 @@ void pom::Model::CreateImages(const Context& context, CommandPool& cmdPool)
 			.SetMipLevels(mipLevels)
 			.SetUsageFlags(VK_IMAGE_USAGE_SAMPLED_BIT)
 			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-			.InitialData(tex.GetPixels(), 0, texW, texH, tex.GetMemorySize(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, cmdPool)
+			.InitialData(tex.GetPixels(), 0, texW, texH, tex.GetMemorySize(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 			.Build(context, images.back());
 		images.back().CreateView(context, tex.GetFormat(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, mipLevels, 0, 1);
 	}

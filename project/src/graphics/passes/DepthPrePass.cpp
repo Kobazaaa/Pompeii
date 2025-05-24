@@ -99,7 +99,7 @@ void pom::DepthPrePass::Initialize(const Context& context, const DepthPrePassCre
 
 	// -- Buffers --
 	{
-		m_vUniformDS = createInfo.pDescriptorPool->AllocateSets(context, m_UniformDSL, createInfo.maxFramesInFlight, "Uniform Buffer DS");
+		m_vUniformDS = context.descriptorPool->AllocateSets(context, m_UniformDSL, createInfo.maxFramesInFlight, "Uniform Buffer DS");
 
 		// -- Write UBO --
 		DescriptorSetWriter writer{};

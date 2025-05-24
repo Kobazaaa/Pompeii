@@ -21,7 +21,6 @@ namespace pom
 	{
 		uint32_t maxFramesInFlight{};
 		glm::vec<2, uint32_t> extent{};
-		DescriptorPool* pDescriptorPool{};
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -40,7 +39,7 @@ namespace pom
 		ShadowPass& operator=(const ShadowPass& other) = delete;
 		ShadowPass& operator=(ShadowPass&& other) noexcept = delete;
 
-		void Initialize(const Context& context, const ShadowPassCreateInfo& createInfo);
+		void Initialize(Context& context, const ShadowPassCreateInfo& createInfo);
 		void Destroy();
 		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Scene* pScene);
 

@@ -33,7 +33,6 @@ namespace pom
 		VkExtent2D extent{};
 		VkFormat format{};
 		VkFormat depthFormat{};
-		DescriptorPool* pDescriptorPool{};
 		ShadowPass* pShadowPass{};
 	};
 

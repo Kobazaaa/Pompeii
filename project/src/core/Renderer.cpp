@@ -45,7 +45,7 @@ void pom::Renderer::Update()
 				/* lumen */		100.f, Light::Type::Point
 			});
 		m_Context.device.WaitIdle();
-		m_LightingPass.UpdateLightDescriptors(m_Context, m_CommandPool, m_pScene);
+		m_LightingPass.UpdateLightDescriptors(m_Context, m_pScene);
 	}
 	else if (glfwGetKey(m_pWindow->GetHandle(), GLFW_KEY_X) != GLFW_PRESS)
 		pressX = false;
@@ -55,7 +55,7 @@ void pom::Renderer::Update()
 		pressC = true;
 		m_pScene->PopLight();
 		m_Context.device.WaitIdle();
-		m_LightingPass.UpdateLightDescriptors(m_Context, m_CommandPool, m_pScene);
+		m_LightingPass.UpdateLightDescriptors(m_Context, m_pScene);
 	}
 	else if (glfwGetKey(m_pWindow->GetHandle(), GLFW_KEY_C) != GLFW_PRESS)
 		pressC = false;
@@ -83,7 +83,7 @@ void pom::Renderer::Render()
 	vkResetFences(m_Context.device.GetHandle(), 1, &frameSync.inFlight);
 
 	// -- Record Command Buffer --
-	CommandBuffer& cmdBuffer = m_CommandPool.GetBuffer(m_CurrentFrame);
+	CommandBuffer& cmdBuffer = m_Context.commandPool->GetBuffer(m_CurrentFrame);
 	cmdBuffer.Reset();
 	RecordCommandBuffer(cmdBuffer, imageIndex);
 
@@ -243,11 +243,12 @@ void pom::Renderer::InitializeVulkan()
 
 	// -- Create Command Pool - Requirements - [Device - Physical Device]
 	{
-		m_CommandPool
-			.Create(m_Context)
+		m_Context.commandPool = new CommandPool();
+		m_Context.commandPool
+			->Create(m_Context)
 			.AllocateCmdBuffers(m_MaxFramesInFlight);
 
-		m_Context.deletionQueue.Push([&] { m_CommandPool.Destroy(); });
+		m_Context.deletionQueue.Push([&] { m_Context.commandPool->Destroy(); delete m_Context.commandPool; m_Context.commandPool = nullptr; });
 	}
 
 	// -- Create SwapChain - Requirements - [Device - Allocator - Physical Device, Window, Command Pool]
@@ -264,14 +265,15 @@ void pom::Renderer::InitializeVulkan()
 	// -- Allocate Scene - Requirements - []
 	{
 		sceneLoader.join();
-		m_pScene->AllocateGPU(m_Context, m_CommandPool, false);
+		m_pScene->AllocateGPU(m_Context, false);
 		m_Context.deletionQueue.Push([&] { m_pScene->Destroy(m_Context); });
 	}
 
 	// -- Create Descriptor Pool - Requirements - [Device]
 	{
-		m_DescriptorPool
-			.SetDebugName("Descriptor Pool (Default)")
+		m_Context.descriptorPool = new DescriptorPool();
+		m_Context.descriptorPool
+			->SetDebugName("Descriptor Pool (Default)")
 			.SetMaxSets(100)
 			.AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100)
 			.AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100)
@@ -279,7 +281,7 @@ void pom::Renderer::InitializeVulkan()
 			.AddFlags(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT)
 			.AddFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
 			.Create(m_Context);
-		m_Context.deletionQueue.Push([&] {m_DescriptorPool.Destroy(m_Context); });
+		m_Context.deletionQueue.Push([&] { m_Context.descriptorPool->Destroy(m_Context); delete m_Context.descriptorPool; m_Context.descriptorPool = nullptr; });
 	}
 
 	// -- Depth Resources --
@@ -298,7 +300,6 @@ void pom::Renderer::InitializeVulkan()
 	{
 		ShadowPassCreateInfo createInfo{};
 		createInfo.extent = glm::vec2(8192, 8192);
-		createInfo.pDescriptorPool = &m_DescriptorPool;
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
 
 		m_ShadowPass.Initialize(m_Context, createInfo);
@@ -309,7 +310,6 @@ void pom::Renderer::InitializeVulkan()
 	{
 		ForwardPassCreateInfo createInfo{};
 		createInfo.pShadowPass = &m_ShadowPass;
-		createInfo.pDescriptorPool = &m_DescriptorPool;
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
 		createInfo.pScene = m_pScene;
 		createInfo.extent = m_SwapChain.GetExtent();
@@ -323,7 +323,6 @@ void pom::Renderer::InitializeVulkan()
 	// -- Geometry Pass --
 	{
 		GeometryPassCreateInfo createInfo{};
-		createInfo.pDescriptorPool = &m_DescriptorPool;
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
 		createInfo.pScene = m_pScene;
 		createInfo.extent = m_SwapChain.GetExtent();
@@ -336,7 +335,6 @@ void pom::Renderer::InitializeVulkan()
 	// -- Depth PrePass --
 	{
 		DepthPrePassCreateInfo createInfo{};
-		createInfo.pDescriptorPool = &m_DescriptorPool;
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
 		createInfo.depthFormat = m_vDepthImages[0].GetFormat();
 		createInfo.pGeometryPass = &m_GeometryPass;
@@ -348,10 +346,8 @@ void pom::Renderer::InitializeVulkan()
 	// -- Lighting Pass --
 	{
 		LightingPassCreateInfo createInfo{};
-		createInfo.pDescriptorPool = &m_DescriptorPool;
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
 		createInfo.pGeometryPass = &m_GeometryPass;
-		createInfo.pCommandPool = &m_CommandPool;
 		createInfo.format = m_vRenderTargets.front().GetFormat();
 		createInfo.pScene = m_pScene;
 
@@ -362,7 +358,6 @@ void pom::Renderer::InitializeVulkan()
 	// -- Blit Pass --
 	{
 		BlitPassCreateInfo createInfo{};
-		createInfo.pDescriptorPool = &m_DescriptorPool;
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
 		createInfo.renderImages = &m_vRenderTargets;
 		createInfo.format = m_SwapChain.GetFormat();

@@ -15,9 +15,7 @@
 // -- Pompeii Includes --
 #include "BlitPass.h"
 #include "Context.h"
-#include "CommandPool.h"
 #include "DepthPrePass.h"
-#include "DescriptorPool.h"
 #include "Window.h"
 #include "SwapChain.h"
 #include "SyncManager.h"
@@ -72,10 +70,6 @@ namespace pom
 		std::vector<Image>			m_vDepthImages			{ };
 		std::vector<Image>			m_vRenderTargets		{ };
 		uint32_t					m_MaxFramesInFlight		{ 3 };
-
-		// -- Pools --
-		DescriptorPool				m_DescriptorPool		{ };
-		CommandPool					m_CommandPool			{ };
 
 		// -- Sync --
 		SyncManager					m_SyncManager			{ };

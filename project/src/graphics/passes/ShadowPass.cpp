@@ -6,7 +6,7 @@
 #include "Context.h"
 #include "DescriptorPool.h"
 
-void pom::ShadowPass::Initialize(const Context& context, const ShadowPassCreateInfo& createInfo)
+void pom::ShadowPass::Initialize(Context& context, const ShadowPassCreateInfo& createInfo)
 {
 	// -- Descriptor Set Layout --
 	{
@@ -114,7 +114,7 @@ void pom::ShadowPass::Initialize(const Context& context, const ShadowPassCreateI
 		m_DeletionQueue.Push([&] { for (auto& ubo : m_vLightDataBuffers) ubo.Destroy(context); });
 
 
-		m_vLightDataDS = createInfo.pDescriptorPool->AllocateSets(context, m_LightDataDSL, createInfo.maxFramesInFlight, "Light Data DS");
+		m_vLightDataDS = context.descriptorPool->AllocateSets(context, m_LightDataDSL, createInfo.maxFramesInFlight, "Light Data DS");
 		DescriptorSetWriter writer{};
 		for (size_t i{}; i < createInfo.maxFramesInFlight; ++i)
 		{

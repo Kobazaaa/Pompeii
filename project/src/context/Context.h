@@ -9,6 +9,8 @@
 #include "Device.h"
 #include "PhysicalDevice.h"
 #include "DeletionQueue.h"
+#include "DescriptorPool.h"
+#include "CommandPool.h"
 
 namespace pom
 {
@@ -18,6 +20,9 @@ namespace pom
 		VmaAllocator	allocator		{};
 		PhysicalDevice	physicalDevice	{};
 		Device			device			{};
+
+		CommandPool*	commandPool		{};
+		DescriptorPool*	descriptorPool	{};
 
 		DeletionQueue	deletionQueue	{};
 	};

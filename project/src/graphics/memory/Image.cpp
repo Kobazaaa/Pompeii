@@ -399,7 +399,6 @@ pom::ImageBuilder::ImageBuilder()
 	m_InitDataWidth = 0;											//? CAN CHANGE
 	m_InitDataOffset = 0;											//? CAN CHANGE
 	m_FinalLayout = VK_IMAGE_LAYOUT_UNDEFINED;						//? CAN CHANGE
-	m_pCmdPool = nullptr;											//? CAN CHANGE
 }
 
 
@@ -421,7 +420,7 @@ pom::ImageBuilder& pom::ImageBuilder::SetSharingMode(VkSharingMode sharingMode)	
 pom::ImageBuilder& pom::ImageBuilder::SetImageType(VkImageType type)						{ m_ImageInfo.imageType = type; return *this; }
 pom::ImageBuilder& pom::ImageBuilder::InitialData(void* data, uint32_t offset, uint32_t
 													width, uint32_t height, uint32_t dataSize,
-													VkImageLayout finalLayout, CommandPool& cmdPool)
+													VkImageLayout finalLayout)
 {
 	m_UseInitialData = true;
 	m_pData = data;
@@ -433,7 +432,6 @@ pom::ImageBuilder& pom::ImageBuilder::InitialData(void* data, uint32_t offset, u
 	if (m_ImageInfo.mipLevels > 1)
 		m_ImageInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	m_FinalLayout = finalLayout;
-	m_pCmdPool = &cmdPool;
 	return *this;
 }
 pom::ImageBuilder& pom::ImageBuilder::SetPreMadeImage(VkImage image)
@@ -464,7 +462,7 @@ void pom::ImageBuilder::Build(const Context& context, Image& image) const
 			.Allocate(context, stagingBuffer);
 		vmaCopyMemoryToAllocation(context.allocator, m_pData, stagingBuffer.GetMemoryHandle(), m_InitDataOffset, m_InitDataSize);
 
-		CommandBuffer& cmd = m_pCmdPool->AllocateCmdBuffers(1);
+		CommandBuffer& cmd = context.commandPool->AllocateCmdBuffers(1);
 		cmd.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 		{
 			image.TransitionLayout(cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,

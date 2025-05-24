@@ -32,9 +32,7 @@ namespace pom
 	{
 		uint32_t maxFramesInFlight{};
 		VkFormat format{};
-		DescriptorPool* pDescriptorPool{};
 		GeometryPass* pGeometryPass;
-		CommandPool* pCommandPool;
 		Scene* pScene;
 	};
 
@@ -57,7 +55,7 @@ namespace pom
 		void Initialize(const Context& context, const LightingPassCreateInfo& createInfo);
 		void Destroy();
 		void UpdateGBufferDescriptors(const Context& context, const GeometryPass& pGeometryPass) const;
-		void UpdateLightDescriptors(const Context& context, CommandPool& commandPool, Scene* pScene);
+		void UpdateLightDescriptors(const Context& context, Scene* pScene);
 		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, Scene* pScene, Camera* pCamera) const;
 
 	private:

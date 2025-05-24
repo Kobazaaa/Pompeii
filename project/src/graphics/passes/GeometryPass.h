@@ -32,7 +32,6 @@ namespace pom
 		Scene* pScene{};
 		VkExtent2D extent{};
 		VkFormat depthFormat{};
-		DescriptorPool* pDescriptorPool{};
 	};
 
 
@@ -55,7 +54,7 @@ namespace pom
 		void Initialize(const Context& context, const GeometryPassCreateInfo& createInfo);
 		void Destroy();
 		void Resize(const Context& context, VkExtent2D extent);
-		void UpdateTextureDescriptor(const Context& context, const DescriptorPool& pool, const Scene* pScene);
+		void UpdateTextureDescriptor(const Context& context, const Scene* pScene);
 		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Image& depthImage, Scene* pScene, Camera* pCamera);
 
 		//--------------------------------------------------

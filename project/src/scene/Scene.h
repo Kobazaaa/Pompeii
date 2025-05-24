@@ -26,7 +26,7 @@ namespace pom
 		Scene& operator=(Scene&& other) noexcept = delete;
 
 		virtual void Initialize() = 0;
-		virtual void AllocateGPU(const Context& context, CommandPool& cmdPool, bool keepHostData = false);
+		virtual void AllocateGPU(const Context& context, bool keepHostData = false);
 		virtual void Destroy(const Context& context);
 
 

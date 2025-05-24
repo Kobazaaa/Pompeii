@@ -26,12 +26,10 @@ struct aiScene;
 struct aiMesh;
 namespace pom
 {
-	class CommandPool;
 	class CommandBuffer;
 	class PipelineLayout;
 	struct Context;
 }
-
 
 namespace pom
 {
@@ -87,7 +85,7 @@ namespace pom
 		Model& operator=(Model&& other) noexcept;
 
 		void LoadModel(const std::string& path);
-		void AllocateResources(const Context& context, CommandPool& cmdPool, bool keepHostData = false);
+		void AllocateResources(const Context& context, bool keepHostData = false);
 		void Destroy(const Context& context);
 
 		//--------------------------------------------------
@@ -122,9 +120,9 @@ namespace pom
 
 		static glm::mat4 ConvertAssimpMatrix(const aiMatrix4x4& mat);
 
-		void CreateVertexBuffer(const Context& context, CommandPool& cmdPool);
-		void CreateIndexBuffer(const Context& context, CommandPool& cmdPool);
-		void CreateImages(const Context& context, CommandPool& cmdPool);
+		void CreateVertexBuffer(const Context& context);
+		void CreateIndexBuffer(const Context& context);
+		void CreateImages(const Context& context);
 	};
 }
 

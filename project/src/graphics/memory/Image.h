@@ -115,7 +115,7 @@ namespace pom
 		ImageBuilder& SetSampleCount(VkSampleCountFlagBits sampleCount);
 		ImageBuilder& SetSharingMode(VkSharingMode sharingMode);
 		ImageBuilder& SetImageType(VkImageType type);
-		ImageBuilder& InitialData(void* data, uint32_t offset, uint32_t width, uint32_t height, uint32_t dataSize, VkImageLayout finalLayout, CommandPool& cmdPool);
+		ImageBuilder& InitialData(void* data, uint32_t offset, uint32_t width, uint32_t height, uint32_t dataSize, VkImageLayout finalLayout);
 		ImageBuilder& SetPreMadeImage(VkImage image);
 
 		void Build(const Context& context, Image& image) const;
@@ -128,7 +128,6 @@ namespace pom
 		uint32_t m_InitDataHeight;
 		uint32_t m_InitDataOffset;
 		VkImageLayout m_FinalLayout;
-		CommandPool* m_pCmdPool;
 
 		const char* m_pName{};
 

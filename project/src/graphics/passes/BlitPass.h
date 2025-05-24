@@ -24,7 +24,6 @@ namespace pom
 	{
 		uint32_t maxFramesInFlight{};
 		VkFormat format{};
-		DescriptorPool* pDescriptorPool{};
 		std::vector<Image>* renderImages{};
 	};
 

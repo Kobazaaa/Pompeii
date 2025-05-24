@@ -75,7 +75,7 @@ namespace pom
 		BufferAllocator& SetMemUsage(VmaMemoryUsage usage);
 		BufferAllocator& SetSharingMode(VkSharingMode sharingMode);
 		BufferAllocator& HostAccess(bool access);
-		BufferAllocator& AddInitialData(void* data, VkDeviceSize dstOffset, uint32_t size, CommandPool& cmdPool);
+		BufferAllocator& AddInitialData(void* data, VkDeviceSize dstOffset, uint32_t size);
 
 		void Allocate(const Context& context, Buffer& buffer) const;
 
@@ -86,7 +86,6 @@ namespace pom
 			void* pData;
 			uint32_t initDataSize;
 			VkDeviceSize dstOffset;
-			CommandPool* pCmdPool;
 		};
 		std::vector<InitData> m_vInitialData{};
 

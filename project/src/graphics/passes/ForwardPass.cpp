@@ -1,5 +1,4 @@
 // -- Standard Library --
-#include <array>
 #include <iostream>
 
 // -- Pompeii Includes --
@@ -195,10 +194,10 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 
 	// -- Buffers --
 	{
-		m_vUniformDS = createInfo.pDescriptorPool->AllocateSets(context, m_UniformDSL, createInfo.maxFramesInFlight, "Uniform Buffer DS");
-		m_TextureDS = createInfo.pDescriptorPool->AllocateSets(context, m_TextureDSL, 1, "Texture Array DS").front();
-		m_ShadowMapDS = createInfo.pDescriptorPool->AllocateSets(context, m_ShadowMapDSL, createInfo.maxFramesInFlight, "Shadow Map DS");
-		m_vLightDS = createInfo.pDescriptorPool->AllocateSets(context, m_LightDSL, createInfo.maxFramesInFlight, "Light DS");
+		m_vUniformDS = context.descriptorPool->AllocateSets(context, m_UniformDSL, createInfo.maxFramesInFlight, "Uniform Buffer DS");
+		m_TextureDS = context.descriptorPool->AllocateSets(context, m_TextureDSL, 1, "Texture Array DS").front();
+		m_ShadowMapDS = context.descriptorPool->AllocateSets(context, m_ShadowMapDSL, createInfo.maxFramesInFlight, "Shadow Map DS");
+		m_vLightDS = context.descriptorPool->AllocateSets(context, m_LightDSL, createInfo.maxFramesInFlight, "Light DS");
 
 		// -- Write UBO --
 		DescriptorSetWriter writer{};
