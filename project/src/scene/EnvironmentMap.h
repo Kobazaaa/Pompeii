@@ -34,6 +34,7 @@ namespace pom
 		//--------------------------------------------------
 		const Sampler& GetSampler() const;
 		const Image& GetSkybox() const;
+		const Image& GetDiffuseIrradianceMap() const;
 
 	private:
 		// -- Helpers --

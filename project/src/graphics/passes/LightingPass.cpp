@@ -55,6 +55,9 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 			.NewLayoutBinding() // Environment Map
 				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
+			.NewLayoutBinding() // Diffuse Irradiance
+				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
 			.Build(context, m_GBufferTexturesDSL);
 		m_DeletionQueue.Push([&] { m_GBufferTexturesDSL.Destroy(context); });
 	}
@@ -202,6 +205,12 @@ void pom::LightingPass::UpdateGBufferDescriptors(const Context& context, const G
 			.AddImageInfo(envMap.GetSkybox().GetView(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, envMap.GetSampler())
 			.WriteImages(m_vGBufferTexturesDS[i], 5)
+			.Execute(context);
+
+		writer
+			.AddImageInfo(envMap.GetDiffuseIrradianceMap().GetView(),
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, envMap.GetSampler())
+			.WriteImages(m_vGBufferTexturesDS[i], 6)
 			.Execute(context);
 	}
 }

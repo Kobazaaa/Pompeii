@@ -133,8 +133,9 @@ pom::EnvironmentMap& pom::EnvironmentMap::CreateDiffIrradianceMap(const Context&
 //--------------------------------------------------
 //    Accessors
 //--------------------------------------------------
-const pom::Sampler& pom::EnvironmentMap::GetSampler()	const { return m_Sampler; }
-const pom::Image& pom::EnvironmentMap::GetSkybox()		const { return m_Skybox; }
+const pom::Sampler& pom::EnvironmentMap::GetSampler()				const { return m_Sampler; }
+const pom::Image& pom::EnvironmentMap::GetSkybox()					const { return m_Skybox; }
+const pom::Image& pom::EnvironmentMap::GetDiffuseIrradianceMap()	const { return m_DiffuseIrradiance; }
 
 //--------------------------------------------------
 //    Helpers

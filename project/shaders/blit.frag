@@ -39,7 +39,7 @@ void main()
 	const vec3 aces = ACESFilmToneMapping(hdrColor);
 	const vec3 reinhard = ReinhardToneMapping(hdrColor);
 	const vec3 uncharted2 = Uncharted2ToneMapping(hdrColor);
-	vec3 ldrColor = uncharted2;
+	vec3 ldrColor = reinhard;
 
 	// -- Output --
 	outColor = vec4(ldrColor, 1.0);

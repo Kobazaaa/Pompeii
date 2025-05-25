@@ -73,7 +73,7 @@ void pom::Scene::SetEnvironmentMap(const std::string& path) { m_EnvMapPath = pat
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void pom::SponzaScene::Initialize()
 {
-	AddModel("models/FlightHelmet.gltf");
+	AddModel("models/Sponza.gltf");
 	SetEnvironmentMap("textures/circus_arena_4k.hdr");
 
 	//AddLight(Light

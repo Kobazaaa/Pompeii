@@ -25,13 +25,14 @@ layout(std430, set = 1, binding = 0) readonly buffer LightBuffer
     Light lights[];
 } lights;
 
-// -- GBuffer & Surroundnigs --
+// -- GBuffer & Surroundings --
 layout(set = 2, binding = 0) uniform sampler2D Albedo_Opacity;
 layout(set = 2, binding = 1) uniform sampler2D Normal;
 layout(set = 2, binding = 2) uniform sampler2D WorldPos;
 layout(set = 2, binding = 3) uniform sampler2D Roughness_Metallic;
 layout(set = 2, binding = 4) uniform sampler2D Depth;
 layout(set = 2, binding = 5) uniform samplerCube EnvironmentMap;
+layout(set = 2, binding = 6) uniform samplerCube DiffuseIrradiance;
 
 // -- Input --
 layout(location = 0) in vec2 fragTexCoord;
@@ -59,11 +60,11 @@ void main()
 	float alpha = texture(Albedo_Opacity, fragTexCoord).a;
 	vec3 worldPos = texture(WorldPos, fragTexCoord).rgb;
 	float roughness = clamp(texture(Roughness_Metallic, fragTexCoord).r, 0.001, 1.0);
-	bool metal = texture(Roughness_Metallic, fragTexCoord).g > 0.5 ? true : false;
+	float metalFactor = texture(Roughness_Metallic, fragTexCoord).g;
+	bool metal = metalFactor > 0.5 ? true : false;
 
 	vec3 n = normalize(texture(Normal, fragTexCoord).rgb * 2.0 - 1.0);
 	vec3 v = -normalize(worldPos - inverse(cam.view)[3].xyz);
-	float k = pow(roughness + 1, 2) / 8.0;
 	vec3 F0 = metal ? albedo : vec3(0.04, 0.04, 0.04);
 
 	// -- Ugly Magenta --
@@ -102,14 +103,15 @@ void main()
 
 		// -- Cook Torrence Specular BRDF --
 		float D = ThrowbridgeReitzGGX(roughness * roughness, n, h);
-		vec3 F = FresnelSchlick(h, l, F0);
-		float G = GeometrySchlickGGX(n, v, k) * GeometrySchlickGGX(n, l, k);
+		vec3 F = FresnelSchlick(h, v, F0);
+		float G = GeometrySmith(n, v, l, roughness, false);
 		vec3 num = D * F * G;
 		float denom = 4.0 * max(dot(n, v), 0.0001) * max(dot(n, l), 0.0001);
 		vec3 spec = num / denom;
 
 		// -- Lambertian Diffuse BRDF --
-		vec3 kd = metal ? vec3(0.0) : (vec3(1.0) - F);
+		vec3 kd = vec3(1.0) - F;
+		kd *= 1.0 - metalFactor;
 		vec3 diff = kd * albedo / PI;
 
 		// -- Lambert Cosine Law -- Observed Area --
@@ -119,7 +121,12 @@ void main()
 		Lo += (diff + spec) * irradiance * oa;
 	}
 
-	vec3 ambient = vec3(0.0005) * albedo;
+	vec3 F = FresnelSchlickRoughness(n, v, F0, roughness);
+	vec3 kd = 1.0 - F;
+	kd *= 1.0 - metalFactor;
+	vec3 diffuseIrradiance = kd * texture(DiffuseIrradiance, n).rgb * albedo;
+
+	vec3 ambient = diffuseIrradiance;
 	vec3 color = ambient + Lo;
 	outColor = vec4(color, alpha);
 }
