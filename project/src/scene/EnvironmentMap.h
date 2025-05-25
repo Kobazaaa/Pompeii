@@ -28,6 +28,7 @@ namespace pom
 		EnvironmentMap& CreateSampler(const Context& context);
 		EnvironmentMap& CreateSkyboxCube(const Context& context, const std::string& path, uint32_t size = 1024);
 		EnvironmentMap& CreateDiffIrradianceMap(const Context& context, uint32_t size = 64);
+		EnvironmentMap& CreateSpecIrradianceMap(const Context& context, uint32_t size = 128);
 
 		//--------------------------------------------------
 		//    Accessors
@@ -35,6 +36,7 @@ namespace pom
 		const Sampler& GetSampler() const;
 		const Image& GetSkybox() const;
 		const Image& GetDiffuseIrradianceMap() const;
+		const Image& GetSpecularIrradianceMap() const;
 
 	private:
 		// -- Helpers --
@@ -47,6 +49,7 @@ namespace pom
 		Sampler m_Sampler{};
 		Image m_Skybox;
 		Image m_DiffuseIrradiance;
+		Image m_SpecularIrradiance;
 	};
 }
 

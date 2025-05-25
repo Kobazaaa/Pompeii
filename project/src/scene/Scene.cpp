@@ -17,7 +17,8 @@ void pom::Scene::AllocateGPU(const Context& context, bool keepHostData)
 		m_EnvironmentMap
 			.CreateSampler(context)
 			.CreateSkyboxCube(context, m_EnvMapPath)
-			.CreateDiffIrradianceMap(context);
+			.CreateDiffIrradianceMap(context)
+			.CreateSpecIrradianceMap(context);
 }
 void pom::Scene::Destroy(const Context& context)
 {

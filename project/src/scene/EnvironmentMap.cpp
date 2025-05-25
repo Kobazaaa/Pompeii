@@ -19,6 +19,7 @@
 //--------------------------------------------------
 void pom::EnvironmentMap::Destroy(const Context& context)
 {
+	m_SpecularIrradiance.Destroy(context);
 	m_DiffuseIrradiance.Destroy(context);
 	m_Skybox.Destroy(context);
 	m_Sampler.Destroy(context);
@@ -134,12 +135,54 @@ pom::EnvironmentMap& pom::EnvironmentMap::CreateDiffIrradianceMap(const Context&
 	return *this;
 }
 
+pom::EnvironmentMap& pom::EnvironmentMap::CreateSpecIrradianceMap(const Context& context, uint32_t size)
+{
+	assert(m_Skybox.GetHandle() && "Cannot create a diffuse irradiance map without the skybox being set up!");
+
+	// -- Build Cube Map Image on GPU --
+	ImageBuilder builder{};
+	builder
+		.SetDebugName("Cube Map Specular Irradiance")
+		.SetWidth(size)
+		.SetHeight(size)
+		.SetFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
+		.SetTiling(VK_IMAGE_TILING_OPTIMAL)
+		.SetUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+		.SetCreateFlags(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT)
+		.SetMipLevels(5) // 5 mip for 5 roughness levels (0.00; 0.25; 0.50; 0.75; 1.00)
+		.SetArrayLayers(6) // 6 beautiful cubic faces :)
+		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		.Build(context, m_SpecularIrradiance);
+	// -- Generate the 6 views to each face --
+	std::array<std::vector<ImageView>, 6> faces{};
+	for (uint32_t i{}; i < 6; ++i)
+	{
+		faces[i].resize(5);
+		for (uint32_t j{}; j < 5; ++j)
+		{
+			faces[i][j] = m_SpecularIrradiance.CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, j, 1, i, 1);
+		}
+	}
+
+	// -- Render To CubeMap --
+	RenderToCubeMap(context, "shaders/cubemap.vert.spv", "shaders/specular_irradiance.frag.spv",
+		m_Skybox, m_Skybox.GetView(), m_Sampler,
+		m_SpecularIrradiance, faces, size);
+	m_SpecularIrradiance.DestroyAllViews(context);
+
+	// -- Generate a view to all faces --
+	m_SpecularIrradiance.CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_CUBE, 0, 5, 0, 6);
+
+	return *this;
+}
+
 //--------------------------------------------------
 //    Accessors
 //--------------------------------------------------
 const pom::Sampler& pom::EnvironmentMap::GetSampler()				const { return m_Sampler; }
 const pom::Image& pom::EnvironmentMap::GetSkybox()					const { return m_Skybox; }
 const pom::Image& pom::EnvironmentMap::GetDiffuseIrradianceMap()	const { return m_DiffuseIrradiance; }
+const pom::Image& pom::EnvironmentMap::GetSpecularIrradianceMap()	const { return m_SpecularIrradiance; }
 
 //--------------------------------------------------
 //    Helpers
@@ -172,6 +215,10 @@ void pom::EnvironmentMap::RenderToCubeMap(const Context& context, const std::str
 		.NewPushConstantRange()
 			.SetPCSize(sizeof(PC))
 			.SetPCStageFlags(VK_SHADER_STAGE_VERTEX_BIT)
+		.NewPushConstantRange()
+			.SetPCOffset(sizeof(PC))
+			.SetPCSize(sizeof(float))
+			.SetPCStageFlags(VK_SHADER_STAGE_FRAGMENT_BIT)
 		.AddLayout(DSL)
 		.Build(context, pipelineLayout);
 
@@ -233,7 +280,7 @@ void pom::EnvironmentMap::RenderToCubeMap(const Context& context, const std::str
 	cmd.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 	{
 		Debugger::BeginDebugLabel(cmd, "Render To CubeMap", glm::vec4(0.6f, 0.2f, 0.8f, 1));
-		VkCommandBuffer vCmd = cmd.GetHandle();
+		const VkCommandBuffer& vCmd = cmd.GetHandle();
 
 		// -- Ready outImage to be rendered to --
 		outImage.TransitionLayout(cmd,
@@ -257,10 +304,11 @@ void pom::EnvironmentMap::RenderToCubeMap(const Context& context, const std::str
 				colorAttachment.clearValue.color = { {0.f, 0.f, 0.f, 1.0f} };
 
 				// -- Rendering Info --
+				uint32_t mip_size = std::max(1u, size >> mipIdx);
 				VkRenderingInfo renderingInfo{};
 				renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
 				renderingInfo.renderArea.offset = {.x = 0, .y = 0};
-				renderingInfo.renderArea.extent = {.width = size, .height = size};
+				renderingInfo.renderArea.extent = {.width = mip_size, .height = mip_size };
 				renderingInfo.layerCount = 1;
 				renderingInfo.colorAttachmentCount = 1;
 				renderingInfo.pColorAttachments = &colorAttachment;
@@ -272,8 +320,8 @@ void pom::EnvironmentMap::RenderToCubeMap(const Context& context, const std::str
 					VkViewport viewport{};
 					viewport.x = 0.0f;
 					viewport.y = 0.0f;
-					viewport.width = static_cast<float>(size);
-					viewport.height = static_cast<float>(size);
+					viewport.width = static_cast<float>(mip_size);
+					viewport.height = static_cast<float>(mip_size);
 					viewport.minDepth = 0.0f;
 					viewport.maxDepth = 1.0f;
 					vkCmdSetViewport(vCmd, 0, 1, &viewport);
@@ -281,7 +329,7 @@ void pom::EnvironmentMap::RenderToCubeMap(const Context& context, const std::str
 					// -- Set Dynamic Scissors --
 					VkRect2D scissor{};
 					scissor.offset = { .x = 0, .y = 0 };
-					scissor.extent = { .width = size, .height = size };
+					scissor.extent = { .width = mip_size, .height = mip_size };
 					vkCmdSetScissor(vCmd, 0, 1, &scissor);
 
 					// -- Bind Pipeline --
@@ -296,7 +344,9 @@ void pom::EnvironmentMap::RenderToCubeMap(const Context& context, const std::str
 						.view = captureViews[layerIdx],
 						.projection = captureProj
 					};
+					float roughness = static_cast<float>(mipIdx) / static_cast<float>(outViews[layerIdx].size() - 1);
 					vkCmdPushConstants(vCmd, pipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PC), &pc);
+					vkCmdPushConstants(vCmd, pipelineLayout.GetHandle(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(PC), sizeof(float), &roughness);
 
 					// -- Draw --
 					vkCmdDraw(vCmd, 36, 1, 0, 0);
