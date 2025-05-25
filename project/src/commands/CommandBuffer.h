@@ -45,7 +45,7 @@ namespace pom
 		void End() const;
 		void Submit(VkQueue queue, bool waitIdle, const SemaphoreInfo& semaphoreInfo = {}, VkFence fence = VK_NULL_HANDLE) const;
 		void Reset() const;
-		void Free(const Device& device) const;
+		void Free(const Device& device);
 
 	private:
 		VkCommandBuffer m_CmdBuffer { VK_NULL_HANDLE };

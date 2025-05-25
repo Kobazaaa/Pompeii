@@ -125,4 +125,4 @@ void pom::CommandBuffer::Submit(VkQueue queue, bool waitIdle, const SemaphoreInf
 		vkQueueWaitIdle(queue);
 }
 void pom::CommandBuffer::Reset() const { vkResetCommandBuffer(m_CmdBuffer, 0); }
-void pom::CommandBuffer::Free(const Device& device) const { vkFreeCommandBuffers(device.GetHandle(), m_PoolOwner, 1, &m_CmdBuffer); }
+void pom::CommandBuffer::Free(const Device& device) { vkFreeCommandBuffers(device.GetHandle(), m_PoolOwner, 1, &m_CmdBuffer); m_CmdBuffer = VK_NULL_HANDLE; }

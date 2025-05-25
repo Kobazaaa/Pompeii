@@ -46,6 +46,11 @@ pom::CommandBuffer& pom::CommandPool::GetBuffer(uint32_t bufferIdx)
 }
 pom::CommandBuffer& pom::CommandPool::AllocateCmdBuffers(uint32_t count, VkCommandBufferLevel level)
 {
+	std::erase_if(m_vCommandBuffers, [](const CommandBuffer& b)
+		{
+			return b.GetHandle() == VK_NULL_HANDLE;
+		});
+
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.commandPool = m_CommandPool;
