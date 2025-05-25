@@ -2,7 +2,7 @@
 #extension GL_GOOGLE_include_directive : require
 
 // -- Includes --
-#include "helpers.glsl"
+#include "helpers_exposure.glsl"
 
 // -- Data --
 layout(set = 0, binding = 0) uniform sampler2D Render;

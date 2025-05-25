@@ -2,7 +2,8 @@
 #extension GL_GOOGLE_include_directive : require
 
 // -- Includes --
-#include "helpers.glsl"
+#include "helpers_lighting.glsl"
+#include "helpers_general.glsl"
 
 // -- Camera --
 layout(set = 0, binding = 0) uniform CameraUbo

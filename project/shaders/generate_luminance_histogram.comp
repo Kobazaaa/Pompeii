@@ -3,7 +3,7 @@
 // https://bruop.github.io/exposure/
 
 // -- Includes --
-#include "helpers.glsl"
+#include "helpers_exposure.glsl"
 
 // -- Data --
 #define GROUP_SIZE 256
