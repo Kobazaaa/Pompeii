@@ -63,7 +63,7 @@ namespace pom
 		SamplerBuilder& EnableCompare(VkCompareOp op);
 		// If not set, a default of VK_SAMPLER_MIPMAP_MODE_LINEAR is assumed
 		SamplerBuilder& SetMipmapMode(VkSamplerMipmapMode mode);
-		// All 0 by default
+		// Bias and min 0, max set to VK_LOD_CLAMP_NONE by default
 		SamplerBuilder& SetMipLevels(float bias, float min, float max);
 
 		void Build(const Context& context, Sampler& sampler) const;

@@ -46,7 +46,7 @@ pom::SamplerBuilder::SamplerBuilder()
 	m_CreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;				//? CAN CHANGE
 	m_CreateInfo.mipLodBias = 0.0f;											//? CAN CHANGE
 	m_CreateInfo.minLod = 0.0f;												//? CAN CHANGE
-	m_CreateInfo.maxLod = 0.0f;												//? CAN CHANGE
+	m_CreateInfo.maxLod = VK_LOD_CLAMP_NONE;								//? CAN CHANGE
 }
 
 

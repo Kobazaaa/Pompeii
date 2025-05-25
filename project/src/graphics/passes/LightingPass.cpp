@@ -119,6 +119,7 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 			.SetFilters(VK_FILTER_NEAREST, VK_FILTER_NEAREST)
 			.SetAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER)
 			.SetMipmapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST)
+			.SetMipLevels(0.f, 0.f, 0.f)
 			.SetBorderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
 			.Build(context, m_GBufferSampler);
 		m_DeletionQueue.Push([&] { m_GBufferSampler.Destroy(context); });
