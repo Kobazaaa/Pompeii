@@ -103,7 +103,8 @@ namespace pom
 		void InsertBarrier(const CommandBuffer& cmd,
 							  VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
 							  VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage);
-		void GenerateMipMaps(const Context& context, const CommandBuffer& cmd, uint32_t texW, uint32_t texH, uint32_t mips, VkImageLayout finalLayout);
+		void GenerateMipMaps(const Context& context, uint32_t texW, uint32_t texH, uint32_t mips, uint32_t layers, VkImageLayout finalLayout);
+		void GenerateMipMaps(const Context& context, const CommandBuffer& cmd, uint32_t texW, uint32_t texH, uint32_t mips, uint32_t layers, VkImageLayout finalLayout);
 
 	private:
 		VkImage m_Image							{ VK_NULL_HANDLE };

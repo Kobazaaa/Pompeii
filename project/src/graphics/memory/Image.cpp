@@ -227,7 +227,22 @@ void pom::Image::InsertBarrier(const CommandBuffer& cmd,
 	TransitionLayout(cmd, m_CurrentLayout, srcAccess, srcStage, dstAccess, dstStage, 0, GetMipLevels(), 0, GetLayerCount());
 }
 
-void pom::Image::GenerateMipMaps(const Context& context, const CommandBuffer& cmd, uint32_t texW, uint32_t texH, uint32_t mips, VkImageLayout finalLayout)
+void pom::Image::GenerateMipMaps(const Context& context, uint32_t texW, uint32_t texH, uint32_t mips, uint32_t layers, VkImageLayout finalLayout)
+{
+	CommandBuffer& cmd = context.commandPool->AllocateCmdBuffers(1);
+	cmd.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	{
+		TransitionLayout(cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			0, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+			VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			0, mips, 0, layers);
+		GenerateMipMaps(context, cmd, texW, texH, mips, layers, finalLayout);
+	}
+	cmd.End();
+	cmd.Submit(context.device.GetGraphicQueue(), true);
+	cmd.Free(context.device);
+}
+void pom::Image::GenerateMipMaps(const Context& context, const CommandBuffer& cmd, uint32_t texW, uint32_t texH, uint32_t mips, uint32_t layers, VkImageLayout finalLayout)
 {
 	// -- Support --
 	VkFormat imageFormat = GetFormat();
@@ -278,7 +293,7 @@ void pom::Image::GenerateMipMaps(const Context& context, const CommandBuffer& cm
 	barrier.subresourceRange.baseMipLevel = 0;					// Gets Overwritten
 	barrier.subresourceRange.levelCount = 1;
 	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.layerCount = layers;
 
 	int32_t mipWidth = static_cast<int32_t>(texW);
 	int32_t mipHeight = static_cast<int32_t>(texH);
@@ -319,7 +334,7 @@ void pom::Image::GenerateMipMaps(const Context& context, const CommandBuffer& cm
 		blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		blit.srcSubresource.mipLevel = mip - 1;
 		blit.srcSubresource.baseArrayLayer = 0;
-		blit.srcSubresource.layerCount = 1;
+		blit.srcSubresource.layerCount = layers;
 
 		// dst
 		blit.dstOffsets[0] = { .x = 0, .y = 0, .z = 0 };
@@ -327,7 +342,7 @@ void pom::Image::GenerateMipMaps(const Context& context, const CommandBuffer& cm
 		blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		blit.dstSubresource.mipLevel = mip;
 		blit.dstSubresource.baseArrayLayer = 0;
-		blit.dstSubresource.layerCount = 1;
+		blit.dstSubresource.layerCount = layers;
 
 		VkBlitImageInfo2 blitInfo{};
 		blitInfo.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2;
@@ -512,9 +527,9 @@ void pom::ImageBuilder::Build(const Context& context, Image& image) const
 			image.TransitionLayout(cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 								   0, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
 								   VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-								   0, m_ImageInfo.mipLevels, 0, 1);
+								   0, m_ImageInfo.mipLevels, 0, m_ImageInfo.arrayLayers);
 			stagingBuffer.CopyToImage(cmd, image, VkExtent3D{ m_InitDataWidth, m_InitDataHeight, 1 }, 0, 0, 1);
-			image.GenerateMipMaps(context, cmd, m_InitDataWidth, m_InitDataHeight, m_ImageInfo.mipLevels, m_FinalLayout);
+			image.GenerateMipMaps(context, cmd, m_InitDataWidth, m_InitDataHeight, m_ImageInfo.mipLevels, m_ImageInfo.arrayLayers, m_FinalLayout);
 		}
 		cmd.End();
 		cmd.Submit(context.device.GetGraphicQueue(), true);
