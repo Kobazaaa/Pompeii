@@ -6,13 +6,15 @@
 
 // -- Standard Library --
 #include <vector>
-#include "CommandPool.h"
+#include <string>
 
 // -- Forward Declarations --
 namespace pom
 {
+	class Sampler;
 	class PhysicalDevice;
 	class CommandPool;
+	class CommandBuffer;
 	struct Context;
 }
 
@@ -21,6 +23,7 @@ namespace pom
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Image View	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	class Image;
 	class ImageView final
 	{
 	public:
@@ -29,10 +32,6 @@ namespace pom
 		//--------------------------------------------------
 		explicit ImageView() = default;
 		~ImageView() = default;
-		ImageView(const ImageView& other) = delete;
-		ImageView(ImageView&& other) noexcept;
-		ImageView& operator=(const ImageView& other) = delete;
-		ImageView& operator=(ImageView&& other) noexcept;
 		void Destroy(const Context& context) const;
 
 		//--------------------------------------------------
@@ -66,6 +65,7 @@ namespace pom
 		Image& operator=(Image&& other) noexcept;
 		void Destroy(const Context& context);
 		void DestroyAllViews(const Context& context);
+		void DestroyViewsFrom(const Context& context, uint32_t firstViewToRemove);
 
 		//--------------------------------------------------
 		//    Helpers
@@ -143,6 +143,7 @@ namespace pom
 		ImageBuilder& SetFormat(VkFormat format);
 		ImageBuilder& SetTiling(VkImageTiling tiling);
 		ImageBuilder& SetUsageFlags(VkImageUsageFlags usage);
+		ImageBuilder& SetCreateFlags(VkImageCreateFlags flags);
 		ImageBuilder& SetMemoryProperties(VkMemoryPropertyFlags properties);
 		ImageBuilder& SetMipLevels(uint32_t levels);
 		ImageBuilder& SetArrayLayers(uint32_t layers);

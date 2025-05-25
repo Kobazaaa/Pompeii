@@ -1,5 +1,6 @@
 // -- Standard Library --
 #include <stdexcept>
+#include <algorithm>
 
 // -- Pompeii Includes --
 #include "Image.h"
@@ -16,24 +17,6 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::ImageView::ImageView(ImageView&& other) noexcept
-{
-	m_pOwnerImage = std::move(other.m_pOwnerImage);
-	other.m_pOwnerImage = nullptr;
-	m_ImageView = std::move(other.m_ImageView);
-	other.m_ImageView = VK_NULL_HANDLE;
-}
-pom::ImageView& pom::ImageView::operator=(ImageView&& other) noexcept
-{
-	if (this == &other)
-		return *this;
-	m_pOwnerImage = std::move(other.m_pOwnerImage);
-	other.m_pOwnerImage = nullptr;
-	m_ImageView = std::move(other.m_ImageView);
-	other.m_ImageView = VK_NULL_HANDLE;
-	return *this;
-}
-
 void pom::ImageView::Destroy(const Context& context) const
 {
 	if (m_ImageView)
@@ -95,6 +78,15 @@ void pom::Image::DestroyAllViews(const Context& context)
 	for (auto& view : m_vImageViews)
 		view.Destroy(context);
 	m_vImageViews.clear();
+}
+void pom::Image::DestroyViewsFrom(const Context& context, uint32_t firstViewToRemove)
+{
+	if (firstViewToRemove > static_cast<uint32_t>(m_vImageViews.size() - 1))
+		return;
+
+	for (uint32_t i{ firstViewToRemove }; i < m_vImageViews.size(); ++i)
+		m_vImageViews[i].Destroy(context);
+	m_vImageViews.erase(m_vImageViews.begin() + firstViewToRemove, m_vImageViews.end());
 }
 
 pom::ImageView& pom::Image::CreateView(const Context& context, VkImageAspectFlags aspectFlags, VkImageViewType viewType,
@@ -410,6 +402,7 @@ void pom::Image::GenerateMipMaps(const Context& context, const CommandBuffer& cm
 	m_CurrentLayout = finalLayout;
 }
 
+
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  ImageBuilder	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -434,7 +427,7 @@ pom::ImageBuilder::ImageBuilder()
 	m_ImageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;		//? CAN CHANGE
 	m_ImageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;			//? CAN CHANGE
 	m_ImageInfo.samples = VK_SAMPLE_COUNT_1_BIT;					//? CAN CHANGE
-	m_ImageInfo.flags = 0;											// CAN'T CHANGE
+	m_ImageInfo.flags = 0;											//? CAN CHANGE
 
 	m_AllocInfo = {};
 	m_AllocInfo.usage = VMA_MEMORY_USAGE_AUTO;						// CAN'T CHANGE
@@ -462,6 +455,7 @@ pom::ImageBuilder& pom::ImageBuilder::SetDepth(uint32_t depth)								{ m_ImageI
 pom::ImageBuilder& pom::ImageBuilder::SetFormat(VkFormat format)							{ m_ImageInfo.format = format; return *this; }
 pom::ImageBuilder& pom::ImageBuilder::SetTiling(VkImageTiling tiling)						{ m_ImageInfo.tiling = tiling; return *this; }
 pom::ImageBuilder& pom::ImageBuilder::SetUsageFlags(VkImageUsageFlags usage)				{ m_ImageInfo.usage = usage; return *this; }
+pom::ImageBuilder& pom::ImageBuilder::SetCreateFlags(VkImageCreateFlags flags)				{ m_ImageInfo.flags |= flags; return *this; }
 pom::ImageBuilder& pom::ImageBuilder::SetMemoryProperties(VkMemoryPropertyFlags properties) { m_AllocInfo.requiredFlags = properties; return *this; }
 pom::ImageBuilder& pom::ImageBuilder::SetMipLevels(uint32_t levels)							{ m_ImageInfo.mipLevels = levels; return *this; }
 pom::ImageBuilder& pom::ImageBuilder::SetArrayLayers(uint32_t layers)						{ m_ImageInfo.arrayLayers = layers; return *this; }
