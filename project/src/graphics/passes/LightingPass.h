@@ -19,6 +19,7 @@ namespace pom
 	class GeometryPass;
 	class DescriptorPool;
 	class Scene;
+	class EnvironmentMap;
 	class Camera;
 	class CommandBuffer;
 }
@@ -34,6 +35,7 @@ namespace pom
 		VkFormat format{};
 		GeometryPass* pGeometryPass;
 		Scene* pScene;
+		std::vector<Image>* pDepthImages;
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -54,7 +56,7 @@ namespace pom
 
 		void Initialize(const Context& context, const LightingPassCreateInfo& createInfo);
 		void Destroy();
-		void UpdateGBufferDescriptors(const Context& context, const GeometryPass& pGeometryPass) const;
+		void UpdateGBufferDescriptors(const Context& context, const GeometryPass& pGeometryPass, const std::vector<Image>& depthImages, const EnvironmentMap& envMap) const;
 		void UpdateLightDescriptors(const Context& context, Scene* pScene);
 		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, Scene* pScene, Camera* pCamera) const;
 

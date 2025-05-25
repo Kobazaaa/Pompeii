@@ -24,11 +24,13 @@ layout(std430, set = 1, binding = 0) readonly buffer LightBuffer
     Light lights[];
 } lights;
 
-// -- GBuffer --
+// -- GBuffer & Surroundnigs --
 layout(set = 2, binding = 0) uniform sampler2D Albedo_Opacity;
 layout(set = 2, binding = 1) uniform sampler2D Normal;
 layout(set = 2, binding = 2) uniform sampler2D WorldPos;
 layout(set = 2, binding = 3) uniform sampler2D Roughness_Metallic;
+layout(set = 2, binding = 4) uniform sampler2D Depth;
+layout(set = 2, binding = 5) uniform samplerCube EnvironmentMap;
 
 // -- Input --
 layout(location = 0) in vec2 fragTexCoord;
@@ -39,6 +41,18 @@ layout(location = 0) out vec4 outColor;
 // -- Shader --
 void main()
 {
+	// -- Environment Map --
+	float depth = texelFetch(Depth, ivec2(gl_FragCoord.xy), 0).r;
+	if(depth >= 1.0)
+	{
+		const vec3 worldPos = GetWorldPositionFromDepth(
+			1.0, ivec2(gl_FragCoord.xy), textureSize(Depth, 0),
+			inverse(cam.proj), inverse(cam.view));
+		vec3 sampleDir = normalize(worldPos);
+		outColor = vec4(texture(EnvironmentMap, sampleDir).rgb, 1.0);
+		return;
+	}
+
 	// -- Common Data --
 	vec3 albedo = texture(Albedo_Opacity, fragTexCoord).rgb;
 	float alpha = texture(Albedo_Opacity, fragTexCoord).a;

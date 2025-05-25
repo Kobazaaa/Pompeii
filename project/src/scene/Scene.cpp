@@ -12,13 +12,20 @@ void pom::Scene::AllocateGPU(const Context& context, bool keepHostData)
 {
 	for (auto& model : m_vModels)
 		model.AllocateResources(context, keepHostData);
+
+	if (!m_EnvMapPath.empty())
+		m_EnvironmentMap
+			.CreateSampler(context)
+			.CreateSkyboxCube(context, m_EnvMapPath);
 }
 void pom::Scene::Destroy(const Context& context)
 {
 	for (auto& model : std::ranges::reverse_view(m_vModels))
 		model.Destroy(context);
+	m_EnvironmentMap.Destroy(context);
 }
 
+// -- Model --
 const std::vector<pom::Model>& pom::Scene::GetModels() const
 {
 	return m_vModels;
@@ -37,6 +44,7 @@ uint32_t pom::Scene::GetImageCount() const
 		});
 }
 
+// -- Light --
 std::vector<pom::Light>& pom::Scene::GetLights()		{ return m_vLights; }
 std::vector<pom::GPULight> pom::Scene::GetLightsGPU()	{ return m_vGPULights; }
 uint32_t pom::Scene::GetLightsCount() const				{ return static_cast<uint32_t>(m_vLights.size()); }
@@ -46,7 +54,6 @@ pom::Light& pom::Scene::AddLight(const Light& light)
 	m_vGPULights.push_back(light.GetGPULight());
 	return m_vLights.back();
 }
-
 void pom::Scene::PopLight()
 {
 	if (m_vLights.empty() || m_vGPULights.empty())
@@ -55,13 +62,18 @@ void pom::Scene::PopLight()
 	m_vGPULights.pop_back();
 }
 
+// -- Environment Map --
+const pom::EnvironmentMap& pom::Scene::GetEnvironmentMap() const { return m_EnvironmentMap; }
+void pom::Scene::SetEnvironmentMap(const std::string& path) { m_EnvMapPath = path; }
+
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Sponza Scene	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void pom::SponzaScene::Initialize()
 {
-	AddModel("models/Sponza.gltf");
+	AddModel("models/FlightHelmet.gltf");
+	SetEnvironmentMap("textures/circus_arena_4k.hdr");
 
 	//AddLight(Light
 	//	{

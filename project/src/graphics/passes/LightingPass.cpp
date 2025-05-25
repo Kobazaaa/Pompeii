@@ -37,16 +37,22 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 		builder = {};
 		builder
 			.SetDebugName("GBuffer Textures Layout")
-			.NewLayoutBinding()
+			.NewLayoutBinding() // Albedo
 				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
-			.NewLayoutBinding()
+			.NewLayoutBinding() // Normal
 				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
-			.NewLayoutBinding()
+			.NewLayoutBinding() // WorldPos
 				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
-			.NewLayoutBinding()
+			.NewLayoutBinding() // Roughness Metallic
+				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
+			.NewLayoutBinding() // Depth
+				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
+			.NewLayoutBinding() // Environment Map
 				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
 			.Build(context, m_GBufferTexturesDSL);
@@ -136,7 +142,7 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 		m_vGBufferTexturesDS = context.descriptorPool->AllocateSets(context, m_GBufferTexturesDSL, createInfo.maxFramesInFlight, "GBuffer Textures DS");
 		m_SSBOLightDS = context.descriptorPool->AllocateSets(context, m_SSBOLightDSL, 1, "Light SSBO DS").front();
 		m_vCameraMatricesDS = context.descriptorPool->AllocateSets(context, m_CameraMatricesDSL, createInfo.maxFramesInFlight, "Camera Matrices DS");
-		UpdateGBufferDescriptors(context, *createInfo.pGeometryPass);
+		UpdateGBufferDescriptors(context, *createInfo.pGeometryPass, *createInfo.pDepthImages, createInfo.pScene->GetEnvironmentMap());
 		UpdateLightDescriptors(context, createInfo.pScene);
 
 		DescriptorSetWriter writer{};
@@ -155,7 +161,7 @@ void pom::LightingPass::Destroy()
 	m_DeletionQueue.Flush();
 }
 
-void pom::LightingPass::UpdateGBufferDescriptors(const Context& context, const GeometryPass& pGeometryPass) const
+void pom::LightingPass::UpdateGBufferDescriptors(const Context& context, const GeometryPass& pGeometryPass, const std::vector<Image>& depthImages, const EnvironmentMap& envMap) const
 {
 	DescriptorSetWriter writer{};
 	for (uint32_t i{}; i < pGeometryPass.GetGBuffers().size(); ++i)
@@ -184,6 +190,18 @@ void pom::LightingPass::UpdateGBufferDescriptors(const Context& context, const G
 			.AddImageInfo(gBuffer.GetRoughnessMetallicImage().GetView(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_GBufferSampler)
 			.WriteImages(m_vGBufferTexturesDS[i], 3)
+			.Execute(context);
+
+		writer
+			.AddImageInfo(depthImages[i].GetView(),
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_GBufferSampler)
+			.WriteImages(m_vGBufferTexturesDS[i], 4)
+			.Execute(context);
+
+		writer
+			.AddImageInfo(envMap.GetSkybox().GetView(),
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, envMap.GetSampler())
+			.WriteImages(m_vGBufferTexturesDS[i], 5)
 			.Execute(context);
 	}
 }

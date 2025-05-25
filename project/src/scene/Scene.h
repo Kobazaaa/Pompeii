@@ -3,6 +3,7 @@
 
 // -- Pom Includes --
 #include "Camera.h"
+#include "EnvironmentMap.h"
 #include "Light.h"
 #include "Model.h"
 
@@ -33,20 +34,30 @@ namespace pom
 		//--------------------------------------------------
 		//    Helpers
 		//--------------------------------------------------
+		// -- Models --
 		const std::vector<Model>& GetModels() const;
 		Model& AddModel(const std::string& path);
 		uint32_t GetImageCount() const;
 
+		// -- Lights --
 		std::vector<Light>& GetLights();
 		std::vector<GPULight> GetLightsGPU();
 		uint32_t GetLightsCount() const;
 		Light& AddLight(const Light& light);
 		void PopLight();
 
+		// -- Environment Map --
+		const EnvironmentMap& GetEnvironmentMap() const;
+	protected:
+		void SetEnvironmentMap(const std::string& path);
+
 	private:
 		std::vector<Model> m_vModels;
 		std::vector<Light> m_vLights;
 		std::vector<GPULight> m_vGPULights;
+
+		std::string m_EnvMapPath{"textures/circus_arena_4k.hdr"};
+		EnvironmentMap m_EnvironmentMap;
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

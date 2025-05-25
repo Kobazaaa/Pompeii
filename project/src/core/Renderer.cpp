@@ -275,13 +275,6 @@ void pom::Renderer::InitializeVulkan()
 		m_Context.deletionQueue.Push([&] { m_SwapChain.Destroy(m_Context); });
 	}
 
-	// -- Allocate Scene - Requirements - []
-	{
-		sceneLoader.join();
-		m_pScene->AllocateGPU(m_Context, false);
-		m_Context.deletionQueue.Push([&] { m_pScene->Destroy(m_Context); });
-	}
-
 	// -- Create Descriptor Pool - Requirements - [Device]
 	{
 		m_Context.descriptorPool = new DescriptorPool();
@@ -295,6 +288,13 @@ void pom::Renderer::InitializeVulkan()
 			.AddFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
 			.Create(m_Context);
 		m_Context.deletionQueue.Push([&] { m_Context.descriptorPool->Destroy(m_Context); delete m_Context.descriptorPool; m_Context.descriptorPool = nullptr; });
+	}
+
+	// -- Allocate Scene - Requirements - []
+	{
+		sceneLoader.join();
+		m_pScene->AllocateGPU(m_Context, false);
+		m_Context.deletionQueue.Push([&] { m_pScene->Destroy(m_Context); });
 	}
 
 	// -- Depth Resources --
@@ -363,6 +363,7 @@ void pom::Renderer::InitializeVulkan()
 		createInfo.pGeometryPass = &m_GeometryPass;
 		createInfo.format = m_vRenderTargets.front().GetFormat();
 		createInfo.pScene = m_pScene;
+		createInfo.pDepthImages = &m_vDepthImages;
 
 		m_LightingPass.Initialize(m_Context, createInfo);
 		m_Context.deletionQueue.Push([&] { m_LightingPass.Destroy(); });
@@ -418,7 +419,7 @@ void pom::Renderer::RecreateSwapChain()
 	// -- Resize Passes if needed --
 	m_ForwardPass.Resize(m_Context, m_SwapChain.GetExtent(), m_SwapChain.GetFormat());
 	m_GeometryPass.Resize(m_Context, m_SwapChain.GetExtent());
-	m_LightingPass.UpdateGBufferDescriptors(m_Context, m_GeometryPass);
+	m_LightingPass.UpdateGBufferDescriptors(m_Context, m_GeometryPass, m_vDepthImages, m_pScene->GetEnvironmentMap());
 	m_BlitPass.UpdateDescriptors(m_Context, m_vRenderTargets);
 
 	// -- Update Camera Settings --
@@ -449,7 +450,7 @@ void pom::Renderer::CreateDepthResources(const Context& context, VkExtent2D exte
 			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
 			//.SetSampleCount(context.physicalDevice.GetMaxSampleCount())
 			.SetFormat(format)
-			.SetUsageFlags(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+			.SetUsageFlags(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
 			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 			.Build(context, image);
 		image.CreateView(context, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
@@ -525,6 +526,13 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 
 		// -- Lighting Pass --
 		{
+			// Transition the current Depth Image to be sampled from
+			depthImage.TransitionLayout(commandBuffer,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+				VK_ACCESS_2_SHADER_SAMPLED_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+				0, 1, 0, 1);
+
 			// Transition the current Render Image to be written to
 			renderImage.TransitionLayout(commandBuffer,
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
