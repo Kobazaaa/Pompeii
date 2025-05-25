@@ -27,6 +27,7 @@ namespace pom
 		//--------------------------------------------------
 		EnvironmentMap& CreateSampler(const Context& context);
 		EnvironmentMap& CreateSkyboxCube(const Context& context, const std::string& path, uint32_t size = 1024);
+		EnvironmentMap& CreateDiffIrradianceMap(const Context& context, uint32_t size = 64);
 
 		//--------------------------------------------------
 		//    Accessors
@@ -44,6 +45,7 @@ namespace pom
 		// -- Data --
 		Sampler m_Sampler{};
 		Image m_Skybox;
+		Image m_DiffuseIrradiance;
 	};
 }
 

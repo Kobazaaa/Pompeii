@@ -19,8 +19,9 @@
 //--------------------------------------------------
 void pom::EnvironmentMap::Destroy(const Context& context)
 {
-	m_Sampler.Destroy(context);
+	m_DiffuseIrradiance.Destroy(context);
 	m_Skybox.Destroy(context);
+	m_Sampler.Destroy(context);
 }
 
 //--------------------------------------------------
@@ -89,6 +90,43 @@ pom::EnvironmentMap& pom::EnvironmentMap::CreateSkyboxCube(const Context& contex
 	m_Skybox.CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_CUBE, 0, 1, 0, 6);
 
 	HDRI.Destroy(context);
+	return *this;
+}
+
+pom::EnvironmentMap& pom::EnvironmentMap::CreateDiffIrradianceMap(const Context& context, uint32_t size)
+{
+	assert(m_Skybox.GetHandle() && "Cannot create a diffuse irradiance map without the skybox being set up!");
+	
+	// -- Build Cube Map Image on GPU --
+	ImageBuilder builder{};
+	builder
+		.SetDebugName("Cube Map Diffuse Irradiance")
+		.SetWidth(size)
+		.SetHeight(size)
+		.SetFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
+		.SetTiling(VK_IMAGE_TILING_OPTIMAL)
+		.SetUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+		.SetCreateFlags(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT)
+		.SetArrayLayers(6) // 6 beautiful cubic faces :)
+		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		.Build(context, m_DiffuseIrradiance);
+	// -- Generate the 6 views to each face --
+	std::array<std::vector<ImageView>, 6> faces{};
+	for (uint32_t i{}; i < 6; ++i)
+	{
+		faces[i].resize(1);
+		faces[i][0] = m_DiffuseIrradiance.CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, i, 1);
+	}
+
+	// -- Render To CubeMap --
+	RenderToCubeMap(context, "shaders/cubemap.vert.spv", "shaders/diffuse_irradiance.frag.spv",
+		m_Skybox, m_Skybox.GetView(), m_Sampler,
+		m_DiffuseIrradiance, faces, size);
+	m_DiffuseIrradiance.DestroyAllViews(context);
+
+	// -- Generate a view to all faces --
+	m_DiffuseIrradiance.CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_CUBE, 0, 1, 0, 6);
+
 	return *this;
 }
 
