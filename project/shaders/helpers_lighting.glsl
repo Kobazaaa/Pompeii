@@ -1,11 +1,16 @@
 #include "constants.glsl"
 
 // -- Normal Distrbution Function --
-float ThrowbridgeReitzGGX(in float a, in vec3 n, in vec3 h)
+float ThrowbridgeReitzGGX(in vec3 n, in vec3 h, in float roughness)
 {
+	float a = roughness * roughness;
 	float a2 = a * a;
 	float nDoth = max(dot(n, h), 0.0);
-	return a2 / (PI * pow((nDoth * nDoth) * (a2 -1) + 1, 2));
+	float nDoth2 = nDoth * nDoth;
+
+	float denom = (nDoth2 * (a2 - 1.0) + 1.0);
+	denom = PI * denom * denom;
+	return a2 / denom;
 }
 
 // -- Fresnel Schlick Function --

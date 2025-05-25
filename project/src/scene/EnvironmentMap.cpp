@@ -34,6 +34,7 @@ pom::EnvironmentMap& pom::EnvironmentMap::CreateSampler(const Context& context)
 		.SetFilters(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
 		.SetAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER)
 		.SetMipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
+		.SetMipLevels(0.f, 0.f, VK_LOD_CLAMP_NONE)
 		.SetBorderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
 		.Build(context, m_Sampler);
 	return *this;
@@ -60,6 +61,7 @@ pom::EnvironmentMap& pom::EnvironmentMap::CreateSkyboxCube(const Context& contex
 	HDRI.CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
 
 	// -- Build Cube Map Image on GPU --
+	uint32_t maxMipsLevels = static_cast<uint32_t>(std::floor(std::log2(size))) + 1;
 	builder = {};
 	builder
 		.SetDebugName("Cube Map Skybox")
@@ -67,7 +69,8 @@ pom::EnvironmentMap& pom::EnvironmentMap::CreateSkyboxCube(const Context& contex
 		.SetHeight(size)
 		.SetFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
 		.SetTiling(VK_IMAGE_TILING_OPTIMAL)
-		.SetUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+		.SetMipLevels(maxMipsLevels)
+		.SetUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
 		.SetCreateFlags(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT)
 		.SetArrayLayers(6) // 6 beautiful cubic faces :)
 		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
@@ -84,10 +87,11 @@ pom::EnvironmentMap& pom::EnvironmentMap::CreateSkyboxCube(const Context& contex
 	RenderToCubeMap(context, "shaders/cubemap.vert.spv", "shaders/cubemap.frag.spv", 
 				 HDRI, HDRI.GetView(), m_Sampler, 
 				 m_Skybox, faces, size);
+	m_Skybox.GenerateMipMaps(context, size, size, maxMipsLevels, 6, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	m_Skybox.DestroyAllViews(context);
 
 	// -- Generate a view to all faces --
-	m_Skybox.CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_CUBE, 0, 1, 0, 6);
+	m_Skybox.CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_CUBE, 0, m_Skybox.GetMipLevels(), 0, 6);
 
 	HDRI.Destroy(context);
 	return *this;

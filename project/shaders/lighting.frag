@@ -102,13 +102,12 @@ void main()
 
 
 		// -- Cook Torrence Specular BRDF --
-		float D = ThrowbridgeReitzGGX(roughness * roughness, n, h);
+		float D = ThrowbridgeReitzGGX(n, h, roughness);
 		vec3 F = FresnelSchlick(h, v, F0);
 		float G = GeometrySmith(n, v, l, roughness, false);
 		vec3 num = D * F * G;
 		float denom = 4.0 * max(dot(n, v), 0.0001) * max(dot(n, l), 0.0001);
 		vec3 spec = num / denom;
-
 		// -- Lambertian Diffuse BRDF --
 		vec3 kd = vec3(1.0) - F;
 		kd *= 1.0 - metalFactor;
@@ -124,7 +123,7 @@ void main()
 	vec3 F = FresnelSchlickRoughness(n, v, F0, roughness);
 	vec3 kd = 1.0 - F;
 	kd *= 1.0 - metalFactor;
-	vec3 diffuseIrradiance = kd * texture(DiffuseIrradiance, n).rgb * albedo;
+	vec3 diffuseIrradiance = kd * texture(DiffuseIrradiance, vec3(n.x, -n.y, n.z)).rgb * albedo;
 
 	vec3 ambient = diffuseIrradiance;
 	vec3 color = ambient + Lo;
