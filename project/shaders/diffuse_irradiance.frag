@@ -2,7 +2,6 @@
 #extension GL_GOOGLE_include_directive : require
 
 // -- Includes --
-#include "constants.glsl"
 #include "helpers_general.glsl"
 
 // -- Input --
@@ -17,11 +16,9 @@ void main()
 {
 	// Sample dir == hemisphere orientation
 	vec3 normal = normalize(fragLocalPos);
-	vec3 up = vec3(0.0, 1.0, 0.0);
-	if(abs(normal.y) > 1.0 - EPSILON)
-		up = vec3(0.0, 0.0, -1.0);
-	vec3 right = normalize(cross(normal, up));
-	up         = normalize(cross(right, normal));
+	vec3 tangent;
+	vec3 bitangent;
+	CalculateTangents(normal, tangent, bitangent);
 
 	vec3 irradiance = vec3(0.0);
 	float sampleCount = 0.0; 
@@ -37,7 +34,7 @@ void main()
 			cos(theta));
 
 			// tangent to world
-			vec3 sampleVec = tangentSample.x * right + tangentSample.y * up + tangentSample.z * normal; 
+			vec3 sampleVec = tangentSample.x * tangent + tangentSample.y * bitangent + tangentSample.z * normal; 
 
 			// sample and accum
 			irradiance += texture(hdri, sampleVec).rgb * cos(theta) * sin(theta);

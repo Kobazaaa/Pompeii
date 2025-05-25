@@ -1,3 +1,5 @@
+#ifndef HELPER_LIGHTING
+#define HELPER_LIGHTING
 #include "constants.glsl"
 
 // -- Normal Distrbution Function --
@@ -47,3 +49,4 @@ float GeometrySmith(in vec3 n, in vec3 v, in vec3 l, in float roughness, in bool
 		return GeometrySchlickGGX_Indirect(n, v, roughness) * GeometrySchlickGGX_Indirect(n, l, roughness);
 	return GeometrySchlickGGX_Direct(n, v, roughness) * GeometrySchlickGGX_Direct(n, l, roughness);
 }
+#endif //HELPER_LIGHTING

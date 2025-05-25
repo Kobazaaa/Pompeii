@@ -1,3 +1,6 @@
+#ifndef HELPER_EXPOSURE
+#define HELPER_EXPOSURE
+
 // -- Tone Mappers --
 vec3 ACESFilmToneMapping(in vec3 color)
 {
@@ -71,3 +74,5 @@ uint ColorToBin(in vec3 hdrColor, in float minLogLum, in float inverseLogLumRang
 	// Map [0; 1] to [1, 255]. Bin 0 handled by epsilon check
 	return uint(logLum * 254.0 + 1.0);
 }
+
+#endif // HELPER_EXPOSURE

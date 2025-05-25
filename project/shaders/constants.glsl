@@ -1,3 +1,6 @@
+#ifndef HELPER_CONSTANTS
+#define HELPER_CONSTANTS
+
 // -- Constants --
 const float PI = 3.14159265;
 const float TWO_PI = 6.28318530;
@@ -14,3 +17,5 @@ const float EPSILON = 0.00001;
 // -- Bit level Constants --
 const int INT_MAX = 2147483647;
 const uint UINT_MAX = 4294967295;
+
+#endif // HELPER_CONSTANTS
