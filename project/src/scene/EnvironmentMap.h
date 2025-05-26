@@ -29,6 +29,7 @@ namespace pom
 		EnvironmentMap& CreateSkyboxCube(const Context& context, const std::string& path, uint32_t size = 1024);
 		EnvironmentMap& CreateDiffIrradianceMap(const Context& context, uint32_t size = 64);
 		EnvironmentMap& CreateSpecIrradianceMap(const Context& context, uint32_t size = 128);
+		EnvironmentMap& CreateBRDFLut(const Context& context, uint32_t size = 512);
 
 		//--------------------------------------------------
 		//    Accessors
@@ -37,6 +38,7 @@ namespace pom
 		const Image& GetSkybox() const;
 		const Image& GetDiffuseIrradianceMap() const;
 		const Image& GetSpecularIrradianceMap() const;
+		const Image& GetBRDFLut() const;
 
 	private:
 		// -- Helpers --
@@ -50,6 +52,7 @@ namespace pom
 		Image m_Skybox;
 		Image m_DiffuseIrradiance;
 		Image m_SpecularIrradiance;
+		Image m_BRDFLut;
 	};
 }
 

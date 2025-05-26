@@ -19,6 +19,7 @@
 //--------------------------------------------------
 void pom::EnvironmentMap::Destroy(const Context& context)
 {
+	m_BRDFLut.Destroy(context);
 	m_SpecularIrradiance.Destroy(context);
 	m_DiffuseIrradiance.Destroy(context);
 	m_Skybox.Destroy(context);
@@ -176,6 +177,142 @@ pom::EnvironmentMap& pom::EnvironmentMap::CreateSpecIrradianceMap(const Context&
 	return *this;
 }
 
+pom::EnvironmentMap& pom::EnvironmentMap::CreateBRDFLut(const Context& context, uint32_t size)
+{
+	assert(m_Skybox.GetHandle() && "Cannot create a diffuse irradiance map without the skybox being set up!");
+
+	// -- Build Cube Map Image on GPU --
+	ImageBuilder builder{};
+	builder
+		.SetDebugName("Cube Map BRDF LUT")
+		.SetWidth(size)
+		.SetHeight(size)
+		.SetFormat(VK_FORMAT_R32G32_SFLOAT)
+		.SetTiling(VK_IMAGE_TILING_OPTIMAL)
+		.SetUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		.Build(context, m_BRDFLut);
+	m_BRDFLut.CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
+
+	// -- Pipeline Layout --
+	PipelineLayout pipelineLayout{};
+	PipelineLayoutBuilder pipelineLayoutBuilder{};
+	pipelineLayoutBuilder
+		.Build(context, pipelineLayout);
+
+	// -- Load Shaders --
+	ShaderLoader shaderLoader{};
+	ShaderModule vertShader;
+	ShaderModule fragShader;
+	shaderLoader.Load(context, "shaders/fullscreenTri.vert.spv", vertShader);
+	shaderLoader.Load(context, "shaders/brdf_lut.frag.spv", fragShader);
+
+	// -- Pipeline --
+	VkPipelineRenderingCreateInfo renderingCreateInfo{};
+	VkFormat format = m_BRDFLut.GetFormat();
+	renderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+	renderingCreateInfo.colorAttachmentCount = 1;
+	renderingCreateInfo.pColorAttachmentFormats = &format;
+
+	Pipeline pipeline{};
+	GraphicsPipelineBuilder pipelineBuilder{};
+	pipelineBuilder
+		.SetDebugName("Graphics Pipeline (Render To BRDF Lut)")
+		.SetPipelineLayout(pipelineLayout)
+		.SetupDynamicRendering(renderingCreateInfo)
+		.AddDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
+		.AddDynamicState(VK_DYNAMIC_STATE_SCISSOR)
+		.AddShader(vertShader, VK_SHADER_STAGE_VERTEX_BIT)
+		.AddShader(fragShader, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+		.SetCullMode(VK_CULL_MODE_NONE)
+		.SetFrontFace(VK_FRONT_FACE_CLOCKWISE)
+		.SetPolygonMode(VK_POLYGON_MODE_FILL)
+		.SetDepthTest(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER)
+		.Build(context, pipeline);
+
+	// -- Render --
+	CommandBuffer& cmd = context.commandPool->AllocateCmdBuffers(1);
+	cmd.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	{
+		Debugger::BeginDebugLabel(cmd, "Render To BRDF LUT", glm::vec4(0.6f, 0.2f, 0.8f, 1));
+		const VkCommandBuffer& vCmd = cmd.GetHandle();
+
+		// -- Ready outImage to be rendered to --
+		m_BRDFLut.TransitionLayout(cmd,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
+			VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+			0, m_BRDFLut.GetMipLevels(), 0, m_BRDFLut.GetLayerCount());
+
+		// -- Render --
+		// -- Setup Attachment --
+		VkRenderingAttachmentInfo colorAttachment{};
+		colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		colorAttachment.imageView = m_BRDFLut.GetView().GetHandle();
+		colorAttachment.imageLayout = m_BRDFLut.GetCurrentLayout();
+		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachment.clearValue.color = { {0.f, 0.f, 0.f, 1.0f} };
+
+		// -- Rendering Info --
+		VkRenderingInfo renderingInfo{};
+		renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+		renderingInfo.renderArea.offset = { .x = 0, .y = 0 };
+		renderingInfo.renderArea.extent = { .width = size, .height = size };
+		renderingInfo.layerCount = 1;
+		renderingInfo.colorAttachmentCount = 1;
+		renderingInfo.pColorAttachments = &colorAttachment;
+
+		// -- Begin Rendering --
+		vkCmdBeginRendering(vCmd, &renderingInfo);
+		{
+			// -- Set Dynamic Viewport --
+			VkViewport viewport{};
+			viewport.x = 0.0f;
+			viewport.y = 0.0f;
+			viewport.width = static_cast<float>(size);
+			viewport.height = static_cast<float>(size);
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+			vkCmdSetViewport(vCmd, 0, 1, &viewport);
+
+			// -- Set Dynamic Scissors --
+			VkRect2D scissor{};
+			scissor.offset = { .x = 0, .y = 0 };
+			scissor.extent = { .width = size, .height = size };
+			vkCmdSetScissor(vCmd, 0, 1, &scissor);
+
+			// -- Bind Pipeline --
+			vkCmdBindPipeline(vCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.GetHandle());
+
+			// -- Draw --
+			vkCmdDraw(vCmd, 3, 1, 0, 0);
+		}
+		vkCmdEndRendering(vCmd);
+
+		// -- Ready outImage to be read from --
+		m_BRDFLut.TransitionLayout(cmd,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+			VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+			0, m_BRDFLut.GetMipLevels(), 0, m_BRDFLut.GetLayerCount());
+
+		Debugger::EndDebugLabel(cmd);
+	}
+	cmd.End();
+	cmd.Submit(context.device.GetGraphicQueue(), true);
+	cmd.Free(context.device);
+
+	// -- Cleanup --
+	pipeline.Destroy(context);
+	fragShader.Destroy(context);
+	vertShader.Destroy(context);
+	pipelineLayout.Destroy(context);
+
+	return *this;
+}
+
 //--------------------------------------------------
 //    Accessors
 //--------------------------------------------------
@@ -183,6 +320,7 @@ const pom::Sampler& pom::EnvironmentMap::GetSampler()				const { return m_Sample
 const pom::Image& pom::EnvironmentMap::GetSkybox()					const { return m_Skybox; }
 const pom::Image& pom::EnvironmentMap::GetDiffuseIrradianceMap()	const { return m_DiffuseIrradiance; }
 const pom::Image& pom::EnvironmentMap::GetSpecularIrradianceMap()	const { return m_SpecularIrradiance; }
+const pom::Image& pom::EnvironmentMap::GetBRDFLut()					const { return m_BRDFLut; }
 
 //--------------------------------------------------
 //    Helpers

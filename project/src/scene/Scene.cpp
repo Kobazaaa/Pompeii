@@ -18,7 +18,8 @@ void pom::Scene::AllocateGPU(const Context& context, bool keepHostData)
 			.CreateSampler(context)
 			.CreateSkyboxCube(context, m_EnvMapPath)
 			.CreateDiffIrradianceMap(context)
-			.CreateSpecIrradianceMap(context);
+			.CreateSpecIrradianceMap(context)
+			.CreateBRDFLut(context);
 }
 void pom::Scene::Destroy(const Context& context)
 {
