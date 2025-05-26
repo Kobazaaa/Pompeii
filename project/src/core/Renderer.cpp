@@ -18,12 +18,9 @@ pom::Renderer::Renderer(Camera* pCamera, Window* pWindow)
 {
 	m_pWindow = pWindow;
 	m_pCamera = pCamera;
-	m_pScene = new SponzaScene();
+	m_pScene = new SpheresScene();
 	m_Context.deletionQueue.Push([&] {delete m_pScene; });
 	InitializeVulkan();
-
-	Texture test{ "textures/autumn_field_puresky_4k.hdr", VK_FORMAT_R32G32B32A32_SFLOAT, true };
-	test.FreePixels();
 }
 pom::Renderer::~Renderer()
 {

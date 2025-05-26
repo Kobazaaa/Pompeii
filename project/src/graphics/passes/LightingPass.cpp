@@ -236,6 +236,8 @@ void pom::LightingPass::UpdateGBufferDescriptors(const Context& context, const G
 void pom::LightingPass::UpdateLightDescriptors(const Context& context, Scene* pScene)
 {
 	uint32_t lightCount = pScene->GetLightsCount();
+	if (lightCount <= 0)
+		return;
 	const VkDeviceSize totalSize = /*uint + 3padding*/4 * sizeof(uint32_t) + sizeof(GPULight) * lightCount;
 
 	if (m_SSBOLights.Size() < totalSize)
