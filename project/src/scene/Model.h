@@ -53,6 +53,20 @@ namespace pom
 		bool operator==(const Vertex& other) const;
 	};
 
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//? ~~	  AABB	
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	struct AABB
+	{
+		glm::vec3 min{  FLT_MAX };
+		glm::vec3 max{ -FLT_MAX };
+
+		void GrowToInclude(const glm::vec3& p)
+		{
+			min = glm::min(min, p);
+			max = glm::max(max, p);
+		}
+	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Mesh	
@@ -66,6 +80,8 @@ namespace pom
 		Material material{};
 
 		glm::mat4 matrix = glm::mat4(1);
+		AABB aabb{};
+
 		std::string name;
 	};
 
@@ -101,6 +117,7 @@ namespace pom
 		std::vector<uint32_t> indices{};
 		std::vector<Texture> textures{};
 		std::unordered_map<std::string, uint32_t> pathToIdx{};
+		AABB aabb{};
 
 		// -- GPU --
 		Buffer vertexBuffer;

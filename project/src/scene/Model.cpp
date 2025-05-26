@@ -254,6 +254,8 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene)
 										 pMesh->mBitangents[vIdx].z);
 		}
 		vertices.push_back(vertex);
+		opaqueMeshes.back().aabb.GrowToInclude(vertex.position);
+		aabb.GrowToInclude(vertex.position);
 	}
 
 	// -- Process Indices --
