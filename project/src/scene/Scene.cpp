@@ -37,6 +37,7 @@ pom::Model& pom::Scene::AddModel(const std::string& path)
 {
 	m_vModels.emplace_back();
 	m_vModels.back().LoadModel(path);
+	m_AABB.GrowToInclude(m_vModels.back().aabb);
 	return m_vModels.back();
 }
 uint32_t pom::Scene::GetImageCount() const
@@ -49,20 +50,47 @@ uint32_t pom::Scene::GetImageCount() const
 
 // -- Light --
 std::vector<pom::Light>& pom::Scene::GetLights()		{ return m_vLights; }
-std::vector<pom::GPULight> pom::Scene::GetLightsGPU()	{ return m_vGPULights; }
+std::vector<pom::GPULight> pom::Scene::GetLightsGPU()
+{
+	std::vector<pom::GPULight> res{};
+	res.resize(m_vLights.size());
+	for (uint32_t i{}; i < m_vLights.size(); ++i)
+	{
+		const auto& l = m_vLights[i];
+		GPULight gpuL{};
+		gpuL.dirPosType = {l.GetDirPos(), static_cast<int>(l.GetType())};
+		gpuL.intensity = l.GetLuxLumen();
+		gpuL.color = l.GetColor();
+		gpuL.shadowMatrixOffset = i == 0 ? 0 : res[i - 1].shadowMatrixCount + res[i - 1].shadowMatrixOffset;
+		gpuL.shadowMatrixCount = l.GetType() == Light::Type::Point ? 6 : 1;
+		res.push_back(gpuL);
+	}
+	return res;
+}
+std::vector<glm::mat4> pom::Scene::GetLightMatrices()
+{
+	std::vector<glm::mat4> res{};
+	for (auto& l : m_vLights)
+	{
+		l.CalculateMatrices(m_AABB);
+		const auto& proj = l.GetProjectionMatrix();
+		for (const auto& v : l.GetViewMatrices())
+			res.push_back(proj * v);
+	}
+	return res;
+}
+
 uint32_t pom::Scene::GetLightsCount() const				{ return static_cast<uint32_t>(m_vLights.size()); }
 pom::Light& pom::Scene::AddLight(const Light& light)
 {
 	m_vLights.push_back(light);
-	m_vGPULights.push_back(light.GetGPULight());
 	return m_vLights.back();
 }
 void pom::Scene::PopLight()
 {
-	if (m_vLights.empty() || m_vGPULights.empty())
+	if (m_vLights.empty())
 		return;
 	m_vLights.pop_back();
-	m_vGPULights.pop_back();
 }
 
 // -- Environment Map --

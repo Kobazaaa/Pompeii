@@ -1,6 +1,9 @@
 #ifndef GENERAL_LIGHT_H
 #define GENERAL_LIGHT_H
 
+// -- Standard Library --
+#include <vector>
+
 // -- Math Includes --
 #include "glm/glm.hpp"
 
@@ -14,12 +17,15 @@ namespace pom
 		glm::vec4 dirPosType;
 		glm::vec3 color;
 		float intensity;
-		glm::vec4 params;
+		uint32_t shadowMatrixOffset;
+		uint32_t shadowMatrixCount;
+		float _padding[2];
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Light	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	struct AABB;
 	class Light final
 	{
 	public:
@@ -36,7 +42,6 @@ namespace pom
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		const GPULight& GetGPULight() const;
 		Type GetType() const;
 
 		glm::vec3 GetDirPos() const;
@@ -48,6 +53,10 @@ namespace pom
 		float GetLuxLumen() const;
 		void SetLuxLumen(float luxLumen);
 
+		void CalculateMatrices(const AABB& aabb);
+		const std::vector<glm::mat4>& GetViewMatrices() const;
+		const glm::mat4& GetProjectionMatrix() const;
+
 	private:
 		// -- Data --
 		Type m_Type;
@@ -55,7 +64,9 @@ namespace pom
 		glm::vec3 m_Color;
 		float m_LuxLumen;
 
-		GPULight m_GPULight;
+		// -- Matrices --
+		std::vector<glm::mat4> m_ViewMatrix;
+		glm::mat4 m_ProjMatrix;
 	};
 }
 

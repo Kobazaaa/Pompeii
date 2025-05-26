@@ -42,6 +42,7 @@ namespace pom
 		// -- Lights --
 		std::vector<Light>& GetLights();
 		std::vector<GPULight> GetLightsGPU();
+		std::vector<glm::mat4> GetLightMatrices();
 		uint32_t GetLightsCount() const;
 		Light& AddLight(const Light& light);
 		void PopLight();
@@ -54,7 +55,7 @@ namespace pom
 	private:
 		std::vector<Model> m_vModels;
 		std::vector<Light> m_vLights;
-		std::vector<GPULight> m_vGPULights;
+		AABB m_AABB;
 
 		std::string m_EnvMapPath{"textures/circus_arena_4k.hdr"};
 		EnvironmentMap m_EnvironmentMap;

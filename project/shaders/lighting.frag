@@ -18,13 +18,16 @@ struct Light
     vec4 dirpostype;
     vec3 color;
     float luxLumen;
-	vec4 params;
+	uint shadowMatrixOffset;
+	uint shadowMatrixCount;
 };
 layout(std430, set = 1, binding = 0) readonly buffer LightBuffer
 {
 	uint lightCount;
     Light lights[];
 } lights;
+
+// add matrix buffer & dir/point depth images
 
 // -- GBuffer & Surroundings --
 layout(set = 2, binding = 0) uniform sampler2D Albedo_Opacity;
