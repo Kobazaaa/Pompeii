@@ -14,6 +14,7 @@ namespace pom
 		glm::vec4 dirPosType;
 		glm::vec3 color;
 		float intensity;
+		glm::vec4 params;
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

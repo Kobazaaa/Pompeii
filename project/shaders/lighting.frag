@@ -18,6 +18,7 @@ struct Light
     vec4 dirpostype;
     vec3 color;
     float luxLumen;
+	vec4 params;
 };
 layout(std430, set = 1, binding = 0) readonly buffer LightBuffer
 {
