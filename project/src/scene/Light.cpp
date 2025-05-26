@@ -83,7 +83,16 @@ void pom::Light::CalculateMatrices(const AABB& aabb)
 	}
 	// -- Point --
 	{
-
+		glm::vec3 eye = glm::vec3(0.f);
+		m_ViewMatrix = {
+			glm::lookAt(eye, eye + glm::vec3( 1.f,  0.f,  0.f), glm::vec3(0.f, -1.f,  0.f)), // +X
+			glm::lookAt(eye, eye + glm::vec3(-1.f,  0.f,  0.f), glm::vec3(0.f, -1.f,  0.f)), // -X
+			glm::lookAt(eye, eye + glm::vec3( 0.f, -1.f,  0.f), glm::vec3(0.f,  0.f, -1.f)), // -Y
+			glm::lookAt(eye, eye + glm::vec3( 0.f,  1.f,  0.f), glm::vec3(0.f,  0.f,  1.f)), // +Y
+			glm::lookAt(eye, eye + glm::vec3( 0.f,  0.f,  1.f), glm::vec3(0.f, -1.f,  0.f)), // +Z
+			glm::lookAt(eye, eye + glm::vec3( 0.f,  0.f, -1.f), glm::vec3(0.f, -1.f,  0.f)), // -Z
+		};
+		m_ProjMatrix = glm::perspective(glm::radians(90.f), 1.f, 0.1f, 10.f);
 	}
 }
 
