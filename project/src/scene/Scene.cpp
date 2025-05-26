@@ -120,3 +120,13 @@ void pom::FlightHelmetScene::Initialize()
 		});
 }
 
+
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  FlightHelmet Scene	
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void pom::SpheresScene::Initialize()
+{
+	AddModel("models/MetalRoughSpheres.gltf");
+	SetEnvironmentMap("textures/circus_arena_4k.hdr");
+}
+

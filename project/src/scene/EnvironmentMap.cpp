@@ -34,7 +34,7 @@ pom::EnvironmentMap& pom::EnvironmentMap::CreateSampler(const Context& context)
 	SamplerBuilder builder{};
 	builder
 		.SetFilters(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
-		.SetAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER)
+		.SetAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
 		.SetMipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
 		.SetMipLevels(0.f, 0.f, VK_LOD_CLAMP_NONE)
 		.SetBorderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)

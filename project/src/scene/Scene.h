@@ -79,6 +79,16 @@ namespace pom
 		explicit FlightHelmetScene() = default;
 		void Initialize() override;
 	};
+
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//? ~~	  Spheres Scene	
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	class SpheresScene final : public Scene
+	{
+	public:
+		explicit SpheresScene() = default;
+		void Initialize() override;
+	};
 }
 
 #endif // SCENE_H
