@@ -66,7 +66,12 @@ namespace pom
 			min = glm::min(min, p);
 			max = glm::max(max, p);
 		}
-	};
+		void GrowToInclude(const AABB& aabb)
+		{
+			min = glm::min(min, aabb.min);
+			max = glm::max(max, aabb.max);
+		}
+};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Mesh	
