@@ -33,6 +33,8 @@ layout(set = 2, binding = 3) uniform sampler2D Roughness_Metallic;
 layout(set = 2, binding = 4) uniform sampler2D Depth;
 layout(set = 2, binding = 5) uniform samplerCube EnvironmentMap;
 layout(set = 2, binding = 6) uniform samplerCube DiffuseIrradiance;
+layout(set = 2, binding = 7) uniform samplerCube SpecularIrradiance;
+layout(set = 2, binding = 8) uniform sampler2D BrdfLut;
 
 // -- Input --
 layout(location = 0) in vec2 fragTexCoord;
@@ -123,9 +125,16 @@ void main()
 	vec3 F = FresnelSchlickRoughness(n, v, F0, roughness);
 	vec3 kd = 1.0 - F;
 	kd *= 1.0 - metalFactor;
-	vec3 diffuseIrradiance = kd * texture(DiffuseIrradiance, vec3(n.x, -n.y, n.z)).rgb * albedo;
+	vec3 diffuseIrradiance = texture(DiffuseIrradiance, vec3(n.x, -n.y, n.z)).rgb;
+	vec3 diffuse = kd * diffuseIrradiance * albedo;
 
-	vec3 ambient = diffuseIrradiance;
+	const float maxLod = 4.0;
+	vec3 refl = reflect(-v, n);
+	const vec3 specularIrradiance = textureLod(SpecularIrradiance, refl, roughness * maxLod).rgb;
+	const vec2 brdfLUT = texture(BrdfLut, vec2(max(dot(n, v), 0.0), roughness)).rg;
+	vec3 specular = specularIrradiance * (F * brdfLUT.x + brdfLUT.y);
+
+	vec3 ambient = (diffuse + specular);
 	vec3 color = ambient + Lo;
 	outColor = vec4(color, alpha);
 }

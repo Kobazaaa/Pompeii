@@ -58,6 +58,12 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 			.NewLayoutBinding() // Diffuse Irradiance
 				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
+			.NewLayoutBinding() // Specular Irradiance
+				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
+			.NewLayoutBinding() // BRDF LUT
+				.SetType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+				.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
 			.Build(context, m_GBufferTexturesDSL);
 		m_DeletionQueue.Push([&] { m_GBufferTexturesDSL.Destroy(context); });
 	}
@@ -212,6 +218,18 @@ void pom::LightingPass::UpdateGBufferDescriptors(const Context& context, const G
 			.AddImageInfo(envMap.GetDiffuseIrradianceMap().GetView(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, envMap.GetSampler())
 			.WriteImages(m_vGBufferTexturesDS[i], 6)
+			.Execute(context);
+
+		writer
+			.AddImageInfo(envMap.GetSpecularIrradianceMap().GetView(),
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, envMap.GetSampler())
+			.WriteImages(m_vGBufferTexturesDS[i], 7)
+			.Execute(context);
+
+		writer
+			.AddImageInfo(envMap.GetBRDFLut().GetView(),
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, envMap.GetSampler())
+			.WriteImages(m_vGBufferTexturesDS[i], 8)
 			.Execute(context);
 	}
 }
