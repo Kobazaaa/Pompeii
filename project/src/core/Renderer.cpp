@@ -18,7 +18,7 @@ pom::Renderer::Renderer(Camera* pCamera, Window* pWindow)
 {
 	m_pWindow = pWindow;
 	m_pCamera = pCamera;
-	m_pScene = new SpheresScene();
+	m_pScene = new SponzaScene();
 	m_Context.deletionQueue.Push([&] {delete m_pScene; });
 	InitializeVulkan();
 }
@@ -308,26 +308,26 @@ void pom::Renderer::InitializeVulkan()
 
 	// -- Shadow Pass --
 	{
-		ShadowPassCreateInfo createInfo{};
-		createInfo.extent = glm::vec2(8192, 8192);
-		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
-
-		m_ShadowPass.Initialize(m_Context, createInfo);
-		m_Context.deletionQueue.Push([&] {m_ShadowPass.Destroy(); });
+		//ShadowPassCreateInfo createInfo{};
+		//createInfo.extent = glm::vec2(8192, 8192);
+		//createInfo.maxFramesInFlight = m_MaxFramesInFlight;
+		//
+		//m_ShadowPass.Initialize(m_Context, createInfo);
+		//m_Context.deletionQueue.Push([&] {m_ShadowPass.Destroy(); });
 	}
 
 	// -- Forward Pass --
 	{
-		ForwardPassCreateInfo createInfo{};
-		createInfo.pShadowPass = &m_ShadowPass;
-		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
-		createInfo.pScene = m_pScene;
-		createInfo.extent = m_SwapChain.GetExtent();
-		createInfo.format = m_SwapChain.GetFormat();
-		createInfo.depthFormat = m_vDepthImages[0].GetFormat();
-
-		m_ForwardPass.Initialize(m_Context, createInfo);
-		m_Context.deletionQueue.Push([&] {m_ForwardPass.Destroy(); });
+		//ForwardPassCreateInfo createInfo{};
+		//createInfo.pShadowPass = &m_ShadowPass;
+		//createInfo.maxFramesInFlight = m_MaxFramesInFlight;
+		//createInfo.pScene = m_pScene;
+		//createInfo.extent = m_SwapChain.GetExtent();
+		//createInfo.format = m_SwapChain.GetFormat();
+		//createInfo.depthFormat = m_vDepthImages[0].GetFormat();
+		//
+		//m_ForwardPass.Initialize(m_Context, createInfo);
+		//m_Context.deletionQueue.Push([&] {m_ForwardPass.Destroy(); });
 	}
 
 	// -- Geometry Pass --
