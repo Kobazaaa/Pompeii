@@ -268,9 +268,9 @@ void pom::ForwardPass::Record(const Context& context, CommandBuffer& commandBuff
 	// Update FS UBO
 	// todo only takes front light and assumes its dir
 	UniformBufferFS ubofs;
-	ubofs.intensity = pScene->GetLights().front().GetLuxLumen();
-	ubofs.color = pScene->GetLights().front().GetColor();
-	ubofs.dir = pScene->GetLights().front().GetDirPos();
+	ubofs.intensity = pScene->GetLights().front().luxLumen;
+	ubofs.color = pScene->GetLights().front().color;
+	ubofs.dir = pScene->GetLights().front().dirPos;
 	vmaCopyMemoryToAllocation(context.allocator, &ubofs, m_vLightBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(ubofs));
 
 	// todo is this needed? I don't think the layout ever changes?

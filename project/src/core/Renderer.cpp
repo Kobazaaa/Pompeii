@@ -414,7 +414,7 @@ void pom::Renderer::RecreateSwapChain()
 	CreateRenderTargetResources(m_Context, m_SwapChain.GetExtent());
 
 	// -- Resize Passes if needed --
-	m_ForwardPass.Resize(m_Context, m_SwapChain.GetExtent(), m_SwapChain.GetFormat());
+	//m_ForwardPass.Resize(m_Context, m_SwapChain.GetExtent(), m_SwapChain.GetFormat());
 	m_GeometryPass.Resize(m_Context, m_SwapChain.GetExtent());
 	m_LightingPass.UpdateGBufferDescriptors(m_Context, m_GeometryPass, m_vDepthImages, m_pScene->GetEnvironmentMap());
 	m_BlitPass.UpdateDescriptors(m_Context, m_vRenderTargets);

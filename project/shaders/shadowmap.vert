@@ -1,16 +1,11 @@
 #version 450
 
-// -- LightData --
-layout(set = 0, binding = 0) uniform LightData
-{
-	mat4 lightSpace;
-} ubo;
-
 // -- Model Data --
-layout(push_constant) uniform constants
+layout(push_constant) uniform PushConstants
 {
+	mat4 projView;
 	mat4 model;
-} modelData;
+} pc;
 
 
 // -- Input --
@@ -24,5 +19,5 @@ layout(location = 5) in vec2 inTexCoord;
 // -- Shader --
 void main()
 {
-    gl_Position = ubo.lightSpace * modelData.model * vec4(inPosition, 1.0);
+    gl_Position = pc.projView * pc.model * vec4(inPosition, 1.0);
 }

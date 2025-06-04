@@ -7,6 +7,17 @@
 // -- Math Includes --
 #include "glm/glm.hpp"
 
+// -- Pompeii Includes --
+#include "Image.h"
+
+// -- Forward Declarations --
+namespace pom
+{
+	struct AABB;
+	struct Context;
+	class Scene;
+}
+
 namespace pom
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -25,7 +36,6 @@ namespace pom
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Light	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	struct AABB;
 	class Light final
 	{
 	public:
@@ -38,35 +48,38 @@ namespace pom
 		};
 		Light() = default;
 		Light(const glm::vec3& dirPos, const glm::vec3& col, float luxLumen, Type type);
+		void DestroyDepthMap(const Context& context);
+
+		Light(const Light& other) = delete;
+		Light(Light&& other) noexcept;
+		Light& operator=(const Light& other) = delete;
+		Light& operator=(Light&& other) noexcept;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		Type GetType() const;
-
-		glm::vec3 GetDirPos() const;
-		void SetDirPos(const glm::vec3& dirPos);
-
-		glm::vec3 GetColor() const;
-		void SetColor(const glm::vec3& col);
-		
-		float GetLuxLumen() const;
-		void SetLuxLumen(float luxLumen);
-
-		void CalculateMatrices(const AABB& aabb);
-		const std::vector<glm::mat4>& GetViewMatrices() const;
-		const glm::mat4& GetProjectionMatrix() const;
-
-	private:
 		// -- Data --
-		Type m_Type;
-		glm::vec3 m_DirPos;
-		glm::vec3 m_Color;
-		float m_LuxLumen;
+		Type GetType() const;
+		glm::vec3 dirPos;
+		glm::vec3 color;
+		float luxLumen;
 
 		// -- Matrices --
-		std::vector<glm::mat4> m_ViewMatrix;
-		glm::mat4 m_ProjMatrix;
+		std::vector<glm::mat4> viewMatrices;
+		glm::mat4 projMatrix;
+
+		const Image& GetDepthMap() const;
+		void GenerateDepthMap(const Context& context, const Scene* pScene, uint32_t size = 2048);
+
+	private:
+		// -- Helper --
+		void GenerateDepthMap(const Context& context, const Scene* pScene, Image& outImage, std::vector<ImageView>& outViews, uint32_t size);
+
+		// -- Data --
+		Type m_Type;
+
+		// -- Depth Map --
+		Image m_DepthMap;
 	};
 }
 

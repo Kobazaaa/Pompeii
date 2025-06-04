@@ -1,6 +1,11 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+// -- Defines --
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_LEFT_HANDED
+#define GLM_FORCE_RADIANS
+
 // -- Math Includes --
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

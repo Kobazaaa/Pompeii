@@ -255,7 +255,7 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene)
 		}
 		vertices.push_back(vertex);
 		opaqueMeshes.back().aabb.GrowToInclude(vertex.position);
-		aabb.GrowToInclude(vertex.position);
+		aabb.GrowToInclude(opaqueMeshes.back().matrix * glm::vec4{ vertex.position, 1.f });
 	}
 
 	// -- Process Indices --

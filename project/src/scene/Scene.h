@@ -1,6 +1,11 @@
 #ifndef SCENE_H
 #define SCENE_H
 
+// -- Defines --
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_LEFT_HANDED
+#define GLM_FORCE_RADIANS
+
 // -- Pom Includes --
 #include "Camera.h"
 #include "EnvironmentMap.h"
@@ -44,8 +49,11 @@ namespace pom
 		std::vector<GPULight> GetLightsGPU();
 		std::vector<glm::mat4> GetLightMatrices();
 		uint32_t GetLightsCount() const;
-		Light& AddLight(const Light& light);
+		Light& AddLight(Light&& light);
 		void PopLight();
+
+		void CalculateLightMatrices();
+		void GenerateDepthMaps(const Context& context, uint32_t size = 2048);
 
 		// -- Environment Map --
 		const EnvironmentMap& GetEnvironmentMap() const;
