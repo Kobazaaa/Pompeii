@@ -211,7 +211,7 @@ void pom::SponzaScene::Initialize()
 		{
 		/* direction */	{ 0.f, -1.f, 0.f },
 		/* color */		{ 1.f, 1.f, 1.f },
-		/* lux */		100'000.f, Light::Type::Directional
+		/* lux */		64'000.f, Light::Type::Directional
 		});
 	AddLight(Light
 		{

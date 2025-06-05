@@ -54,8 +54,8 @@ float GeometrySmith(in vec3 n, in vec3 v, in vec3 l, in float roughness, in bool
 // -- Importance Sampling --
 vec3 ImportanceSampleGGX(vec2 Xi, vec3 n, float roughness)
 {
-    // float a = roughness * roughness;
-    float a = roughness;
+    float a = roughness * roughness;
+    //float a = roughness;
 	
     float phi = TWO_PI * Xi.x;
     float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a * a - 1.0) * Xi.y));

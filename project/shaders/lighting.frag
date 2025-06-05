@@ -72,6 +72,7 @@ void main()
 	float alpha = texture(Albedo_Opacity, fragTexCoord).a;
 	vec3 worldPos = texture(WorldPos, fragTexCoord).rgb;
 	float roughness = clamp(texture(Roughness_Metallic, fragTexCoord).r, 0.001, 1.0);
+	roughness = roughness * roughness;
 	float metalFactor = texture(Roughness_Metallic, fragTexCoord).g;
 	bool metal = metalFactor > 0.5 ? true : false;
 
@@ -89,14 +90,14 @@ void main()
 		Light light = lightBuffer.lights[lightIdx];
 		int type = int(round(light.dirpostype.w));
 		vec3 l = vec3(0);
-		vec3 irradiance = vec3(0);
+		vec3 radiance = vec3(0);
 
 		// 0 == Directional Light
 		if(type == 0)
 		{
 			l = -normalize(light.dirpostype.xyz);
 			float illuminance = light.luxLumen;
-			irradiance = illuminance * light.color;
+			radiance = illuminance * light.color;
 		}
 
 		// 1 == Point Light
@@ -108,7 +109,7 @@ void main()
 			float dst = length(light.dirpostype.xyz - worldPos);
 			float attenuation = 1.0 / max((dst * dst), 0.0001);
 			float illuminance = attenuation * luminousIntensity;
-			irradiance = illuminance * light.color;
+			radiance = illuminance * light.color;
 		}
 		vec3 h = normalize(v + l);
 
@@ -136,12 +137,11 @@ void main()
 			shadowTerm = CalculateShadowTermPoint(light.dirpostype.xyz, worldPos, PointShadowMaps[light.depthIndex]);
 
 		// -- Add to outgoing light --
-		Lo += (diff + spec) * irradiance * oa * shadowTerm;
+		Lo += (diff + spec) * radiance * oa * shadowTerm;
 	}
 
 	vec3 F = FresnelSchlickRoughness(n, v, F0, roughness);
-	vec3 kd = 1.0 - F;
-	kd *= 1.0 - metalFactor;
+	vec3 kd = (1.0 - F) * (1.0 - metalFactor);
 	vec3 diffuseIrradiance = texture(DiffuseIrradiance, vec3(n.x, -n.y, n.z)).rgb;
 	vec3 diffuse = kd * diffuseIrradiance * albedo;
 
@@ -149,7 +149,10 @@ void main()
 	vec3 refl = reflect(-v, n);
 	const vec3 specularIrradiance = textureLod(SpecularIrradiance, refl, roughness * maxLod).rgb;
 	const vec2 brdfLUT = texture(BrdfLut, vec2(max(dot(n, v), 0.0), roughness)).rg;
-	vec3 specular = specularIrradiance * (F * brdfLUT.x + brdfLUT.y);
+	vec3 specular = specularIrradiance * (F0 * brdfLUT.x + brdfLUT.y);
+	// I'm unsure if in the above formula i should use F or F0. All example code uses F, but the mathematical formula uses F0.
+	// I decided to use F0 as it gave me better results, but maybe I am missing something
+
 
 	vec3 ambient = (diffuse + specular);
 	vec3 color = ambient + Lo;

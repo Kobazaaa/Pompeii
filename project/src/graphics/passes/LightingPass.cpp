@@ -275,8 +275,6 @@ void pom::LightingPass::UpdateGBufferDescriptors(const Context& context, const G
 void pom::LightingPass::UpdateLightDescriptors(const Context& context, Scene* pScene)
 {
 	uint32_t lightCount = pScene->GetLightsCount();
-	if (lightCount <= 0)
-		return;
 
 	// -- Prepare and Count Light Depth Maps --
 	DescriptorSetWriter directionalWriter{};
