@@ -75,9 +75,7 @@ namespace pom
 		SyncManager					m_SyncManager			{ };
 
 		// -- Passes --
-		ShadowPass					m_ShadowPass			{ };
 		DepthPrePass				m_DepthPrePass			{ };
-		ForwardPass					m_ForwardPass			{ };
 		GeometryPass				m_GeometryPass			{ };
 		LightingPass				m_LightingPass			{ };
 		BlitPass					m_BlitPass				{ };

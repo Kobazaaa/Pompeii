@@ -205,7 +205,7 @@ void pom::Scene::SetEnvironmentMap(const std::string& path) { m_EnvMapPath = pat
 void pom::SponzaScene::Initialize()
 {
 	AddModel("models/Sponza.gltf");
-	SetEnvironmentMap("textures/circus_arena_4k.hdr");
+	SetEnvironmentMap("textures/golden_gate_hills_4k.hdr");
 
 	AddLight(Light
 		{
@@ -213,12 +213,12 @@ void pom::SponzaScene::Initialize()
 		/* color */		{ 1.f, 1.f, 1.f },
 		/* lux */		64'000.f, Light::Type::Directional
 		});
-	AddLight(Light
-		{
-		/* direction */	{ -0.577f, -0.577f, -0.577f },
-		/* color */		{ 1.f, 0.f, 1.f },
-		/* lux */		100.f, Light::Type::Directional
-		});
+	//AddLight(Light
+	//	{
+	//	/* direction */	{ -0.577f, -0.577f, -0.577f },
+	//	/* color */		{ 1.f, 0.f, 1.f },
+	//	/* lux */		100.f, Light::Type::Directional
+	//	});
 	AddLight(Light
 		{
 		/* position */	{ 3.f, 0.5f, 0.f },

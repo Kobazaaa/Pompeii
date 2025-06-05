@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <array>
 #include <thread>
+#include <fstream>
 
 // -- Pompeii Includes --
 #include "Renderer.h"
@@ -20,10 +21,21 @@ pom::Renderer::Renderer(Camera* pCamera, Window* pWindow)
 	m_pCamera = pCamera;
 	m_pScene = new SponzaScene();
 	m_Context.deletionQueue.Push([&] {delete m_pScene; });
+
 	InitializeVulkan();
 }
 pom::Renderer::~Renderer()
 {
+	// -- Dump VMA --
+	char* StatsString = nullptr;
+	vmaBuildStatsString(m_Context.allocator, &StatsString, true);
+	{
+		std::ofstream OutStats{ "VmaStats.json" };
+		OutStats << StatsString;
+	}
+	vmaFreeStatsString(m_Context.allocator, StatsString);
+
+	// -- Release Resources --
 	m_Context.device.WaitIdle();
 	m_Context.deletionQueue.Flush();
 }
@@ -306,30 +318,6 @@ void pom::Renderer::InitializeVulkan()
 		m_Context.deletionQueue.Push([&] { for (Image& image : m_vRenderTargets) image.Destroy(m_Context); });
 	}
 
-	// -- Shadow Pass --
-	{
-		//ShadowPassCreateInfo createInfo{};
-		//createInfo.extent = glm::vec2(8192, 8192);
-		//createInfo.maxFramesInFlight = m_MaxFramesInFlight;
-		//
-		//m_ShadowPass.Initialize(m_Context, createInfo);
-		//m_Context.deletionQueue.Push([&] {m_ShadowPass.Destroy(); });
-	}
-
-	// -- Forward Pass --
-	{
-		//ForwardPassCreateInfo createInfo{};
-		//createInfo.pShadowPass = &m_ShadowPass;
-		//createInfo.maxFramesInFlight = m_MaxFramesInFlight;
-		//createInfo.pScene = m_pScene;
-		//createInfo.extent = m_SwapChain.GetExtent();
-		//createInfo.format = m_SwapChain.GetFormat();
-		//createInfo.depthFormat = m_vDepthImages[0].GetFormat();
-		//
-		//m_ForwardPass.Initialize(m_Context, createInfo);
-		//m_Context.deletionQueue.Push([&] {m_ForwardPass.Destroy(); });
-	}
-
 	// -- Geometry Pass --
 	{
 		GeometryPassCreateInfo createInfo{};
@@ -414,7 +402,6 @@ void pom::Renderer::RecreateSwapChain()
 	CreateRenderTargetResources(m_Context, m_SwapChain.GetExtent());
 
 	// -- Resize Passes if needed --
-	//m_ForwardPass.Resize(m_Context, m_SwapChain.GetExtent(), m_SwapChain.GetFormat());
 	m_GeometryPass.Resize(m_Context, m_SwapChain.GetExtent());
 	m_LightingPass.UpdateGBufferDescriptors(m_Context, m_GeometryPass, m_vDepthImages, m_pScene->GetEnvironmentMap());
 	m_BlitPass.UpdateDescriptors(m_Context, m_vRenderTargets);
@@ -481,13 +468,6 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 
 	commandBuffer.Begin();
 	{
-		// -- Shadow Pass -- Disabled For Now
-		{
-			// The ShadowPass generates a depth image from the POV of the light.
-			// m_ShadowPass.Record(m_Context, commandBuffer, imageIndex, m_pScene);
-			// After it is done it transition the image layout.
-		}
-
 		// -- Depth Pre-Pass --
 		{
 			// Transition the current Depth Image to be written to
@@ -513,12 +493,6 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 			// The Geometry Pass renders the entire scene to a GBuffer.
 			m_GeometryPass.Record(m_Context, commandBuffer, imageIndex, depthImage, m_pScene, m_pCamera);
 			// After it is done, the GBuffers are transitioned to a layout ready for being sampled from.
-		}
-
-		// -- Forward Pass -- Deprecated --
-		{
-			// The Forward Pass renders the entire screen to the provided image.
-			//m_ForwardPass.Record(m_Context, commandBuffer, imageIndex, renderImage, depthImage, m_pScene, m_pCamera);
 		}
 
 		// -- Lighting Pass --
@@ -552,7 +526,6 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 		{
 			// The blit pass will blit the rendered image to the swapchain and potentially do post-processing.
 			m_BlitPass.RecordCompute(m_Context, commandBuffer, imageIndex, renderImage);
-
 
 			// Insert a barrier for the Render Image to be used in fragment
 			renderImage.TransitionLayout(commandBuffer,
