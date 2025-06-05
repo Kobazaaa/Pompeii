@@ -246,6 +246,11 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, glm::ma
 			vertex.texCoord = glm::vec2(0.0f, 0.0f);
 
 		vertex.color = glm::vec3(1.f, 1.f, 1.f);
+		if (pMesh->HasVertexColors(vIdx))
+		{
+			auto c = pMesh->mColors[vIdx];
+			vertex.color = glm::vec3{ c->r, c->g, c->b };
+		}
 
 		if (pMesh->HasTangentsAndBitangents())
 		{

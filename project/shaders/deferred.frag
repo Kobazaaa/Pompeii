@@ -40,6 +40,8 @@ void main()
 	// -- Diffuse --
 	if(pushConstants.diffuseIdx < pushConstants.textureCount)
 		outAlbedo_Opacity = vec4(fragColor, 1.0) * texture(textures[nonuniformEXT(pushConstants.diffuseIdx)], fragTexCoord);
+	else
+		outAlbedo_Opacity = vec4(fragColor, 1.0);
 	// -- Opacity --
 	if(pushConstants.opacityIdx < pushConstants.textureCount)
 		outAlbedo_Opacity.a = texture(textures[nonuniformEXT(pushConstants.opacityIdx)], fragTexCoord).r;
