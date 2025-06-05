@@ -236,3 +236,19 @@ void pom::SpheresScene::Initialize()
 	SetEnvironmentMap("textures/circus_arena_4k.hdr");
 }
 
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  A Beautiful Game Scene	
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void pom::BeautifulGameScene::Initialize()
+{
+	AddModel("models/ABeautifulGame.gltf");
+	SetEnvironmentMap("textures/circus_arena_4k.hdr");
+
+	AddLight(Light
+		{
+			/* direction */	{ 0.f, -1.f, 0.f },
+			/* color */		{ 1.f, 1.f, 1.f },
+			/* lux */		100'000.f, Light::Type::Directional //todo sunlight at noon is about 100.000 lux
+		});
+}
+

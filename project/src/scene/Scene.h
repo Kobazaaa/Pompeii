@@ -98,6 +98,16 @@ namespace pom
 		explicit SpheresScene() = default;
 		void Initialize() override;
 	};
+
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//? ~~	  A Beautiful Game Scene	
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	class BeautifulGameScene final : public Scene
+	{
+	public:
+		explicit BeautifulGameScene() = default;
+		void Initialize() override;
+	};
 }
 
 #endif // SCENE_H
