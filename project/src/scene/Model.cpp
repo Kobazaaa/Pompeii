@@ -205,22 +205,25 @@ void pom::Model::Bind(CommandBuffer& cmdBuffer) const
 //--------------------------------------------------
 //    Helpers
 //--------------------------------------------------
-void pom::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene)
+void pom::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene, glm::mat4 transform)
 {
+	auto nodeTransform = ConvertAssimpMatrix(pNode->mTransformation);
+	auto totalTransform = transform * nodeTransform;
+
 	for (uint32_t index{}; index < pNode->mNumMeshes; ++index)
 	{
 		aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[index]];
-		ProcessMesh(pMesh, pScene);
+		ProcessMesh(pMesh, pScene, totalTransform);
 	}
 
 	for (uint32_t cIdx{}; cIdx < pNode->mNumChildren; ++cIdx)
-		ProcessNode(pNode->mChildren[cIdx], pScene);
+		ProcessNode(pNode->mChildren[cIdx], pScene, totalTransform);
 }
-void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene)
+void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, glm::mat4 transform)
 {
 	opaqueMeshes.push_back(Mesh());
 	opaqueMeshes.back().name = pMesh->mName.C_Str();
-	opaqueMeshes.back().matrix = ConvertAssimpMatrix(pScene->mRootNode->mTransformation);
+	opaqueMeshes.back().matrix = transform;
 
 	// -- Process Vertices --
 	opaqueMeshes.back().vertexOffset = static_cast<uint32_t>(vertices.size());
