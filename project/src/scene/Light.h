@@ -28,8 +28,8 @@ namespace pom
 		glm::vec4 dirPosType;
 		glm::vec3 color;
 		float intensity;
-		uint32_t shadowMatrixOffset;
-		uint32_t shadowMatrixCount;
+		uint32_t matrixIndex;
+		uint32_t depthIndex;
 		float _padding[2];
 	};
 

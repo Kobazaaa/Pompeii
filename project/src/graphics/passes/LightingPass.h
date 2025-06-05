@@ -67,18 +67,25 @@ namespace pom
 
 		// -- Image --
 		Sampler						m_GBufferSampler		{ };
+		Sampler						m_ShadowSampler			{ };
 
 		// -- Descriptors --
 		DescriptorSetLayout			m_CameraMatricesDSL		{ };
 		DescriptorSetLayout			m_SSBOLightDSL			{ };
+		DescriptorSetLayout			m_SSBOLightMatricesDSL	{ };
+		DescriptorSetLayout			m_UBOLightMapDSL		{ };
 		DescriptorSetLayout			m_GBufferTexturesDSL	{ };
 
 		std::vector<DescriptorSet>	m_vCameraMatricesDS		{ };
 		DescriptorSet				m_SSBOLightDS			{ };
+		DescriptorSet				m_SSBOLightMatricesDS	{ };
+		DescriptorSet				m_UBODirLightMapDS		{ };
+		DescriptorSet				m_UBOPointLightMapDS	{ };
 		std::vector<DescriptorSet>	m_vGBufferTexturesDS	{ };
 
 		std::vector<Buffer>			m_vCameraMatrices		{ };
 		Buffer						m_SSBOLights			{ };
+		Buffer						m_SSBOLightsMatrices	{ };
 
 		// -- DQ --
 		DeletionQueue				m_DeletionQueue			{ };

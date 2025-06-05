@@ -1,5 +1,6 @@
 #version 450 core
 #extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_nonuniform_qualifier : require
 
 // -- Includes --
 #include "helpers_lighting.glsl"
@@ -18,27 +19,32 @@ struct Light
     vec4 dirpostype;
     vec3 color;
     float luxLumen;
-	uint shadowMatrixOffset;
-	uint shadowMatrixCount;
+	uint matrixIndex;
+	uint depthIndex;
 };
 layout(std430, set = 1, binding = 0) readonly buffer LightBuffer
 {
 	uint lightCount;
     Light lights[];
-} lights;
-
-// add matrix buffer & dir/point depth images
+} lightBuffer;
+layout(std430, set = 2, binding = 0) readonly buffer LightMatrices
+{
+	uint matrixCount;
+    mat4 matrices[];
+} lightSpaceMatrices;
+layout(set = 3, binding = 0) uniform sampler2DShadow DirectionalShadowMaps[];
+layout(set = 4, binding = 0) uniform samplerCubeShadow PointShadowMaps[];
 
 // -- GBuffer & Surroundings --
-layout(set = 2, binding = 0) uniform sampler2D Albedo_Opacity;
-layout(set = 2, binding = 1) uniform sampler2D Normal;
-layout(set = 2, binding = 2) uniform sampler2D WorldPos;
-layout(set = 2, binding = 3) uniform sampler2D Roughness_Metallic;
-layout(set = 2, binding = 4) uniform sampler2D Depth;
-layout(set = 2, binding = 5) uniform samplerCube EnvironmentMap;
-layout(set = 2, binding = 6) uniform samplerCube DiffuseIrradiance;
-layout(set = 2, binding = 7) uniform samplerCube SpecularIrradiance;
-layout(set = 2, binding = 8) uniform sampler2D BrdfLut;
+layout(set = 5, binding = 0) uniform sampler2D Albedo_Opacity;
+layout(set = 5, binding = 1) uniform sampler2D Normal;
+layout(set = 5, binding = 2) uniform sampler2D WorldPos;
+layout(set = 5, binding = 3) uniform sampler2D Roughness_Metallic;
+layout(set = 5, binding = 4) uniform sampler2D Depth;
+layout(set = 5, binding = 5) uniform samplerCube EnvironmentMap;
+layout(set = 5, binding = 6) uniform samplerCube DiffuseIrradiance;
+layout(set = 5, binding = 7) uniform samplerCube SpecularIrradiance;
+layout(set = 5, binding = 8) uniform sampler2D BrdfLut;
 
 // -- Input --
 layout(location = 0) in vec2 fragTexCoord;
@@ -77,10 +83,10 @@ void main()
 	outColor = vec4(1.0, 0.0, 1.0, 1.0);
 	
 	vec3 Lo = vec3(0);
-	for(int lightIdx = 0; lightIdx < lights.lightCount; ++lightIdx)
+	for(int lightIdx = 0; lightIdx < lightBuffer.lightCount; ++lightIdx)
 	{
 		// -- Extract Light Type --
-		Light light = lights.lights[lightIdx];
+		Light light = lightBuffer.lights[lightIdx];
 		int type = int(round(light.dirpostype.w));
 		vec3 l = vec3(0);
 		vec3 irradiance = vec3(0);
@@ -122,8 +128,15 @@ void main()
 		// -- Lambert Cosine Law -- Observed Area --
 		float oa = max(dot(l, n), 0);
 
+		// -- Shadow --
+		float shadowTerm = 1.0;
+		if(type == 0) // 0 == Directional Light
+			shadowTerm = CalculateShadowTermDirectional(lightSpaceMatrices.matrices[light.matrixIndex], worldPos, DirectionalShadowMaps[light.depthIndex]);
+		else if(type == 1) // 1 == Point Light
+			shadowTerm = CalculateShadowTermPoint(light.dirpostype.xyz, worldPos, PointShadowMaps[light.depthIndex]);
+
 		// -- Add to outgoing light --
-		Lo += (diff + spec) * irradiance * oa;
+		Lo += (diff + spec) * irradiance * oa * shadowTerm;
 	}
 
 	vec3 F = FresnelSchlickRoughness(n, v, F0, roughness);

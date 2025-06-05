@@ -56,17 +56,37 @@ std::vector<pom::Light>& pom::Scene::GetLights()		{ return m_vLights; }
 std::vector<pom::GPULight> pom::Scene::GetLightsGPU()
 {
 	std::vector<pom::GPULight> res{};
-	res.resize(m_vLights.size());
+	res.reserve(m_vLights.size());
+
+	uint32_t matrixIdx = 0;
+	uint32_t directionalCounter = 0;
+	uint32_t pointCounter = 0;
 	for (uint32_t i{}; i < m_vLights.size(); ++i)
 	{
 		const auto& l = m_vLights[i];
 		GPULight gpuL{};
 		Light::Type type = l.GetType();
+
 		gpuL.dirPosType = { type == Light::Type::Point ? l.dirPos : normalize(l.dirPos), static_cast<int>(l.GetType())};
 		gpuL.intensity = l.luxLumen;
 		gpuL.color = l.color;
-		gpuL.shadowMatrixOffset = i == 0 ? 0 : res[i - 1].shadowMatrixCount + res[i - 1].shadowMatrixOffset;
-		gpuL.shadowMatrixCount = type == Light::Type::Point ? 6 : 1;
+		gpuL.matrixIndex = 0xFFFFFFFF;
+		gpuL.depthIndex	 = 0xFFFFFFFF;
+
+		switch (type)
+		{
+		case Light::Type::Point:
+			gpuL.depthIndex = pointCounter;
+			++pointCounter;
+			break;
+		case Light::Type::Directional:
+			gpuL.matrixIndex = matrixIdx;
+			gpuL.depthIndex = directionalCounter;
+			++directionalCounter;
+			++matrixIdx;
+			break;
+		}
+
 		res.push_back(std::move(gpuL));
 	}
 	return res;
@@ -76,13 +96,16 @@ std::vector<glm::mat4> pom::Scene::GetLightMatrices()
 	std::vector<glm::mat4> res{};
 	for (auto& l : m_vLights)
 	{
-		const auto& proj = l.projMatrix;
-		for (const auto& v : l.viewMatrices)
-			res.push_back(proj * v);
+		if (l.GetType() == Light::Type::Directional)
+		{
+			const auto& proj = l.projMatrix;
+			const auto& view = l.viewMatrices.front();
+			res.push_back(proj * view);
+		}
 	}
 	return res;
 }
-uint32_t pom::Scene::GetLightsCount() const				{ return static_cast<uint32_t>(m_vLights.size()); }
+uint32_t pom::Scene::GetLightsCount() const { return static_cast<uint32_t>(m_vLights.size()); }
 pom::Light& pom::Scene::AddLight(Light&& light)
 {
 	m_vLights.push_back(std::move(light));
@@ -151,7 +174,7 @@ void pom::Scene::CalculateLightMatrices()
 		// -- Point --
 		else
 		{
-			glm::vec3 eye = glm::vec3(0.f);
+			glm::vec3 eye = light.dirPos;
 			light.viewMatrices = {
 				glm::lookAt(eye, eye + glm::vec3(1.f,  0.f,  0.f), glm::vec3(0.f, -1.f,  0.f)), // +X
 				glm::lookAt(eye, eye + glm::vec3(-1.f,  0.f,  0.f), glm::vec3(0.f, -1.f,  0.f)), // -X
@@ -160,7 +183,7 @@ void pom::Scene::CalculateLightMatrices()
 				glm::lookAt(eye, eye + glm::vec3(0.f,  0.f,  1.f), glm::vec3(0.f, -1.f,  0.f)), // +Z
 				glm::lookAt(eye, eye + glm::vec3(0.f,  0.f, -1.f), glm::vec3(0.f, -1.f,  0.f)), // -Z
 			};
-			light.projMatrix = glm::perspective(glm::radians(90.f), 1.f, 0.1f, 10.f);
+			light.projMatrix = glm::perspective(glm::radians(90.f), 1.f, 0.1f, 100.f);
 		}
 	}
 }
@@ -184,29 +207,29 @@ void pom::SponzaScene::Initialize()
 	AddModel("models/Sponza.gltf");
 	SetEnvironmentMap("textures/circus_arena_4k.hdr");
 
-	//AddLight(Light
-	//	{
-	//	/* direction */	{ 0.f, -1.f, 0.f },
-	//	/* color */		{ 1.f, 1.f, 1.f },
-	//	/* lux */		1.f, Light::Type::Directional //todo sunlight at noon is about 100.000 lux
-	//	});
+	AddLight(Light
+		{
+		/* direction */	{ 0.f, -1.f, 0.f },
+		/* color */		{ 1.f, 1.f, 1.f },
+		/* lux */		100'000.f, Light::Type::Directional
+		});
 	AddLight(Light
 		{
 		/* direction */	{ -0.577f, -0.577f, -0.577f },
 		/* color */		{ 1.f, 0.f, 1.f },
-		/* lux */		1.f, Light::Type::Directional
+		/* lux */		100.f, Light::Type::Directional
 		});
 	AddLight(Light
 		{
 		/* position */	{ 3.f, 0.5f, 0.f },
 		/* color */		{ 0.f, 1.f, 0.f },
-		/* lumen */		15.f, Light::Type::Point
+		/* lumen */		1000.f, Light::Type::Point
 		});
 	AddLight(Light
 		{
 		/* position */	{ 7.f, 0.5f, 0.f },
 		/* color */		{ 1.f, 1.f, 0.f},
-		/* lumen */		100.f, Light::Type::Point
+		/* lumen */		1200.f, Light::Type::Point
 		});
 }
 
@@ -246,9 +269,9 @@ void pom::BeautifulGameScene::Initialize()
 
 	AddLight(Light
 		{
-			/* direction */	{ 0.f, -1.f, 0.f },
+			/* direction */	{ 0.577f, -0.577f, 0.577f },
 			/* color */		{ 1.f, 1.f, 1.f },
-			/* lux */		100'000.f, Light::Type::Directional //todo sunlight at noon is about 100.000 lux
+			/* lux */		10.f, Light::Type::Directional
 		});
 }
 

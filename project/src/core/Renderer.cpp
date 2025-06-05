@@ -18,7 +18,7 @@ pom::Renderer::Renderer(Camera* pCamera, Window* pWindow)
 {
 	m_pWindow = pWindow;
 	m_pCamera = pCamera;
-	m_pScene = new SponzaScene();
+	m_pScene = new FlightHelmetScene();
 	m_Context.deletionQueue.Push([&] {delete m_pScene; });
 	InitializeVulkan();
 }

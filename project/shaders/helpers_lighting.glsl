@@ -89,4 +89,17 @@ vec2 Hammersley(in uint i, in uint N)
     return vec2(float(i) / float(N), RadicalInverse_VdC(i));
 }
 
+// -- Shadows --
+float CalculateShadowTermDirectional(in mat4 lightSpace, in vec3 worldPos, in sampler2DShadow depth)
+{
+		vec4 lightSpacePos = lightSpace * vec4(worldPos, 1.0);
+		lightSpacePos /= lightSpacePos.w;
+		vec3 shadowMapUV = vec3(lightSpacePos.xy * 0.5 + 0.5, lightSpacePos.z);
+		return texture(depth, shadowMapUV).r;
+}
+float CalculateShadowTermPoint(in vec3 lightPos, in vec3 worldPos, in samplerCubeShadow depth)
+{
+	return 1.0;
+}
+
 #endif //HELPER_LIGHTING
