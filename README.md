@@ -9,78 +9,7 @@ Link to repository: [GitHub Repo](https://github.com/Kobazaaa/Pompeii.git)
 
 ---
 
-## 🌟 Features
-
-### Vulkan Abstraction
-
-I abstracted the Vulkan API, making classes (and builders) for most Vulkan Objects, such as:
-
-- VkInstance
-- VkCommandPool
-- VkBuffer
-- VkSwapchainKHR
-- VkPipeline
-- ...
-
-
-### Rendering Opaque & Transparent Meshes
-
-Two Vulkan pipelines have been set up: one for rendering opaque meshes and another for rendering transparent meshes.
-
-When rendering a model or scene:
-
-1. The vertex and index buffers are bound.
-2. The opaque pipeline is bound, and all opaque meshes are drawn.
-3. After rendering the opaque meshes, the transparent pipeline is bound, and the transparent meshes are drawn.
-
-### Texture Array in Shaders
-
-As of right now there are 2 shaders: "shader.vert" and "shader.frag". The fragment shader needs the model textures
-to be able to sample from them. For this, I created an array in the fragment shader that holds all the textures of a model. Each mesh
-can then index that array through an index they get via push constants. This way, the descriptor set for the textures only needs to be bound 
-once per model, instead of once per mesh.
-
-The size of the array in the shader is not hard coded to some big vlaue, but gets set to the number of textures a model has, using Shader Specializations
-
-### Mipmaps
-
-When a model loads in textures/images, it will also generate mipmaps for said images.
-It will always try to generate as many mipmaps as it can (and the sampler will use them all).
-Unless the texture is smaller than a certa
-
-Mipmaps are great!
-If an object is further away, the sampler will sample fromm is lower resolution texture, removing aliasing artifacts from distant objects.
-
-Ideally, mipmaps don't get generated at runtime, but are generated beforehand. This is currently not the case.
-
-### Multi-Sampling (MSAA)
-
-MSAA (Multi-Sampling Anti-Aliasing) is turned on. The number of samples is set to the maximum your device can do.
-Which probably isn't always what you want, but it's what you get for now.
-
-Since MSAA only smoothens the edges of the geometry and not the interior filling, Sample Shading is also enabled.
-Sample Shading will run the fragment shader per sampler, instead of per pixel/fragment, improving image quality. This obviously comes at a performance cost.
-
-### Shadow Map
-
-I also added a simple shadow map for a directional light to expiriment a little bit with shadows already! Although it is not accurate, and quite a big shadow map texture, it was fun to try out.
-
-### Debug Help
-
-#### Debug Labels & Names
-
-Allow setting Debug Labels or Object Names to help with debugging.
-
-The labels allow you to mark region within a command buffer, which in turn get visualized in debug programs such as RenderDoc or NVIDIA NSight.
-<br>Likewise with Object Names. Validation Layers and Debug Programs such as mentioned before will use these object names, which improves clarity and greatly helps when debugging.
-
-![Debug Labels with Colors](./images/DebugLabels.png)
-
-#### Benchmarking
-
-The static Timer class allows you to easily benchmark operations and see how long they take. This can help finding potentional bottlenecks in the program.
-
-#### Resource Fetching
+## 🍴 Resource Fetching
 
 Resources like models and textures are being fetched from another repo.
 <br>
@@ -115,6 +44,18 @@ Sponza Scene with Transparent Objects (no mipmapping):
 
 Sponza Scene Hallway (mipmapping):
 ![Sponza Scene with Transparent Object 2](./images/SponzaScene2.png)
+
+GBuffer Albedo Opacity:
+![GBuffer Albedo Opacity](./images/GBuffer_-_Albedo_Opacity.png)
+
+One side of a point light's Depth Buffer:
+![Light_Depth_Map__2_](./images/Light_Depth_Map__2_.png)
+
+HDR Output:
+![HDR Output](./images/Render_Target.png)
+
+Final Result:
+![Final Result](./images/Swapchain_Image_0.png)
 
 ---
 
@@ -153,6 +94,8 @@ Pompeii/
 Graphics Programming Teachers at Howest University - Digital Arts & Entertainment <br>
 The Vulkan Tutorial at [vulkan-tutorial.com](https://vulkan-tutorial.com) <br>
 Morgan McGuire's [Computer Graphics Archive](https://casual-effects.com/data) <br>
+Khronos Groups's [glTF Sample Assets](https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main) <br>
+OpenGL's Tutorials at [LearnOpenGL](https://learnopengl.com) <br>
 Extra repository storing all the models and textures used are at [Pompeii Resources Repository](https://github.com/Kobazaaa/PompeiiResources.git)
 
 
