@@ -6,6 +6,9 @@
 #include "Context.h"
 #include "DescriptorPool.h"
 
+//! This Shadow Pass is NO LONGER IN USE!!!
+//! Shadows are handled differently now!
+
 void pom::ShadowPass::Initialize(Context& context, const ShadowPassCreateInfo& createInfo)
 {
 	// -- Descriptor Set Layout --

@@ -181,6 +181,10 @@ void pom::GeometryPass::UpdateTextureDescriptor(const Context& context, const Sc
 	m_TextureDS = context.descriptorPool->AllocateSets(context, m_TextureDSL, 1, "Texture Array DS", &variableCountInfo).front();
 
 	// -- Write Textures --
+	auto imageCount = pScene->GetImageCount();
+	if (imageCount <= 0)
+		return;
+
 	DescriptorSetWriter writer{};
 	for (const Model& model : pScene->GetModels())
 	{
@@ -189,8 +193,8 @@ void pom::GeometryPass::UpdateTextureDescriptor(const Context& context, const Sc
 			writer.AddImageInfo(image.GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_TextureSampler);
 		}
 	}
-	writer.WriteImages(m_TextureDS, 0, pScene->GetImageCount()).Execute(context);
-	m_TextureCount = pScene->GetImageCount();
+	writer.WriteImages(m_TextureDS, 0, imageCount).Execute(context);
+	m_TextureCount = imageCount;
 }
 void pom::GeometryPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Image& depthImage, Scene* pScene, Camera* pCamera)
 {
