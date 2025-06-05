@@ -190,6 +190,9 @@ void pom::BufferAllocator::Allocate(const Context& context, Buffer& buffer) cons
 	{
 		for (const InitData& data : m_vInitialData)
 		{
+			if (data.initDataSize <= 0)
+				continue;
+
 			Buffer stagingBuffer;
 			BufferAllocator stagingAllocator{};
 			stagingAllocator
