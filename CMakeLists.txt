@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.27)
 
 # Project Name
-project(Kobe_Dereyne_GP2_Vulkan)
+project(Pompeii)
 
 # Use C++20
 set(CMAKE_CXX_STANDARD 20)

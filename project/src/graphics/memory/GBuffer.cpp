@@ -45,10 +45,10 @@ void pom::GBuffer::Initialize(const Context& context, VkExtent2D size)
 	m_Extent = size;
 
 	CreateImage(context, m_Albedo_Opacity,
-		size, VK_FORMAT_R8G8B8A8_SRGB,
+		size, VK_FORMAT_R32G32B32A32_SFLOAT,
 		"GBuffer - Albedo_Opacity");
 	CreateImage(context, m_Normal,
-		size, VK_FORMAT_R8G8B8A8_UNORM,
+		size, VK_FORMAT_R16G16B16A16_UNORM,
 		"GBuffer - Normal");
 	CreateImage(context, m_WorldPos,
 		size, VK_FORMAT_R32G32B32A32_SFLOAT,
