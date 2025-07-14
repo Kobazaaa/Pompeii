@@ -17,7 +17,7 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::ImageView::Destroy(const Context& context) const
+void pompeii::ImageView::Destroy(const Context& context) const
 {
 	if (m_ImageView)
 		vkDestroyImageView(context.device.GetHandle(), m_ImageView, nullptr);
@@ -27,8 +27,8 @@ void pom::ImageView::Destroy(const Context& context) const
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkImageView& pom::ImageView::GetHandle()	const { return m_ImageView; }
-const pom::Image& pom::ImageView::GetImage()	const { return *m_pOwnerImage; }
+const VkImageView& pompeii::ImageView::GetHandle()	const { return m_ImageView; }
+const pompeii::Image& pompeii::ImageView::GetImage()	const { return *m_pOwnerImage; }
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Image	
@@ -37,7 +37,7 @@ const pom::Image& pom::ImageView::GetImage()	const { return *m_pOwnerImage; }
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::Image::Image(Image&& other) noexcept
+pompeii::Image::Image(Image&& other) noexcept
 {
 	m_Image = std::move(other.m_Image);
 	other.m_Image = VK_NULL_HANDLE;
@@ -50,7 +50,7 @@ pom::Image::Image(Image&& other) noexcept
 	m_ImageInfo = std::move(other.m_ImageInfo);
 	other.m_ImageInfo = {};
 }
-pom::Image& pom::Image::operator=(Image&& other) noexcept
+pompeii::Image& pompeii::Image::operator=(Image&& other) noexcept
 {
 	if (this == &other)
 		return *this;
@@ -67,19 +67,19 @@ pom::Image& pom::Image::operator=(Image&& other) noexcept
 	return *this;
 }
 
-void pom::Image::Destroy(const Context& context)
+void pompeii::Image::Destroy(const Context& context)
 {
 	DestroyAllViews(context);
 	if (m_ImageMemory)
 		vmaDestroyImage(context.allocator, m_Image, m_ImageMemory);
 }
-void pom::Image::DestroyAllViews(const Context& context)
+void pompeii::Image::DestroyAllViews(const Context& context)
 {
 	for (auto& view : m_vImageViews)
 		view.Destroy(context);
 	m_vImageViews.clear();
 }
-void pom::Image::DestroyViewsFrom(const Context& context, uint32_t firstViewToRemove)
+void pompeii::Image::DestroyViewsFrom(const Context& context, uint32_t firstViewToRemove)
 {
 	if (firstViewToRemove > static_cast<uint32_t>(m_vImageViews.size() - 1))
 		return;
@@ -89,7 +89,7 @@ void pom::Image::DestroyViewsFrom(const Context& context, uint32_t firstViewToRe
 	m_vImageViews.erase(m_vImageViews.begin() + firstViewToRemove, m_vImageViews.end());
 }
 
-pom::ImageView& pom::Image::CreateView(const Context& context, VkImageAspectFlags aspectFlags, VkImageViewType viewType,
+pompeii::ImageView& pompeii::Image::CreateView(const Context& context, VkImageAspectFlags aspectFlags, VkImageViewType viewType,
                                        uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)
 {
 	m_vImageViews.emplace_back();
@@ -112,7 +112,7 @@ pom::ImageView& pom::Image::CreateView(const Context& context, VkImageAspectFlag
 
 	return m_vImageViews.back();
 }
-VkFormat pom::Image::FindSupportedFormat(const PhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
+VkFormat pompeii::Image::FindSupportedFormat(const PhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
 {
 	for (const VkFormat format : candidates)
 	{
@@ -129,19 +129,19 @@ VkFormat pom::Image::FindSupportedFormat(const PhysicalDevice& physicalDevice, c
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkImage& pom::Image::GetHandle()							const { return m_Image; }
-const pom::ImageView& pom::Image::GetView(uint32_t idx)			const { return m_vImageViews.at(idx); }
-uint32_t pom::Image::GetViewCount()								const { return static_cast<uint32_t>(m_vImageViews.size()); }
-const std::vector<pom::ImageView>& pom::Image::GetAllViews()	const { return m_vImageViews; }
+const VkImage& pompeii::Image::GetHandle()							const { return m_Image; }
+const pompeii::ImageView& pompeii::Image::GetView(uint32_t idx)			const { return m_vImageViews.at(idx); }
+uint32_t pompeii::Image::GetViewCount()								const { return static_cast<uint32_t>(m_vImageViews.size()); }
+const std::vector<pompeii::ImageView>& pompeii::Image::GetAllViews()	const { return m_vImageViews; }
 
-uint32_t pom::Image::GetMipLevels()				const		{ return m_ImageInfo.mipLevels; }
-uint32_t pom::Image::GetLayerCount()			const		{ return m_ImageInfo.arrayLayers; }
+uint32_t pompeii::Image::GetMipLevels()				const		{ return m_ImageInfo.mipLevels; }
+uint32_t pompeii::Image::GetLayerCount()			const		{ return m_ImageInfo.arrayLayers; }
 
-VkFormat pom::Image::GetFormat()				const		{ return m_ImageInfo.format; }
-VkExtent3D pom::Image::GetExtent3D()			const		{ return m_ImageInfo.extent; }
-VkExtent2D pom::Image::GetExtent2D()			const		{ return VkExtent2D{ m_ImageInfo.extent.width, m_ImageInfo.extent.height}; }
-VkImageLayout pom::Image::GetCurrentLayout()	const		{ return m_CurrentLayout; }
-bool pom::Image::HasStencilComponent()			const
+VkFormat pompeii::Image::GetFormat()				const		{ return m_ImageInfo.format; }
+VkExtent3D pompeii::Image::GetExtent3D()			const		{ return m_ImageInfo.extent; }
+VkExtent2D pompeii::Image::GetExtent2D()			const		{ return VkExtent2D{ m_ImageInfo.extent.width, m_ImageInfo.extent.height}; }
+VkImageLayout pompeii::Image::GetCurrentLayout()	const		{ return m_CurrentLayout; }
+bool pompeii::Image::HasStencilComponent()			const
 {
 	switch (m_ImageInfo.format)
 	{
@@ -152,7 +152,7 @@ bool pom::Image::HasStencilComponent()			const
 		return false;
 	}
 }
-bool pom::Image::HasDepthComponent()			const
+bool pompeii::Image::HasDepthComponent()			const
 {
 	switch (m_ImageInfo.format)
 	{
@@ -171,7 +171,7 @@ bool pom::Image::HasDepthComponent()			const
 //--------------------------------------------------
 //    Commands
 //--------------------------------------------------
-void pom::Image::TransitionLayout(const CommandBuffer& cmd, VkImageLayout newLayout,
+void pompeii::Image::TransitionLayout(const CommandBuffer& cmd, VkImageLayout newLayout,
 								  VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
 								  VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage,
 								  uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)
@@ -220,14 +220,14 @@ void pom::Image::TransitionLayout(const CommandBuffer& cmd, VkImageLayout newLay
 	m_CurrentLayout = newLayout;
 }
 
-void pom::Image::InsertBarrier(const CommandBuffer& cmd,
+void pompeii::Image::InsertBarrier(const CommandBuffer& cmd,
 							   VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
 							   VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage)
 {
 	TransitionLayout(cmd, m_CurrentLayout, srcAccess, srcStage, dstAccess, dstStage, 0, GetMipLevels(), 0, GetLayerCount());
 }
 
-void pom::Image::GenerateMipMaps(const Context& context, uint32_t texW, uint32_t texH, uint32_t mips, uint32_t layers, VkImageLayout finalLayout)
+void pompeii::Image::GenerateMipMaps(const Context& context, uint32_t texW, uint32_t texH, uint32_t mips, uint32_t layers, VkImageLayout finalLayout)
 {
 	CommandBuffer& cmd = context.commandPool->AllocateCmdBuffers(1);
 	cmd.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -242,7 +242,7 @@ void pom::Image::GenerateMipMaps(const Context& context, uint32_t texW, uint32_t
 	cmd.Submit(context.device.GetGraphicQueue(), true);
 	cmd.Free(context.device);
 }
-void pom::Image::GenerateMipMaps(const Context& context, const CommandBuffer& cmd, uint32_t texW, uint32_t texH, uint32_t mips, uint32_t layers, VkImageLayout finalLayout)
+void pompeii::Image::GenerateMipMaps(const Context& context, const CommandBuffer& cmd, uint32_t texW, uint32_t texH, uint32_t mips, uint32_t layers, VkImageLayout finalLayout)
 {
 	// -- Support --
 	VkFormat imageFormat = GetFormat();
@@ -425,7 +425,7 @@ void pom::Image::GenerateMipMaps(const Context& context, const CommandBuffer& cm
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::ImageBuilder::ImageBuilder()
+pompeii::ImageBuilder::ImageBuilder()
 {
 	// Setup Defaults
 	m_ImageInfo = {};
@@ -463,21 +463,21 @@ pom::ImageBuilder::ImageBuilder()
 //--------------------------------------------------
 //    Builder
 //--------------------------------------------------
-pom::ImageBuilder& pom::ImageBuilder::SetDebugName(const char* name)						{ m_pName = name; return *this; }
-pom::ImageBuilder& pom::ImageBuilder::SetWidth(uint32_t width)								{ m_ImageInfo.extent.width = width; return *this; }
-pom::ImageBuilder& pom::ImageBuilder::SetHeight(uint32_t height)							{ m_ImageInfo.extent.height = height; return *this; }
-pom::ImageBuilder& pom::ImageBuilder::SetDepth(uint32_t depth)								{ m_ImageInfo.extent.depth = depth; return *this; }
-pom::ImageBuilder& pom::ImageBuilder::SetFormat(VkFormat format)							{ m_ImageInfo.format = format; return *this; }
-pom::ImageBuilder& pom::ImageBuilder::SetTiling(VkImageTiling tiling)						{ m_ImageInfo.tiling = tiling; return *this; }
-pom::ImageBuilder& pom::ImageBuilder::SetUsageFlags(VkImageUsageFlags usage)				{ m_ImageInfo.usage = usage; return *this; }
-pom::ImageBuilder& pom::ImageBuilder::SetCreateFlags(VkImageCreateFlags flags)				{ m_ImageInfo.flags |= flags; return *this; }
-pom::ImageBuilder& pom::ImageBuilder::SetMemoryProperties(VkMemoryPropertyFlags properties) { m_AllocInfo.requiredFlags = properties; return *this; }
-pom::ImageBuilder& pom::ImageBuilder::SetMipLevels(uint32_t levels)							{ m_ImageInfo.mipLevels = levels; return *this; }
-pom::ImageBuilder& pom::ImageBuilder::SetArrayLayers(uint32_t layers)						{ m_ImageInfo.arrayLayers = layers; return *this; }
-pom::ImageBuilder& pom::ImageBuilder::SetSampleCount(VkSampleCountFlagBits sampleCount)		{ m_ImageInfo.samples = sampleCount; return *this; }
-pom::ImageBuilder& pom::ImageBuilder::SetSharingMode(VkSharingMode sharingMode)				{ m_ImageInfo.sharingMode = sharingMode; return *this; }
-pom::ImageBuilder& pom::ImageBuilder::SetImageType(VkImageType type)						{ m_ImageInfo.imageType = type; return *this; }
-pom::ImageBuilder& pom::ImageBuilder::InitialData(void* data, uint32_t offset, uint32_t
+pompeii::ImageBuilder& pompeii::ImageBuilder::SetDebugName(const char* name)						{ m_pName = name; return *this; }
+pompeii::ImageBuilder& pompeii::ImageBuilder::SetWidth(uint32_t width)								{ m_ImageInfo.extent.width = width; return *this; }
+pompeii::ImageBuilder& pompeii::ImageBuilder::SetHeight(uint32_t height)							{ m_ImageInfo.extent.height = height; return *this; }
+pompeii::ImageBuilder& pompeii::ImageBuilder::SetDepth(uint32_t depth)								{ m_ImageInfo.extent.depth = depth; return *this; }
+pompeii::ImageBuilder& pompeii::ImageBuilder::SetFormat(VkFormat format)							{ m_ImageInfo.format = format; return *this; }
+pompeii::ImageBuilder& pompeii::ImageBuilder::SetTiling(VkImageTiling tiling)						{ m_ImageInfo.tiling = tiling; return *this; }
+pompeii::ImageBuilder& pompeii::ImageBuilder::SetUsageFlags(VkImageUsageFlags usage)				{ m_ImageInfo.usage = usage; return *this; }
+pompeii::ImageBuilder& pompeii::ImageBuilder::SetCreateFlags(VkImageCreateFlags flags)				{ m_ImageInfo.flags |= flags; return *this; }
+pompeii::ImageBuilder& pompeii::ImageBuilder::SetMemoryProperties(VkMemoryPropertyFlags properties) { m_AllocInfo.requiredFlags = properties; return *this; }
+pompeii::ImageBuilder& pompeii::ImageBuilder::SetMipLevels(uint32_t levels)							{ m_ImageInfo.mipLevels = levels; return *this; }
+pompeii::ImageBuilder& pompeii::ImageBuilder::SetArrayLayers(uint32_t layers)						{ m_ImageInfo.arrayLayers = layers; return *this; }
+pompeii::ImageBuilder& pompeii::ImageBuilder::SetSampleCount(VkSampleCountFlagBits sampleCount)		{ m_ImageInfo.samples = sampleCount; return *this; }
+pompeii::ImageBuilder& pompeii::ImageBuilder::SetSharingMode(VkSharingMode sharingMode)				{ m_ImageInfo.sharingMode = sharingMode; return *this; }
+pompeii::ImageBuilder& pompeii::ImageBuilder::SetImageType(VkImageType type)						{ m_ImageInfo.imageType = type; return *this; }
+pompeii::ImageBuilder& pompeii::ImageBuilder::InitialData(void* data, uint32_t offset, uint32_t
 													width, uint32_t height, uint32_t dataSize,
 													VkImageLayout finalLayout)
 {
@@ -493,13 +493,13 @@ pom::ImageBuilder& pom::ImageBuilder::InitialData(void* data, uint32_t offset, u
 	m_FinalLayout = finalLayout;
 	return *this;
 }
-pom::ImageBuilder& pom::ImageBuilder::SetPreMadeImage(VkImage image)
+pompeii::ImageBuilder& pompeii::ImageBuilder::SetPreMadeImage(VkImage image)
 {
 	m_PreMadeImage = image;
 	return *this;
 }
 
-void pom::ImageBuilder::Build(const Context& context, Image& image) const
+void pompeii::ImageBuilder::Build(const Context& context, Image& image) const
 {
 	image.m_ImageInfo = m_ImageInfo;
 	image.m_CurrentLayout = m_ImageInfo.initialLayout;

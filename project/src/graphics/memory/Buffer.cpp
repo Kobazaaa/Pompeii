@@ -13,14 +13,14 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::Buffer::Buffer(Buffer&& other) noexcept
+pompeii::Buffer::Buffer(Buffer&& other) noexcept
 {
 	m_Memory = std::move(other.m_Memory);
 	other.m_Memory = VK_NULL_HANDLE;
 	m_Buffer = std::move(other.m_Buffer);
 	other.m_Buffer = VK_NULL_HANDLE;
 }
-pom::Buffer& pom::Buffer::operator=(Buffer&& other) noexcept
+pompeii::Buffer& pompeii::Buffer::operator=(Buffer&& other) noexcept
 {
 	if (this == &other)
 		return *this;
@@ -31,7 +31,7 @@ pom::Buffer& pom::Buffer::operator=(Buffer&& other) noexcept
 	return *this;
 }
 
-void pom::Buffer::Destroy(const Context& context) const
+void pompeii::Buffer::Destroy(const Context& context) const
 {
 	vmaDestroyBuffer(context.allocator, m_Buffer, m_Memory);
 }
@@ -40,14 +40,14 @@ void pom::Buffer::Destroy(const Context& context) const
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkBuffer& pom::Buffer::GetHandle() const { return m_Buffer; }
-const VmaAllocation& pom::Buffer::GetMemoryHandle() const { return m_Memory; }
-VkDeviceSize pom::Buffer::Size() const { return m_Size; }
+const VkBuffer& pompeii::Buffer::GetHandle() const { return m_Buffer; }
+const VmaAllocation& pompeii::Buffer::GetMemoryHandle() const { return m_Memory; }
+VkDeviceSize pompeii::Buffer::Size() const { return m_Size; }
 
 //--------------------------------------------------
 //    Commands
 //--------------------------------------------------
-void pom::Buffer::InsertBarrier(const CommandBuffer& cmd,
+void pompeii::Buffer::InsertBarrier(const CommandBuffer& cmd,
 								VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
 								VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage) const
 {
@@ -80,7 +80,7 @@ void pom::Buffer::InsertBarrier(const CommandBuffer& cmd,
 
 	vkCmdPipelineBarrier2(cmd.GetHandle(), &dependencyInfo);
 }
-void pom::Buffer::CopyToBuffer(const CommandBuffer& cmd, const Buffer& dst, VkDeviceSize size, VkDeviceSize srcOffset, VkDeviceSize dstOffset) const
+void pompeii::Buffer::CopyToBuffer(const CommandBuffer& cmd, const Buffer& dst, VkDeviceSize size, VkDeviceSize srcOffset, VkDeviceSize dstOffset) const
 {
 	VkBufferCopy copyRegion{};
 	copyRegion.srcOffset = srcOffset;
@@ -88,7 +88,7 @@ void pom::Buffer::CopyToBuffer(const CommandBuffer& cmd, const Buffer& dst, VkDe
 	copyRegion.size = size;
 	vkCmdCopyBuffer(cmd.GetHandle(), m_Buffer, dst.GetHandle(), 1, &copyRegion);
 }
-void pom::Buffer::CopyToImage(const CommandBuffer& cmd, const Image& dst, VkExtent3D extent, uint32_t mip, uint32_t baseLayer, uint32_t layerCount) const
+void pompeii::Buffer::CopyToImage(const CommandBuffer& cmd, const Image& dst, VkExtent3D extent, uint32_t mip, uint32_t baseLayer, uint32_t layerCount) const
 {
 	VkBufferImageCopy region{};
 	region.bufferOffset = 0;
@@ -112,7 +112,7 @@ void pom::Buffer::CopyToImage(const CommandBuffer& cmd, const Image& dst, VkExte
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::BufferAllocator::BufferAllocator()
+pompeii::BufferAllocator::BufferAllocator()
 {
 	m_CreateInfo = {};
 	m_CreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;				// CAN'T CHANGE
@@ -134,32 +134,32 @@ pom::BufferAllocator::BufferAllocator()
 //--------------------------------------------------
 //    Allocator
 //--------------------------------------------------
-pom::BufferAllocator& pom::BufferAllocator::SetDebugName(const char* name)
+pompeii::BufferAllocator& pompeii::BufferAllocator::SetDebugName(const char* name)
 {
 	m_pName = name;
 	return *this;
 }
-pom::BufferAllocator& pom::BufferAllocator::SetSize(uint32_t size)
+pompeii::BufferAllocator& pompeii::BufferAllocator::SetSize(uint32_t size)
 {
 	m_CreateInfo.size = size;
 	return *this;
 }
-pom::BufferAllocator& pom::BufferAllocator::SetUsage(VkBufferUsageFlags usage)
+pompeii::BufferAllocator& pompeii::BufferAllocator::SetUsage(VkBufferUsageFlags usage)
 {
 	m_CreateInfo.usage = usage;
 	return *this;
 }
-pom::BufferAllocator& pom::BufferAllocator::SetMemUsage(VmaMemoryUsage usage)
+pompeii::BufferAllocator& pompeii::BufferAllocator::SetMemUsage(VmaMemoryUsage usage)
 {
 	m_AllocCreateInfo.usage = usage;
 	return *this;
 }
-pom::BufferAllocator& pom::BufferAllocator::SetSharingMode(VkSharingMode sharingMode)
+pompeii::BufferAllocator& pompeii::BufferAllocator::SetSharingMode(VkSharingMode sharingMode)
 {
 	m_CreateInfo.usage = sharingMode;
 	return *this;
 }
-pom::BufferAllocator& pom::BufferAllocator::HostAccess(bool access)
+pompeii::BufferAllocator& pompeii::BufferAllocator::HostAccess(bool access)
 {
 	if (access)
 	{
@@ -173,7 +173,7 @@ pom::BufferAllocator& pom::BufferAllocator::HostAccess(bool access)
 
 	return *this;
 }
-pom::BufferAllocator& pom::BufferAllocator::AddInitialData(void* data, VkDeviceSize dstOffset, uint32_t size)
+pompeii::BufferAllocator& pompeii::BufferAllocator::AddInitialData(void* data, VkDeviceSize dstOffset, uint32_t size)
 {
 	m_UseInitialData = true;
 	m_vInitialData.emplace_back(data, size, dstOffset);
@@ -181,7 +181,7 @@ pom::BufferAllocator& pom::BufferAllocator::AddInitialData(void* data, VkDeviceS
 	return *this;
 }
 
-void pom::BufferAllocator::Allocate(const Context& context, Buffer& buffer) const
+void pompeii::BufferAllocator::Allocate(const Context& context, Buffer& buffer) const
 {
 	vmaCreateBuffer(context.allocator, &m_CreateInfo, &m_AllocCreateInfo, &buffer.m_Buffer, &buffer.m_Memory, nullptr);
 	buffer.m_Size = m_CreateInfo.size;

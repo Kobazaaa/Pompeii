@@ -9,7 +9,7 @@
 //! This Shadow Pass is NO LONGER IN USE!!!
 //! Shadows are handled differently now!
 
-void pom::ShadowPass::Initialize(Context& context, const ShadowPassCreateInfo& createInfo)
+void pompeii::ShadowPass::Initialize(Context& context, const ShadowPassCreateInfo& createInfo)
 {
 	// -- Descriptor Set Layout --
 	{
@@ -129,12 +129,12 @@ void pom::ShadowPass::Initialize(Context& context, const ShadowPassCreateInfo& c
 	}
 }
 
-void pom::ShadowPass::Destroy()
+void pompeii::ShadowPass::Destroy()
 {
 	m_DeletionQueue.Flush();
 }
 
-void pom::ShadowPass::Record(const Context&, CommandBuffer&, uint32_t, Scene*)
+void pompeii::ShadowPass::Record(const Context&, CommandBuffer&, uint32_t, Scene*)
 {
 	//LightDataVS light;
 	//glm::vec3 dir = { 1, -1, 1 };
@@ -222,11 +222,11 @@ void pom::ShadowPass::Record(const Context&, CommandBuffer&, uint32_t, Scene*)
 	//	0, 1, 0, 1);
 }
 
-const pom::Sampler& pom::ShadowPass::GetSampler() const
+const pompeii::Sampler& pompeii::ShadowPass::GetSampler() const
 {
 	return m_ShadowSampler;
 }
-pom::Image& pom::ShadowPass::GetMap(uint32_t idx)
+pompeii::Image& pompeii::ShadowPass::GetMap(uint32_t idx)
 {
 	return m_vShadowMaps[idx];
 }

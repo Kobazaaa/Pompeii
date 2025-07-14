@@ -12,10 +12,10 @@
 #include <glm/glm.hpp>
 
 //-- Forward Declarations --
-namespace pom { struct Context; }
+namespace pompeii { struct Context; }
 
 // -- Class --
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Window	

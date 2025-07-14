@@ -11,7 +11,7 @@
 #include "CommandBuffer.h"
 
 // -- Forward Declarations --
-namespace pom
+namespace pompeii
 {
 	struct Context;
 	class Buffer;
@@ -19,7 +19,7 @@ namespace pom
 }
 
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  CommandPool	

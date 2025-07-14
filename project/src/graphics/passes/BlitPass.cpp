@@ -8,7 +8,7 @@
 #include "Scene.h"
 #include "Timer.h"
 
-void pom::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo& createInfo)
+void pompeii::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo& createInfo)
 {
 	// -- Descriptor Set Layout --
 	{
@@ -243,12 +243,12 @@ void pom::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo&
 	}
 }
 
-void pom::BlitPass::Destroy()
+void pompeii::BlitPass::Destroy()
 {
 	m_DeletionQueue.Flush();
 }
 
-void pom::BlitPass::UpdateDescriptors(const Context& context, const std::vector<Image>& renderImages) const
+void pompeii::BlitPass::UpdateDescriptors(const Context& context, const std::vector<Image>& renderImages) const
 {
 	DescriptorSetWriter writer{};
 	uint32_t count = static_cast<uint32_t>(renderImages.size());
@@ -268,7 +268,7 @@ void pom::BlitPass::UpdateDescriptors(const Context& context, const std::vector<
 	}
 }
 
-void pom::BlitPass::RecordGraphic(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const Camera* pCamera)
+void pompeii::BlitPass::RecordGraphic(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const Camera* pCamera)
 {
 	// -- Update Camera Settings --
 	//todo really? every frame? camera exposure settings don't often change i feel ike, maybe this can be optimized using some dirty flag
@@ -332,7 +332,7 @@ void pom::BlitPass::RecordGraphic(const Context& context, CommandBuffer& command
 	vkCmdEndRendering(vCmdBuffer);
 	Debugger::EndDebugLabel(commandBuffer);
 }
-void pom::BlitPass::RecordCompute(const Context&, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage)
+void pompeii::BlitPass::RecordCompute(const Context&, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage)
 {
 	// -- Compute --
 	Debugger::BeginDebugLabel(commandBuffer, "Compute Luminance | Exposure Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));

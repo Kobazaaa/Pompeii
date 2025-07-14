@@ -4,7 +4,6 @@
 
 // -- Defines --
 #define VMA_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_LEFT_HANDED
 #define GLM_FORCE_RADIANS
@@ -17,7 +16,7 @@
 #include "Timer.h"
 
 // -- Using Pompeii namespace --
-using namespace pom;
+using namespace pompeii;
 
 int main()
 {
@@ -25,7 +24,7 @@ int main()
 	try
 	{
 		// -- Create Window --
-		Window* pWindow = new Window("V - Pompeii - Kobe Dereyne 2GD10", false, 800, 600);
+		Window* pWindow = new Window("V - Pompeii", false, 800, 600);
 
 		// -- Create Camera --
 		CameraSettings settings

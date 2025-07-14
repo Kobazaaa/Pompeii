@@ -7,7 +7,7 @@
 #include "Debugger.h"
 #include "DescriptorPool.h"
 
-void pom::GeometryPass::Initialize(const Context& context, const GeometryPassCreateInfo& createInfo)
+void pompeii::GeometryPass::Initialize(const Context& context, const GeometryPassCreateInfo& createInfo)
 {
 	// -- GBuffers --
 	{
@@ -158,17 +158,17 @@ void pom::GeometryPass::Initialize(const Context& context, const GeometryPassCre
 	}
 }
 
-void pom::GeometryPass::Destroy()
+void pompeii::GeometryPass::Destroy()
 {
 	m_DeletionQueue.Flush();
 }
 
-void pom::GeometryPass::Resize(const Context& context, VkExtent2D extent)
+void pompeii::GeometryPass::Resize(const Context& context, VkExtent2D extent)
 {
 	for (GBuffer& gBuffer : m_vGBuffers)
 		gBuffer.Resize(context, extent);
 }
-void pom::GeometryPass::UpdateTextureDescriptor(const Context& context, const Scene* pScene)
+void pompeii::GeometryPass::UpdateTextureDescriptor(const Context& context, const Scene* pScene)
 {
 	if (m_TextureDS.GetHandle())
 		vkFreeDescriptorSets(context.device.GetHandle(), context.descriptorPool->GetHandle(), 1, &m_TextureDS.GetHandle());
@@ -196,7 +196,7 @@ void pom::GeometryPass::UpdateTextureDescriptor(const Context& context, const Sc
 	writer.WriteImages(m_TextureDS, 0, imageCount).Execute(context);
 	m_TextureCount = imageCount;
 }
-void pom::GeometryPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Image& depthImage, Scene* pScene, Camera* pCamera)
+void pompeii::GeometryPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Image& depthImage, Scene* pScene, Camera* pCamera)
 {
 	// Update VS UBO
 	UniformBufferVS ubo;
@@ -337,8 +337,8 @@ void pom::GeometryPass::Record(const Context& context, CommandBuffer& commandBuf
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const std::vector<pom::GBuffer>& pom::GeometryPass::GetGBuffers() const						{ return m_vGBuffers; }
-const pom::GBuffer& pom::GeometryPass::GetGBuffer(uint32_t index) const						{ return m_vGBuffers.at(index); }
-uint32_t pom::GeometryPass::GetBoundTextureCount() const									{ return m_TextureCount; }
-const pom::DescriptorSet& pom::GeometryPass::GetTexturesDescriptorSet() const				{ return m_TextureDS; }
-const pom::DescriptorSetLayout& pom::GeometryPass::GetTexturesDescriptorSetLayout() const	{ return m_TextureDSL; }
+const std::vector<pompeii::GBuffer>& pompeii::GeometryPass::GetGBuffers() const						{ return m_vGBuffers; }
+const pompeii::GBuffer& pompeii::GeometryPass::GetGBuffer(uint32_t index) const						{ return m_vGBuffers.at(index); }
+uint32_t pompeii::GeometryPass::GetBoundTextureCount() const									{ return m_TextureCount; }
+const pompeii::DescriptorSet& pompeii::GeometryPass::GetTexturesDescriptorSet() const				{ return m_TextureDS; }
+const pompeii::DescriptorSetLayout& pompeii::GeometryPass::GetTexturesDescriptorSetLayout() const	{ return m_TextureDSL; }

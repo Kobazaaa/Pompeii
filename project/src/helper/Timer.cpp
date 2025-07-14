@@ -13,14 +13,14 @@
 //--------------------------------------------------
 //    Behavioural
 //--------------------------------------------------
-void pom::Timer::Start()
+void pompeii::Timer::Start()
 {
 	m_LastTimePoint = std::chrono::high_resolution_clock::now();
 	m_CurrentTimePoint = std::chrono::high_resolution_clock::now();
 	m_DeltaTimeSeconds = 0;
 	m_SleepTimeSeconds = 0;
 }
-void pom::Timer::Update()
+void pompeii::Timer::Update()
 {
 	++m_Ticks;
 
@@ -30,11 +30,11 @@ void pom::Timer::Update()
 	m_TotalTimeSeconds += m_DeltaTimeSeconds;
 }
 
-void pom::Timer::StartBenchmark()
+void pompeii::Timer::StartBenchmark()
 {
 	m_BenchmarkStart = std::chrono::high_resolution_clock::now();
 }
-float pom::Timer::EndBenchmark(bool printResults, const std::string& txt)
+float pompeii::Timer::EndBenchmark(bool printResults, const std::string& txt)
 {
 	m_BenchmarkEnd = std::chrono::high_resolution_clock::now();
 	const float delta = std::chrono::duration<float, std::milli>(m_BenchmarkEnd - m_BenchmarkStart).count();
@@ -51,19 +51,19 @@ float pom::Timer::EndBenchmark(bool printResults, const std::string& txt)
 //--------------------------------------------------
 //    Accessors
 //--------------------------------------------------
-float pom::Timer::GetDeltaSeconds()
+float pompeii::Timer::GetDeltaSeconds()
 {
 	return m_DeltaTimeSeconds;
 }
-float pom::Timer::GetTotalTimeSeconds()
+float pompeii::Timer::GetTotalTimeSeconds()
 {
 	return m_TotalTimeSeconds;
 }
-float pom::Timer::TargetFPS()
+float pompeii::Timer::TargetFPS()
 {
 	return TARGET_FPS;
 }
-std::chrono::nanoseconds pom::Timer::SleepDurationNanoSeconds()
+std::chrono::nanoseconds pompeii::Timer::SleepDurationNanoSeconds()
 {
 	constexpr auto msPerFrame = std::chrono::milliseconds(static_cast<int>(1'000.f / TARGET_FPS));
 	const std::chrono::nanoseconds sleep = (m_CurrentTimePoint + msPerFrame - std::chrono::high_resolution_clock::now());

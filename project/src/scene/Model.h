@@ -29,14 +29,14 @@
 struct aiNode;
 struct aiScene;
 struct aiMesh;
-namespace pom
+namespace pompeii
 {
 	class CommandBuffer;
 	class PipelineLayout;
 	struct Context;
 }
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Vertex	

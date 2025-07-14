@@ -21,7 +21,7 @@
 //    Helpers
 //--------------------------------------------------
 
-VkVertexInputBindingDescription pom::Vertex::GetBindingDescription()
+VkVertexInputBindingDescription pompeii::Vertex::GetBindingDescription()
 {
 	VkVertexInputBindingDescription bindingDescription{};
 	bindingDescription.binding = 0;
@@ -30,7 +30,7 @@ VkVertexInputBindingDescription pom::Vertex::GetBindingDescription()
 
 	return bindingDescription;
 }
-std::vector<VkVertexInputAttributeDescription> pom::Vertex::GetAttributeDescriptions()
+std::vector<VkVertexInputAttributeDescription> pompeii::Vertex::GetAttributeDescriptions()
 {
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions(6);
 	attributeDescriptions[0].binding = 0;
@@ -66,7 +66,7 @@ std::vector<VkVertexInputAttributeDescription> pom::Vertex::GetAttributeDescript
 	return attributeDescriptions;
 }
 
-bool pom::Vertex::operator==(const Vertex& other) const
+bool pompeii::Vertex::operator==(const Vertex& other) const
 {
 	return position == other.position &&
 		normal == other.normal &&
@@ -84,7 +84,7 @@ bool pom::Vertex::operator==(const Vertex& other) const
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::Model::Model(Model&& other) noexcept
+pompeii::Model::Model(Model&& other) noexcept
 {
 	vertices = std::move(other.vertices);
 	other.vertices.clear();
@@ -103,7 +103,7 @@ pom::Model::Model(Model&& other) noexcept
 	transparentMeshes = std::move(other.transparentMeshes);
 	other.transparentMeshes.clear();
 }
-pom::Model& pom::Model::operator=(Model&& other) noexcept
+pompeii::Model& pompeii::Model::operator=(Model&& other) noexcept
 {
 	if (this == &other)
 		return *this;
@@ -126,7 +126,7 @@ pom::Model& pom::Model::operator=(Model&& other) noexcept
 	return *this;
 }
 
-void pom::Model::LoadModel(const std::string& path)
+void pompeii::Model::LoadModel(const std::string& path)
 {
 	Assimp::Importer importer;
 	const aiScene* pScene =
@@ -146,7 +146,7 @@ void pom::Model::LoadModel(const std::string& path)
 
 	ProcessNode(pScene->mRootNode, pScene);
 }
-void pom::Model::AllocateResources(const Context& context, bool keepHostData)
+void pompeii::Model::AllocateResources(const Context& context, bool keepHostData)
 {
 	// -- Create Buffers --
 	CreateVertexBuffer(context);
@@ -169,7 +169,7 @@ void pom::Model::AllocateResources(const Context& context, bool keepHostData)
 		pathToIdx.clear();
 	}
 }
-void pom::Model::Destroy(const Context& context)
+void pompeii::Model::Destroy(const Context& context)
 {
 	// -- Flush --
 	for (Image& image : images) 
@@ -186,7 +186,7 @@ void pom::Model::Destroy(const Context& context)
 //--------------------------------------------------
 //    Commands
 //--------------------------------------------------
-void pom::Model::Bind(CommandBuffer& cmdBuffer) const
+void pompeii::Model::Bind(CommandBuffer& cmdBuffer) const
 {
 	// -- Get Vulkan Command Buffer --
 	const VkCommandBuffer& vCmdBuffer = cmdBuffer.GetHandle();
@@ -205,7 +205,7 @@ void pom::Model::Bind(CommandBuffer& cmdBuffer) const
 //--------------------------------------------------
 //    Helpers
 //--------------------------------------------------
-void pom::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene, glm::mat4 transform)
+void pompeii::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene, glm::mat4 transform)
 {
 	auto nodeTransform = ConvertAssimpMatrix(pNode->mTransformation);
 	auto totalTransform = transform * nodeTransform;
@@ -219,7 +219,7 @@ void pom::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene, glm::ma
 	for (uint32_t cIdx{}; cIdx < pNode->mNumChildren; ++cIdx)
 		ProcessNode(pNode->mChildren[cIdx], pScene, totalTransform);
 }
-void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, glm::mat4 transform)
+void pompeii::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, glm::mat4 transform)
 {
 	opaqueMeshes.push_back(Mesh());
 	opaqueMeshes.back().name = pMesh->mName.C_Str();
@@ -322,7 +322,7 @@ void pom::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, glm::ma
 	}
 }
 
-glm::mat4 pom::Model::ConvertAssimpMatrix(const aiMatrix4x4& mat)
+glm::mat4 pompeii::Model::ConvertAssimpMatrix(const aiMatrix4x4& mat)
 {
 	return glm::mat4(
 		mat.a1, mat.b1, mat.c1, mat.d1,
@@ -332,7 +332,7 @@ glm::mat4 pom::Model::ConvertAssimpMatrix(const aiMatrix4x4& mat)
 	);
 }
 
-void pom::Model::CreateVertexBuffer(const Context& context)
+void pompeii::Model::CreateVertexBuffer(const Context& context)
 {
 	BufferAllocator alloc{};
 	const uint32_t bufferSize = static_cast<uint32_t>(vertices.size()) * sizeof(Vertex);
@@ -344,7 +344,7 @@ void pom::Model::CreateVertexBuffer(const Context& context)
 		.AddInitialData(vertices.data(), 0, bufferSize)
 		.Allocate(context, vertexBuffer);
 }
-void pom::Model::CreateIndexBuffer(const Context& context)
+void pompeii::Model::CreateIndexBuffer(const Context& context)
 {
 	BufferAllocator alloc{};
 	const uint32_t bufferSize = static_cast<uint32_t>(indices.size()) * sizeof(uint32_t);
@@ -356,7 +356,7 @@ void pom::Model::CreateIndexBuffer(const Context& context)
 		.AddInitialData(indices.data(), 0, bufferSize)
 		.Allocate(context, indexBuffer);
 }
-void pom::Model::CreateImages(const Context& context)
+void pompeii::Model::CreateImages(const Context& context)
 {
 	for (Texture& tex : textures)
 	{

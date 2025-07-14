@@ -13,14 +13,14 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::RenderPass::Destroy(const Context& context)		const { vkDestroyRenderPass(context.device.GetHandle(), m_RenderPass, nullptr); }
+void pompeii::RenderPass::Destroy(const Context& context)		const { vkDestroyRenderPass(context.device.GetHandle(), m_RenderPass, nullptr); }
 
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkRenderPass& pom::RenderPass::GetHandle()	const { return m_RenderPass; }
-uint32_t pom::RenderPass::GetAttachmentCount()		const {	return m_AttachmentCount; }
+const VkRenderPass& pompeii::RenderPass::GetHandle()	const { return m_RenderPass; }
+uint32_t pompeii::RenderPass::GetAttachmentCount()		const {	return m_AttachmentCount; }
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -30,7 +30,7 @@ uint32_t pom::RenderPass::GetAttachmentCount()		const {	return m_AttachmentCount
 //--------------------------------------------------
 //    Builder
 //--------------------------------------------------
-pom::RenderPassBuilder& pom::RenderPassBuilder::NewSubpass()
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::NewSubpass()
 {
 	m_SubPassIdx = static_cast<uint32_t>(m_vSubPasses.size());
 	m_vSubPasses.emplace_back();
@@ -41,27 +41,27 @@ pom::RenderPassBuilder& pom::RenderPassBuilder::NewSubpass()
 
 	return *this;
 }
-pom::RenderPassBuilder& pom::RenderPassBuilder::SetBindPoint(VkPipelineBindPoint bindPoint) { m_vSubPasses.back().pipelineBindPoint = bindPoint; return *this; }
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::SetBindPoint(VkPipelineBindPoint bindPoint) { m_vSubPasses.back().pipelineBindPoint = bindPoint; return *this; }
 
-pom::RenderPassBuilder& pom::RenderPassBuilder::NewAttachment()								{ m_vAttachmentDescriptions.emplace_back(); return *this; }
-pom::RenderPassBuilder& pom::RenderPassBuilder::SetFormat(VkFormat format)					{ m_vAttachmentDescriptions.back().format = format; return *this; }
-pom::RenderPassBuilder& pom::RenderPassBuilder::SetSamples(VkSampleCountFlagBits samples)	{ m_vAttachmentDescriptions.back().samples = samples; return *this; }
-pom::RenderPassBuilder& pom::RenderPassBuilder::SetLoadStoreOp(VkAttachmentLoadOp loadOp, VkAttachmentStoreOp storeOp)
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::NewAttachment()								{ m_vAttachmentDescriptions.emplace_back(); return *this; }
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::SetFormat(VkFormat format)					{ m_vAttachmentDescriptions.back().format = format; return *this; }
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::SetSamples(VkSampleCountFlagBits samples)	{ m_vAttachmentDescriptions.back().samples = samples; return *this; }
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::SetLoadStoreOp(VkAttachmentLoadOp loadOp, VkAttachmentStoreOp storeOp)
 {
 	m_vAttachmentDescriptions.back().loadOp = loadOp;
 	m_vAttachmentDescriptions.back().storeOp = storeOp;
 	return *this;
 }
-pom::RenderPassBuilder& pom::RenderPassBuilder::SetStencilLoadStoreOp(VkAttachmentLoadOp loadOp, VkAttachmentStoreOp storeOp)
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::SetStencilLoadStoreOp(VkAttachmentLoadOp loadOp, VkAttachmentStoreOp storeOp)
 {
 	m_vAttachmentDescriptions.back().stencilLoadOp = loadOp;
 	m_vAttachmentDescriptions.back().stencilStoreOp = storeOp;
 	return *this;
 }
-pom::RenderPassBuilder& pom::RenderPassBuilder::SetInitialLayout(VkImageLayout layout)		{ m_vAttachmentDescriptions.back().initialLayout = layout; return *this; }
-pom::RenderPassBuilder& pom::RenderPassBuilder::SetFinalLayout(VkImageLayout layout)		{ m_vAttachmentDescriptions.back().finalLayout = layout; return *this; }
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::SetInitialLayout(VkImageLayout layout)		{ m_vAttachmentDescriptions.back().initialLayout = layout; return *this; }
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::SetFinalLayout(VkImageLayout layout)		{ m_vAttachmentDescriptions.back().finalLayout = layout; return *this; }
 
-pom::RenderPassBuilder& pom::RenderPassBuilder::AddSubpassColorAttachment(uint32_t attachment)
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::AddSubpassColorAttachment(uint32_t attachment)
 {
 	if (m_vColorAttachmentRefs.size() <= m_SubPassIdx)
 		m_vColorAttachmentRefs.emplace_back();
@@ -70,37 +70,37 @@ pom::RenderPassBuilder& pom::RenderPassBuilder::AddSubpassColorAttachment(uint32
 	m_vSubPasses.back().pColorAttachments = m_vColorAttachmentRefs.back().data();
 	return *this;
 }
-pom::RenderPassBuilder& pom::RenderPassBuilder::SetSubpassResolveAttachment(uint32_t attachment)
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::SetSubpassResolveAttachment(uint32_t attachment)
 {
 	m_ResolveAttachmentRef.emplace_back(attachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	m_vSubPasses.back().pResolveAttachments = &m_ResolveAttachmentRef.back();
 	return *this;
 }
-pom::RenderPassBuilder& pom::RenderPassBuilder::SetSubpassDepthAttachment(uint32_t attachment)
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::SetSubpassDepthAttachment(uint32_t attachment)
 {
 	m_vDepthAttachmentRefs.emplace_back(attachment, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 	m_vSubPasses.back().pDepthStencilAttachment = &m_vDepthAttachmentRefs.back();
 	return *this;
 }
 
-pom::RenderPassBuilder& pom::RenderPassBuilder::NewDependency()								{ m_vSubPassDependencies.emplace_back(); return *this; }
-pom::RenderPassBuilder& pom::RenderPassBuilder::AddDependencyFlag(VkDependencyFlags flags)	{ m_vSubPassDependencies.back().dependencyFlags = flags; return *this; }
-pom::RenderPassBuilder& pom::RenderPassBuilder::SetSrcSubPass(uint32_t subpass)				{ m_vSubPassDependencies.back().srcSubpass = subpass; return *this; }
-pom::RenderPassBuilder& pom::RenderPassBuilder::SetDstSubPass(uint32_t subpass)				{ m_vSubPassDependencies.back().dstSubpass = subpass; return *this; }
-pom::RenderPassBuilder& pom::RenderPassBuilder::SetSrcMasks(VkPipelineStageFlags stageFlags, VkAccessFlags accessFlags)
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::NewDependency()								{ m_vSubPassDependencies.emplace_back(); return *this; }
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::AddDependencyFlag(VkDependencyFlags flags)	{ m_vSubPassDependencies.back().dependencyFlags = flags; return *this; }
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::SetSrcSubPass(uint32_t subpass)				{ m_vSubPassDependencies.back().srcSubpass = subpass; return *this; }
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::SetDstSubPass(uint32_t subpass)				{ m_vSubPassDependencies.back().dstSubpass = subpass; return *this; }
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::SetSrcMasks(VkPipelineStageFlags stageFlags, VkAccessFlags accessFlags)
 {
 	m_vSubPassDependencies.back().srcStageMask = stageFlags;
 	m_vSubPassDependencies.back().srcAccessMask = accessFlags;
 	return *this;
 }
-pom::RenderPassBuilder& pom::RenderPassBuilder::SetDstMasks(VkPipelineStageFlags stageFlags, VkAccessFlags accessFlags)
+pompeii::RenderPassBuilder& pompeii::RenderPassBuilder::SetDstMasks(VkPipelineStageFlags stageFlags, VkAccessFlags accessFlags)
 {
 	m_vSubPassDependencies.back().dstStageMask = stageFlags;
 	m_vSubPassDependencies.back().dstAccessMask = accessFlags;
 	return *this;
 }
 
-void pom::RenderPassBuilder::Build(const Context& context, RenderPass& renderPass) const
+void pompeii::RenderPassBuilder::Build(const Context& context, RenderPass& renderPass) const
 {
 	renderPass.m_AttachmentCount = static_cast<uint32_t>(m_vAttachmentDescriptions.size());
 	VkRenderPassCreateInfo renderPassInfo{};

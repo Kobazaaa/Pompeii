@@ -15,22 +15,22 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::Device::Initialize(VkDevice device)	{ m_Device = device; }
-void pom::Device::Destroy() const				{ vkDestroyDevice(m_Device, nullptr); }
+void pompeii::Device::Initialize(VkDevice device)	{ m_Device = device; }
+void pompeii::Device::Destroy() const				{ vkDestroyDevice(m_Device, nullptr); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkDevice& pom::Device::GetHandle()		const { return m_Device; }
-const VkQueue& pom::Device::GetGraphicQueue()	const { return m_GraphicsQueue; }
-const VkQueue& pom::Device::GetPresentQueue()	const { return m_PresentQueue; }
-const VkQueue& pom::Device::GetComputeQueue()	const { return m_ComputeQueue; }
+const VkDevice& pompeii::Device::GetHandle()		const { return m_Device; }
+const VkQueue& pompeii::Device::GetGraphicQueue()	const { return m_GraphicsQueue; }
+const VkQueue& pompeii::Device::GetPresentQueue()	const { return m_PresentQueue; }
+const VkQueue& pompeii::Device::GetComputeQueue()	const { return m_ComputeQueue; }
 
 
 //--------------------------------------------------
 //    Device
 //--------------------------------------------------
-void pom::Device::WaitIdle() const { vkDeviceWaitIdle(m_Device); }
+void pompeii::Device::WaitIdle() const { vkDeviceWaitIdle(m_Device); }
 
 
 
@@ -43,14 +43,14 @@ void pom::Device::WaitIdle() const { vkDeviceWaitIdle(m_Device); }
 //--------------------------------------------------
 //    Builder
 //--------------------------------------------------
-pom::DeviceBuilder& pom::DeviceBuilder::SetFeatures(const VkPhysicalDeviceFeatures2& features)
+pompeii::DeviceBuilder& pompeii::DeviceBuilder::SetFeatures(const VkPhysicalDeviceFeatures2& features)
 {
 	m_DesiredFeatures = features;
 	return *this;
 }
-void pom::DeviceBuilder::Build(Context& context) const
+void pompeii::DeviceBuilder::Build(Context& context) const
 {
-	pom::QueueFamilyIndices indices = context.physicalDevice.GetQueueFamilies();
+	pompeii::QueueFamilyIndices indices = context.physicalDevice.GetQueueFamilies();
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value(), indices.computeFamily.value() };
@@ -76,10 +76,10 @@ void pom::DeviceBuilder::Build(Context& context) const
 	createInfo.enabledExtensionCount = context.physicalDevice.GetExtensionsCount();
 	createInfo.ppEnabledExtensionNames = context.physicalDevice.GetExtensions().data();
 
-	if (pom::Debugger::IsEnabled())
+	if (pompeii::Debugger::IsEnabled())
 	{
-		createInfo.enabledLayerCount = pom::Debugger::GetNumberOfLayers();
-		createInfo.ppEnabledLayerNames = pom::Debugger::GetValidationLayers().data();
+		createInfo.enabledLayerCount = pompeii::Debugger::GetNumberOfLayers();
+		createInfo.ppEnabledLayerNames = pompeii::Debugger::GetValidationLayers().data();
 	}
 	else
 	{

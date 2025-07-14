@@ -12,7 +12,7 @@
 #include "ConsoleTextSettings.h"
 #include "Scene.h"
 
-void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreateInfo& createInfo)
+void pompeii::ForwardPass::Initialize(const Context& context, const ForwardPassCreateInfo& createInfo)
 {
 	// -- MSAA Image --
 	{
@@ -234,17 +234,17 @@ void pom::ForwardPass::Initialize(const Context& context, const ForwardPassCreat
 	}
 }
 
-void pom::ForwardPass::Destroy()
+void pompeii::ForwardPass::Destroy()
 {
 	m_DeletionQueue.Flush();
 }
 
-void pom::ForwardPass::Resize(const Context& context, VkExtent2D extent, VkFormat format)
+void pompeii::ForwardPass::Resize(const Context& context, VkExtent2D extent, VkFormat format)
 {
 	m_MSAAImage.Destroy(context);
 	CreateMSAAImage(context, extent, format);
 }
-void pom::ForwardPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Image& recordImage, Image& depthImage, Scene* pScene, Camera* pCamera)
+void pompeii::ForwardPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Image& recordImage, Image& depthImage, Scene* pScene, Camera* pCamera)
 {
 	// Do sizes match?!
 	VkExtent3D extentImage = recordImage.GetExtent3D();
@@ -436,7 +436,7 @@ void pom::ForwardPass::Record(const Context& context, CommandBuffer& commandBuff
 	Debugger::EndDebugLabel(commandBuffer);
 }
 
-void pom::ForwardPass::CreateMSAAImage(const Context& context, VkExtent2D extent, VkFormat format)
+void pompeii::ForwardPass::CreateMSAAImage(const Context& context, VkExtent2D extent, VkFormat format)
 {
 	ImageBuilder iBuilder{};
 	iBuilder

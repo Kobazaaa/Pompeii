@@ -4,7 +4,7 @@
 // -- Pompeii Includes --
 #include "Image.h"
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  GBuffer	

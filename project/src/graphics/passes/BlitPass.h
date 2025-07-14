@@ -8,7 +8,7 @@
 #include "DescriptorSet.h"
 
 // -- Forward Declarations --
-namespace pom
+namespace pompeii
 {
 	class Camera;
 	class DescriptorPool;
@@ -16,7 +16,7 @@ namespace pom
 	class Image;
 }
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Create Info	

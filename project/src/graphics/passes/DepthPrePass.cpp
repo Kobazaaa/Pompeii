@@ -8,7 +8,7 @@
 #include "GeometryPass.h"
 #include "Scene.h"
 
-void pom::DepthPrePass::Initialize(const Context& context, const DepthPrePassCreateInfo& createInfo)
+void pompeii::DepthPrePass::Initialize(const Context& context, const DepthPrePassCreateInfo& createInfo)
 {
 	// -- Descriptor Set Layout --
 	{
@@ -113,12 +113,12 @@ void pom::DepthPrePass::Initialize(const Context& context, const DepthPrePassCre
 	}
 }
 
-void pom::DepthPrePass::Destroy()
+void pompeii::DepthPrePass::Destroy()
 {
 	m_DeletionQueue.Flush();
 }
 
-void pom::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuffer, const GeometryPass& gPass, uint32_t imageIndex, const Image& depthImage, const Scene* pScene, Camera* pCamera) const
+void pompeii::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuffer, const GeometryPass& gPass, uint32_t imageIndex, const Image& depthImage, const Scene* pScene, Camera* pCamera) const
 {
 	// -- Update Vertex UBO --
 	UniformBufferVS ubo;

@@ -4,6 +4,10 @@
 // -- Pompeii Includes --
 #include "Material.h"
 
+// -- Texture Includes --
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Texture	
@@ -12,7 +16,7 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::Texture::Texture(const std::string& path, VkFormat format, bool isHDR)
+pompeii::Texture::Texture(const std::string& path, VkFormat format, bool isHDR)
 {
 	m_Format = format;
 	m_Path = path;
@@ -24,11 +28,11 @@ pom::Texture::Texture(const std::string& path, VkFormat format, bool isHDR)
 	if (!m_pPixels)
 		throw std::runtime_error("Failed to load Texture: " + path);
 }
-pom::Texture::~Texture()
+pompeii::Texture::~Texture()
 {
 	FreePixels();
 }
-pom::Texture::Texture(Texture&& other) noexcept
+pompeii::Texture::Texture(Texture&& other) noexcept
 {
 	m_pPixels = other.m_pPixels;
 	other.m_pPixels = nullptr;
@@ -39,7 +43,7 @@ pom::Texture::Texture(Texture&& other) noexcept
 	m_Format = other.m_Format;
 	other.m_Format = VK_FORMAT_UNDEFINED;
 }
-pom::Texture& pom::Texture::operator=(Texture&& other) noexcept
+pompeii::Texture& pompeii::Texture::operator=(Texture&& other) noexcept
 {
 	if (this == &other)
 		return *this;
@@ -54,7 +58,7 @@ pom::Texture& pom::Texture::operator=(Texture&& other) noexcept
 	return *this;
 }
 
-void pom::Texture::FreePixels()
+void pompeii::Texture::FreePixels()
 {
 	if (m_pPixels)
 	{
@@ -66,12 +70,12 @@ void pom::Texture::FreePixels()
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-void* pom::Texture::GetPixels()			const {	return m_pPixels; }
-uint32_t pom::Texture::GetMemorySize()	const
+void* pompeii::Texture::GetPixels()			const {	return m_pPixels; }
+uint32_t pompeii::Texture::GetMemorySize()	const
 {
 	const int pixelSize = (m_DataType == TextureDataType::FLOAT32) ? sizeof(float) : sizeof(stbi_uc);
 	return m_Width * m_Height * m_Channels * pixelSize;
 }
-glm::ivec2 pom::Texture::GetExtent()		const { return {m_Width, m_Height}; }
-VkFormat pom::Texture::GetFormat()			const { return m_Format; }
-const std::string& pom::Texture::GetPath()	const { return m_Path; }
+glm::ivec2 pompeii::Texture::GetExtent()		const { return {m_Width, m_Height}; }
+VkFormat pompeii::Texture::GetFormat()			const { return m_Format; }
+const std::string& pompeii::Texture::GetPath()	const { return m_Path; }

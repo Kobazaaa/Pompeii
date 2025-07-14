@@ -6,7 +6,7 @@
 #include <vma/vk_mem_alloc.h>
 
 // -- Forward Declarations --
-namespace pom
+namespace pompeii
 {
 	class CommandBuffer;
 	class Image;
@@ -14,7 +14,7 @@ namespace pom
 	struct Context;
 }
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Buffer	

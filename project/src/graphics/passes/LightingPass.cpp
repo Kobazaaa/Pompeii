@@ -9,7 +9,7 @@
 #include "Shader.h"
 #include "Scene.h"
 
-void pom::LightingPass::Initialize(const Context& context, const LightingPassCreateInfo& createInfo)
+void pompeii::LightingPass::Initialize(const Context& context, const LightingPassCreateInfo& createInfo)
 {
 	// -- Descriptor Set Layout --
 	{
@@ -205,12 +205,12 @@ void pom::LightingPass::Initialize(const Context& context, const LightingPassCre
 	}
 }
 
-void pom::LightingPass::Destroy()
+void pompeii::LightingPass::Destroy()
 {
 	m_DeletionQueue.Flush();
 }
 
-void pom::LightingPass::UpdateGBufferDescriptors(const Context& context, const GeometryPass& pGeometryPass, const std::vector<Image>& depthImages, const EnvironmentMap& envMap) const
+void pompeii::LightingPass::UpdateGBufferDescriptors(const Context& context, const GeometryPass& pGeometryPass, const std::vector<Image>& depthImages, const EnvironmentMap& envMap) const
 {
 	DescriptorSetWriter writer{};
 	for (uint32_t i{}; i < pGeometryPass.GetGBuffers().size(); ++i)
@@ -272,7 +272,7 @@ void pom::LightingPass::UpdateGBufferDescriptors(const Context& context, const G
 			.Execute(context);
 	}
 }
-void pom::LightingPass::UpdateLightDescriptors(const Context& context, Scene* pScene)
+void pompeii::LightingPass::UpdateLightDescriptors(const Context& context, Scene* pScene)
 {
 	uint32_t lightCount = pScene->GetLightsCount();
 
@@ -374,7 +374,7 @@ void pom::LightingPass::UpdateLightDescriptors(const Context& context, Scene* pS
 		.Execute(context);
 }
 
-void pom::LightingPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, Scene*, Camera* pCamera) const
+void pompeii::LightingPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, Scene*, Camera* pCamera) const
 {
 	// -- Update DS --
 	struct cam

@@ -15,7 +15,7 @@
 //! This Shadow Pass is NO LONGER IN USE!!!
 //! Shadows are handled differently now!
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Create Info	

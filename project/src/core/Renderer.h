@@ -4,11 +4,6 @@
 // -- Vulkan Includes --
 #include <vulkan/vulkan.h>
 
-// -- Math Includes --
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include "glm/gtc/quaternion.hpp"
-
 // -- Standard Library --
 #include <vector>
 
@@ -16,23 +11,20 @@
 #include "BlitPass.h"
 #include "Context.h"
 #include "DepthPrePass.h"
-#include "Window.h"
 #include "SwapChain.h"
 #include "SyncManager.h"
 #include "UIPass.h"
 #include "GeometryPass.h"
 #include "LightingPass.h"
-#include "ShadowPass.h"
-
 
 // -- Forward Declarations --
-namespace pom
+namespace pompeii
 {
 	class Window;
 	class Camera;
 }
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Renderer	

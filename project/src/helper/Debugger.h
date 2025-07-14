@@ -12,14 +12,14 @@
 #include "glm/vec4.hpp"
 
 // -- Forward Declarations --
-namespace pom
+namespace pompeii
 {
 	class CommandBuffer;
 	struct Context;
 }
 
 
-namespace pom
+namespace pompeii
 {
 	struct InstanceDebugUtils
 	{

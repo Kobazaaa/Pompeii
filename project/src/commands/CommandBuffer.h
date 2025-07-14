@@ -8,14 +8,14 @@
 #include "SyncManager.h"
 
 // -- Forward Declarations --
-namespace pom
+namespace pompeii
 {
 	class Device;
 	struct SemaphoreInfo;
 }
 
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  CommandBuffer	

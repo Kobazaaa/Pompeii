@@ -17,7 +17,7 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::UIPass::Initialize(const Context& context, const UIPassCreateInfo& createInfo)
+void pompeii::UIPass::Initialize(const Context& context, const UIPassCreateInfo& createInfo)
 {
 	// -- Allocate ImGui Vulkan Descriptor Pool --
 	{
@@ -83,7 +83,7 @@ void pom::UIPass::Initialize(const Context& context, const UIPassCreateInfo& cre
 			});
 	}
 }
-void pom::UIPass::Destroy()
+void pompeii::UIPass::Destroy()
 {
 	m_DeletionQueue.Flush();
 }
@@ -92,7 +92,7 @@ void pom::UIPass::Destroy()
 //--------------------------------------------------
 //    Record
 //--------------------------------------------------
-void pom::UIPass::Record(CommandBuffer& commandBuffer, const Image& renderImage)
+void pompeii::UIPass::Record(CommandBuffer& commandBuffer, const Image& renderImage)
 {
 	// -- New Frame Setup --
 	BeginImGuiFrame();
@@ -108,7 +108,7 @@ void pom::UIPass::Record(CommandBuffer& commandBuffer, const Image& renderImage)
 //    Helpers
 //--------------------------------------------------
 // ReSharper disable once CppMemberFunctionMayBeStatic
-void pom::UIPass::BeginImGuiFrame()
+void pompeii::UIPass::BeginImGuiFrame()
 {
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -118,7 +118,7 @@ void pom::UIPass::BeginImGuiFrame()
 		SetupDockSpace();
 }
 // ReSharper disable once CppMemberFunctionMayBeStatic
-void pom::UIPass::ImGuiLogic()
+void pompeii::UIPass::ImGuiLogic()
 {
 	// -- Menu --
 	if (ImGui::BeginMainMenuBar())
@@ -165,7 +165,7 @@ void pom::UIPass::ImGuiLogic()
 	ImGui::End();
 }
 // ReSharper disable once CppMemberFunctionMayBeStatic
-void pom::UIPass::EndImGuiFrame(CommandBuffer& commandBuffer, const Image& renderImage)
+void pompeii::UIPass::EndImGuiFrame(CommandBuffer& commandBuffer, const Image& renderImage)
 {
 	const ImGuiIO& io = ImGui::GetIO();
 	ImGui::Render();
@@ -202,7 +202,7 @@ void pom::UIPass::EndImGuiFrame(CommandBuffer& commandBuffer, const Image& rende
 	Debugger::EndDebugLabel(commandBuffer);
 }
 
-void pom::UIPass::SetupDockSpace() const
+void pompeii::UIPass::SetupDockSpace() const
 {
 	const ImGuiViewport* viewport = ImGui::GetMainViewport();
 	const auto dockSpaceID = ImGui::DockSpaceOverViewport(viewport->ID, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
@@ -225,7 +225,7 @@ void pom::UIPass::SetupDockSpace() const
 	m_IsDockSpaceBuilt = true;
 }
 // ReSharper disable once CppMemberFunctionMayBeStatic
-void pom::UIPass::SetupImGuiStyle()
+void pompeii::UIPass::SetupImGuiStyle()
 {
 	ImGuiStyle& style = ImGui::GetStyle();
 	ImVec4* colors = style.Colors;

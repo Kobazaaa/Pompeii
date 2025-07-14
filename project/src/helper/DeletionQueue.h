@@ -5,7 +5,7 @@
 #include <functional>
 #include <vector>
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  DeletionQueue	

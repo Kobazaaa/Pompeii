@@ -6,10 +6,9 @@
 
 // -- Standard Library --
 #include <vector>
-#include <string>
 
 // -- Forward Declarations --
-namespace pom
+namespace pompeii
 {
 	class Sampler;
 	class PhysicalDevice;
@@ -18,7 +17,7 @@ namespace pom
 	struct Context;
 }
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Image View	

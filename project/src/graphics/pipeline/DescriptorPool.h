@@ -8,14 +8,14 @@
 #include <vector>
 
 // -- Forward Declarations --
-namespace pom
+namespace pompeii
 {
 	class DescriptorSetLayout;
 	class DescriptorSet;
 	struct Context;
 }
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  DescriptorPool	

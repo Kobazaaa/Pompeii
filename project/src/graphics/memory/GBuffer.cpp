@@ -12,7 +12,7 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::GBuffer::GBuffer(GBuffer&& other) noexcept
+pompeii::GBuffer::GBuffer(GBuffer&& other) noexcept
 {
 	m_Albedo_Opacity = std::move(other.m_Albedo_Opacity);
 	m_Normal = std::move(other.m_Normal);
@@ -24,7 +24,7 @@ pom::GBuffer::GBuffer(GBuffer&& other) noexcept
 	other.m_vRenderingAttachments.clear();
 	m_Extent = std::move(other.m_Extent);
 }
-pom::GBuffer& pom::GBuffer::operator=(GBuffer&& other) noexcept
+pompeii::GBuffer& pompeii::GBuffer::operator=(GBuffer&& other) noexcept
 {
 	if (this == &other)
 		return *this;
@@ -40,7 +40,7 @@ pom::GBuffer& pom::GBuffer::operator=(GBuffer&& other) noexcept
 	return *this;
 }
 
-void pom::GBuffer::Initialize(const Context& context, VkExtent2D size)
+void pompeii::GBuffer::Initialize(const Context& context, VkExtent2D size)
 {
 	m_Extent = size;
 
@@ -57,7 +57,7 @@ void pom::GBuffer::Initialize(const Context& context, VkExtent2D size)
 		size, VK_FORMAT_R8G8_UNORM,
 		"GBuffer - Roughness_Metallic");
 }
-void pom::GBuffer::Destroy(const Context& context)
+void pompeii::GBuffer::Destroy(const Context& context)
 {
 	for (Image* const& image : std::views::reverse(m_vAllImages))
 	{
@@ -67,14 +67,14 @@ void pom::GBuffer::Destroy(const Context& context)
 	m_vRenderingAttachments.clear();
 }
 
-void pom::GBuffer::Resize(const Context& context, VkExtent2D size)
+void pompeii::GBuffer::Resize(const Context& context, VkExtent2D size)
 {
 	Destroy(context);
 	Initialize(context, size);
 	m_Extent = size;
 }
 
-void pom::GBuffer::TransitionBufferWriting(const CommandBuffer& commandBuffer)
+void pompeii::GBuffer::TransitionBufferWriting(const CommandBuffer& commandBuffer)
 {
 	m_vRenderingAttachments.clear();
 	m_vRenderingAttachments.reserve(m_vAllImages.size());
@@ -88,7 +88,7 @@ void pom::GBuffer::TransitionBufferWriting(const CommandBuffer& commandBuffer)
 		AddRenderingAttachment(*image);
 	}
 }
-void pom::GBuffer::TransitionBufferSampling(const CommandBuffer& commandBuffer)
+void pompeii::GBuffer::TransitionBufferSampling(const CommandBuffer& commandBuffer)
 {
 	for (Image*& image : m_vAllImages)
 	{
@@ -100,25 +100,25 @@ void pom::GBuffer::TransitionBufferSampling(const CommandBuffer& commandBuffer)
 	}
 }
 
-const std::vector<VkRenderingAttachmentInfo>& pom::GBuffer::GetRenderingAttachments() const { return m_vRenderingAttachments; }
-uint32_t pom::GBuffer::GetAttachmentCount()											  const { return static_cast<uint32_t>(m_vRenderingAttachments.size()); }
+const std::vector<VkRenderingAttachmentInfo>& pompeii::GBuffer::GetRenderingAttachments() const { return m_vRenderingAttachments; }
+uint32_t pompeii::GBuffer::GetAttachmentCount()											  const { return static_cast<uint32_t>(m_vRenderingAttachments.size()); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-std::vector<VkFormat> pom::GBuffer::GetAllFormats() const
+std::vector<VkFormat> pompeii::GBuffer::GetAllFormats() const
 {
 	return {m_Albedo_Opacity.GetFormat(), m_Normal.GetFormat(), m_WorldPos.GetFormat(), m_Roughness_Metallic.GetFormat()};
 }
-VkExtent2D pom::GBuffer::GetExtent() const { return m_Extent; }
+VkExtent2D pompeii::GBuffer::GetExtent() const { return m_Extent; }
 
-const pom::Image& pom::GBuffer::GetAlbedoOpacityImage()			const {	return m_Albedo_Opacity; }
-const pom::Image& pom::GBuffer::GetNormalImage()				const { return m_Normal; }
-const pom::Image& pom::GBuffer::GetWorldPosImage()				const { return m_WorldPos; }
-const pom::Image& pom::GBuffer::GetRoughnessMetallicImage()		const { return m_Roughness_Metallic; }
+const pompeii::Image& pompeii::GBuffer::GetAlbedoOpacityImage()			const {	return m_Albedo_Opacity; }
+const pompeii::Image& pompeii::GBuffer::GetNormalImage()				const { return m_Normal; }
+const pompeii::Image& pompeii::GBuffer::GetWorldPosImage()				const { return m_WorldPos; }
+const pompeii::Image& pompeii::GBuffer::GetRoughnessMetallicImage()		const { return m_Roughness_Metallic; }
 
 // -- Helper --
-void pom::GBuffer::CreateImage(const Context& context, Image& image, VkExtent2D size, VkFormat format, const char* pName)
+void pompeii::GBuffer::CreateImage(const Context& context, Image& image, VkExtent2D size, VkFormat format, const char* pName)
 {
 	ImageBuilder builder{};
 	builder
@@ -133,7 +133,7 @@ void pom::GBuffer::CreateImage(const Context& context, Image& image, VkExtent2D 
 	image.CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
 	m_vAllImages.emplace_back(&image);
 }
-void pom::GBuffer::AddRenderingAttachment(const Image& image)
+void pompeii::GBuffer::AddRenderingAttachment(const Image& image)
 {
 	VkRenderingAttachmentInfo attachmentInfo{};
 	attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;

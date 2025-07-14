@@ -13,7 +13,7 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::CommandPool& pom::CommandPool::Create(Context& context)
+pompeii::CommandPool& pompeii::CommandPool::Create(Context& context)
 {
 	const QueueFamilyIndices queueFamilyIndices = context.physicalDevice.GetQueueFamilies();
 
@@ -28,7 +28,7 @@ pom::CommandPool& pom::CommandPool::Create(Context& context)
 	m_Context = &context;
 	return *this;
 }
-void pom::CommandPool::Destroy() const
+void pompeii::CommandPool::Destroy() const
 {
 	vkDestroyCommandPool(m_Context->device.GetHandle(), m_CommandPool, nullptr);
 }
@@ -37,14 +37,14 @@ void pom::CommandPool::Destroy() const
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-VkCommandPool& pom::CommandPool::GetHandle() { return m_CommandPool; }
-pom::CommandBuffer& pom::CommandPool::GetBuffer(uint32_t bufferIdx)
+VkCommandPool& pompeii::CommandPool::GetHandle() { return m_CommandPool; }
+pompeii::CommandBuffer& pompeii::CommandPool::GetBuffer(uint32_t bufferIdx)
 {
 	if (bufferIdx < 0 || bufferIdx >= m_vCommandBuffers.size())
 		throw std::out_of_range("Buffer index out of range!");
 	return m_vCommandBuffers[bufferIdx];
 }
-pom::CommandBuffer& pom::CommandPool::AllocateCmdBuffers(uint32_t count, VkCommandBufferLevel level)
+pompeii::CommandBuffer& pompeii::CommandPool::AllocateCmdBuffers(uint32_t count, VkCommandBufferLevel level)
 {
 	std::erase_if(m_vCommandBuffers, [](const CommandBuffer& b)
 		{

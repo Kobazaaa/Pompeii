@@ -19,12 +19,12 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::Instance::Destroy() const { vkDestroyInstance(m_Instance, nullptr); }
+void pompeii::Instance::Destroy() const { vkDestroyInstance(m_Instance, nullptr); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkInstance& pom::Instance::GetHandle() const { return m_Instance; }
+const VkInstance& pompeii::Instance::GetHandle() const { return m_Instance; }
 
 
 
@@ -35,7 +35,7 @@ const VkInstance& pom::Instance::GetHandle() const { return m_Instance; }
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------	
-pom::InstanceBuilder::InstanceBuilder()
+pompeii::InstanceBuilder::InstanceBuilder()
 {
 	m_AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;			// CAN'T CHANGE
 	m_AppInfo.pApplicationName = "";								//? CAN CHANGE
@@ -48,12 +48,12 @@ pom::InstanceBuilder::InstanceBuilder()
 //--------------------------------------------------
 //    Builder
 //--------------------------------------------------
-pom::InstanceBuilder& pom::InstanceBuilder::SetApplicationName(const std::string& name) { m_AppInfo.pApplicationName = name.c_str(); return *this; }
-pom::InstanceBuilder& pom::InstanceBuilder::SetEngineName(const std::string& name)		{ m_AppInfo.pEngineName = name.c_str(); return *this; }
-pom::InstanceBuilder& pom::InstanceBuilder::SetAPIVersion(uint32_t apiVersion)			{ m_AppInfo.apiVersion = apiVersion; return *this; }
-pom::InstanceBuilder& pom::InstanceBuilder::AddInstanceExtension(const char* extName)	{ m_vInstanceExtensions.push_back(extName); return *this; }
+pompeii::InstanceBuilder& pompeii::InstanceBuilder::SetApplicationName(const std::string& name) { m_AppInfo.pApplicationName = name.c_str(); return *this; }
+pompeii::InstanceBuilder& pompeii::InstanceBuilder::SetEngineName(const std::string& name)		{ m_AppInfo.pEngineName = name.c_str(); return *this; }
+pompeii::InstanceBuilder& pompeii::InstanceBuilder::SetAPIVersion(uint32_t apiVersion)			{ m_AppInfo.apiVersion = apiVersion; return *this; }
+pompeii::InstanceBuilder& pompeii::InstanceBuilder::AddInstanceExtension(const char* extName)	{ m_vInstanceExtensions.push_back(extName); return *this; }
 
-void pom::InstanceBuilder::Build(Context& context)
+void pompeii::InstanceBuilder::Build(Context& context)
 {
 	if (Debugger::IsEnabled() && !Debugger::CheckValidationLayerSupport())
 		throw std::runtime_error("Validation Layers requested, but not available!");
@@ -100,7 +100,7 @@ void pom::InstanceBuilder::Build(Context& context)
 	}
 }
 
-void pom::InstanceBuilder::GetRequiredExtensions()
+void pompeii::InstanceBuilder::GetRequiredExtensions()
 {
 	uint32_t glfwExtensionCount = 0;
 	const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);

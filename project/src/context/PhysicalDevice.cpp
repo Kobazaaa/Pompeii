@@ -19,7 +19,7 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::PhysicalDevice::Initialize(VkPhysicalDevice physicalDevice, const std::vector<const char*>& extensions)
+void pompeii::PhysicalDevice::Initialize(VkPhysicalDevice physicalDevice, const std::vector<const char*>& extensions)
 {
 	m_PhysicalDevice = physicalDevice;
 	m_vExtensions = extensions;
@@ -33,12 +33,12 @@ void pom::PhysicalDevice::Initialize(VkPhysicalDevice physicalDevice, const std:
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkPhysicalDevice& pom::PhysicalDevice::GetHandle()						const		{ return m_PhysicalDevice; }
-VkPhysicalDeviceProperties pom::PhysicalDevice::GetProperties()					const		{ return m_Properties; }
-VkFormatProperties pom::PhysicalDevice::GetFormatProperties(VkFormat format)	const		{ VkFormatProperties props{}; vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &props); return props; }
-VkPhysicalDeviceFeatures pom::PhysicalDevice::GetFeatures()						const		{ return m_Features.features; }
-pom::QueueFamilyIndices pom::PhysicalDevice::GetQueueFamilies()					const		{ return m_QueueFamilyIndices; }
-VkSampleCountFlagBits pom::PhysicalDevice::GetMaxSampleCount()					const
+const VkPhysicalDevice& pompeii::PhysicalDevice::GetHandle()						const		{ return m_PhysicalDevice; }
+VkPhysicalDeviceProperties pompeii::PhysicalDevice::GetProperties()					const		{ return m_Properties; }
+VkFormatProperties pompeii::PhysicalDevice::GetFormatProperties(VkFormat format)	const		{ VkFormatProperties props{}; vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &props); return props; }
+VkPhysicalDeviceFeatures pompeii::PhysicalDevice::GetFeatures()						const		{ return m_Features.features; }
+pompeii::QueueFamilyIndices pompeii::PhysicalDevice::GetQueueFamilies()					const		{ return m_QueueFamilyIndices; }
+VkSampleCountFlagBits pompeii::PhysicalDevice::GetMaxSampleCount()					const
 {
 	VkPhysicalDeviceProperties properties = GetProperties();
 
@@ -60,16 +60,16 @@ VkSampleCountFlagBits pom::PhysicalDevice::GetMaxSampleCount()					const
 
 	return VK_SAMPLE_COUNT_1_BIT;
 }
-pom::SwapChainSupportDetails pom::PhysicalDevice::GetSwapChainSupportDetails(const VkSurfaceKHR surface)
+pompeii::SwapChainSupportDetails pompeii::PhysicalDevice::GetSwapChainSupportDetails(const VkSurfaceKHR surface)
 {
 	QuerySwapChainSupport(surface);
 	return m_SwapChainSupportDetails;
 }
 
-const std::vector<const char*>& pom::PhysicalDevice::GetExtensions()			const		{ return m_vExtensions; }
-uint32_t pom::PhysicalDevice::GetExtensionsCount()								const		{ return static_cast<uint32_t>(m_vExtensions.size()); }
+const std::vector<const char*>& pompeii::PhysicalDevice::GetExtensions()			const		{ return m_vExtensions; }
+uint32_t pompeii::PhysicalDevice::GetExtensionsCount()								const		{ return static_cast<uint32_t>(m_vExtensions.size()); }
 
-bool pom::PhysicalDevice::AreExtensionsSupported(const std::vector<const char*>& extensions) const
+bool pompeii::PhysicalDevice::AreExtensionsSupported(const std::vector<const char*>& extensions) const
 {
 	uint32_t extensionCount;
 	vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, nullptr, &extensionCount, nullptr);
@@ -84,7 +84,7 @@ bool pom::PhysicalDevice::AreExtensionsSupported(const std::vector<const char*>&
 
 	return requiredExtensions.empty();
 }
-bool pom::PhysicalDevice::AreFeaturesSupported(const VkPhysicalDeviceFeatures2& features) const
+bool pompeii::PhysicalDevice::AreFeaturesSupported(const VkPhysicalDeviceFeatures2& features) const
 {
 	VkPhysicalDeviceVulkan13Features requested13;
 	VkPhysicalDeviceVulkan12Features requested12;
@@ -116,7 +116,7 @@ bool pom::PhysicalDevice::AreFeaturesSupported(const VkPhysicalDeviceFeatures2& 
 		    std::cout << WARNING_TXT << m_Properties.deviceName << " is missing feature: " << #feature << ". Looking for other suitable GPU!\n" << RESET_TXT; \
 		    return false; \
 		}
-bool pom::PhysicalDevice::CheckFeatures(const VkPhysicalDeviceFeatures& requested, const VkPhysicalDeviceFeatures& available) const
+bool pompeii::PhysicalDevice::CheckFeatures(const VkPhysicalDeviceFeatures& requested, const VkPhysicalDeviceFeatures& available) const
 {
 	CHECK_FEATURE(robustBufferAccess)
 	CHECK_FEATURE(fullDrawIndexUint32)
@@ -173,7 +173,7 @@ bool pom::PhysicalDevice::CheckFeatures(const VkPhysicalDeviceFeatures& requeste
 	CHECK_FEATURE(inheritedQueries)
 	return true;
 }
-bool pom::PhysicalDevice::CheckFeatures(const VkPhysicalDeviceVulkan11Features& requested, const VkPhysicalDeviceVulkan11Features& available) const
+bool pompeii::PhysicalDevice::CheckFeatures(const VkPhysicalDeviceVulkan11Features& requested, const VkPhysicalDeviceVulkan11Features& available) const
 {
 	CHECK_FEATURE(storageBuffer16BitAccess)
 	CHECK_FEATURE(uniformAndStorageBuffer16BitAccess)
@@ -189,7 +189,7 @@ bool pom::PhysicalDevice::CheckFeatures(const VkPhysicalDeviceVulkan11Features& 
 	CHECK_FEATURE(shaderDrawParameters)
 	return true;
 }
-bool pom::PhysicalDevice::CheckFeatures(const VkPhysicalDeviceVulkan12Features& requested, const VkPhysicalDeviceVulkan12Features& available) const
+bool pompeii::PhysicalDevice::CheckFeatures(const VkPhysicalDeviceVulkan12Features& requested, const VkPhysicalDeviceVulkan12Features& available) const
 {
 	CHECK_FEATURE(samplerMirrorClampToEdge)
 	CHECK_FEATURE(drawIndirectCount)
@@ -240,7 +240,7 @@ bool pom::PhysicalDevice::CheckFeatures(const VkPhysicalDeviceVulkan12Features& 
 	CHECK_FEATURE(subgroupBroadcastDynamicId)
 	return true;
 }
-bool pom::PhysicalDevice::CheckFeatures(const VkPhysicalDeviceVulkan13Features& requested, const VkPhysicalDeviceVulkan13Features& available) const
+bool pompeii::PhysicalDevice::CheckFeatures(const VkPhysicalDeviceVulkan13Features& requested, const VkPhysicalDeviceVulkan13Features& available) const
 {
 	CHECK_FEATURE(robustImageAccess)
 	CHECK_FEATURE(inlineUniformBlock)
@@ -265,7 +265,7 @@ bool pom::PhysicalDevice::CheckFeatures(const VkPhysicalDeviceVulkan13Features& 
 //--------------------------------------------------
 //    Queries -- PRIVATE
 //--------------------------------------------------
-pom::SwapChainSupportDetails pom::PhysicalDevice::QuerySwapChainSupport(const VkSurfaceKHR surface)
+pompeii::SwapChainSupportDetails pompeii::PhysicalDevice::QuerySwapChainSupport(const VkSurfaceKHR surface)
 {
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalDevice, surface, &m_SwapChainSupportDetails.capabilities);
 
@@ -290,7 +290,7 @@ pom::SwapChainSupportDetails pom::PhysicalDevice::QuerySwapChainSupport(const Vk
 
 	return m_SwapChainSupportDetails;
 }
-pom::QueueFamilyIndices pom::PhysicalDevice::FindQueueFamilies(const VkSurfaceKHR surface)
+pompeii::QueueFamilyIndices pompeii::PhysicalDevice::FindQueueFamilies(const VkSurfaceKHR surface)
 {
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, nullptr);
@@ -340,17 +340,17 @@ pom::QueueFamilyIndices pom::PhysicalDevice::FindQueueFamilies(const VkSurfaceKH
 //--------------------------------------------------
 //    Selector
 //--------------------------------------------------
-pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::AddExtension(const char* ext)
+pompeii::PhysicalDeviceSelector& pompeii::PhysicalDeviceSelector::AddExtension(const char* ext)
 {
 	m_vDesiredExtensions.push_back(ext);
 	return *this;
 }
-pom::PhysicalDeviceSelector& pom::PhysicalDeviceSelector::CheckForFeatures(const VkPhysicalDeviceFeatures2& features)
+pompeii::PhysicalDeviceSelector& pompeii::PhysicalDeviceSelector::CheckForFeatures(const VkPhysicalDeviceFeatures2& features)
 {
 	m_RequestedFeatures = features;
 	return *this;
 }
-void pom::PhysicalDeviceSelector::PickPhysicalDevice(Context& context, VkSurfaceKHR surface) const
+void pompeii::PhysicalDeviceSelector::PickPhysicalDevice(Context& context, VkSurfaceKHR surface) const
 {
 	uint32_t deviceCount = 0;
 	vkEnumeratePhysicalDevices(context.instance.GetHandle(), &deviceCount, nullptr);
@@ -390,7 +390,7 @@ void pom::PhysicalDeviceSelector::PickPhysicalDevice(Context& context, VkSurface
 	}
 }
 
-uint32_t pom::PhysicalDeviceSelector::RateDeviceSuitability(PhysicalDevice& device, VkSurfaceKHR surface) const
+uint32_t pompeii::PhysicalDeviceSelector::RateDeviceSuitability(PhysicalDevice& device, VkSurfaceKHR surface) const
 {
 	// Query Properties and Features
 	const VkPhysicalDeviceProperties deviceProperties = device.GetProperties();

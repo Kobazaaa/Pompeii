@@ -14,13 +14,13 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::ShaderModule::Destroy(const Context& context) const { vkDestroyShaderModule(context.device.GetHandle(), m_Shader, nullptr); }
+void pompeii::ShaderModule::Destroy(const Context& context) const { vkDestroyShaderModule(context.device.GetHandle(), m_Shader, nullptr); }
 
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkShaderModule& pom::ShaderModule::GetHandle()  const { return m_Shader; }
+const VkShaderModule& pompeii::ShaderModule::GetHandle()  const { return m_Shader; }
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -31,7 +31,7 @@ const VkShaderModule& pom::ShaderModule::GetHandle()  const { return m_Shader; }
 //    Loader
 //--------------------------------------------------
 
-void pom::ShaderLoader::Load(const Context& context, const std::string& filename, ShaderModule& module)
+void pompeii::ShaderLoader::Load(const Context& context, const std::string& filename, ShaderModule& module)
 {
 	ReadCode(filename);
 
@@ -46,7 +46,7 @@ void pom::ShaderLoader::Load(const Context& context, const std::string& filename
 	m_vCode.clear();
 }
 
-void pom::ShaderLoader::ReadCode(const std::string& filename)
+void pompeii::ShaderLoader::ReadCode(const std::string& filename)
 {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 	if (!file.is_open())

@@ -9,10 +9,10 @@
 #include "Device.h"
 #include "PhysicalDevice.h"
 #include "DeletionQueue.h"
-#include "DescriptorPool.h"
 #include "CommandPool.h"
+#include "DescriptorPool.h"
 
-namespace pom
+namespace pompeii
 {
 	struct Context
 	{

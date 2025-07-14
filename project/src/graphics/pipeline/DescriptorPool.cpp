@@ -15,28 +15,28 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::DescriptorPool& pom::DescriptorPool::SetDebugName(const char* name)
+pompeii::DescriptorPool& pompeii::DescriptorPool::SetDebugName(const char* name)
 {
 	m_pName = name;
 	return *this;
 }
-pom::DescriptorPool& pom::DescriptorPool::SetMaxSets(uint32_t count)
+pompeii::DescriptorPool& pompeii::DescriptorPool::SetMaxSets(uint32_t count)
 {
 	m_MaxSets = count;
 	return *this;
 }
-pom::DescriptorPool& pom::DescriptorPool::AddPoolSize(VkDescriptorType type, uint32_t count)
+pompeii::DescriptorPool& pompeii::DescriptorPool::AddPoolSize(VkDescriptorType type, uint32_t count)
 {
 	m_vPoolSizes.emplace_back(type, count);
 	return *this;
 }
-pom::DescriptorPool& pom::DescriptorPool::AddFlags(VkDescriptorPoolCreateFlags flags)
+pompeii::DescriptorPool& pompeii::DescriptorPool::AddFlags(VkDescriptorPoolCreateFlags flags)
 {
 	m_CreateFlags |= flags;
 	return *this;
 }
 
-void pom::DescriptorPool::Create(const Context& context)
+void pompeii::DescriptorPool::Create(const Context& context)
 {
 	VkDescriptorPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -56,7 +56,7 @@ void pom::DescriptorPool::Create(const Context& context)
 	m_pName = nullptr;
 	m_CreateFlags = {};
 }
-void pom::DescriptorPool::Destroy(const Context& context) const
+void pompeii::DescriptorPool::Destroy(const Context& context) const
 {
 	vkDestroyDescriptorPool(context.device.GetHandle(), m_Pool, nullptr);
 }
@@ -65,9 +65,9 @@ void pom::DescriptorPool::Destroy(const Context& context) const
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-std::vector<pom::DescriptorSet> pom::DescriptorPool::AllocateSets(const Context& context, const DescriptorSetLayout& layout, uint32_t count, const char* name, const void* pNext) const
+std::vector<pompeii::DescriptorSet> pompeii::DescriptorPool::AllocateSets(const Context& context, const DescriptorSetLayout& layout, uint32_t count, const char* name, const void* pNext) const
 {
-	std::vector<pom::DescriptorSet> results;
+	std::vector<pompeii::DescriptorSet> results;
 	std::vector<VkDescriptorSet> sets;
 	sets.resize(count);
 	results.resize(count);
@@ -98,4 +98,4 @@ std::vector<pom::DescriptorSet> pom::DescriptorPool::AllocateSets(const Context&
 
 	return results;
 }
-const VkDescriptorPool& pom::DescriptorPool::GetHandle() const { return m_Pool; }
+const VkDescriptorPool& pompeii::DescriptorPool::GetHandle() const { return m_Pool; }

@@ -11,7 +11,7 @@
 #include "Image.h"
 
 // -- Forward Declarations --
-namespace pom
+namespace pompeii
 {
 	class GeometryPass;
 	class DescriptorPool;
@@ -20,7 +20,7 @@ namespace pom
 	class CommandBuffer;
 }
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Create Info	

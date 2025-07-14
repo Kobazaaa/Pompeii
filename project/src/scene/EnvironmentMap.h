@@ -1,14 +1,14 @@
 #ifndef ENVIRONMENT_MAP_H
 #define ENVIRONMENT_MAP_H
 
-// -- Math Includes --
-#include "glm/glm.hpp"
+// -- Standard Library --
+#include <string>
 
 // -- Pompeii Includes --
 #include "Image.h"
 #include "Sampler.h"
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  EnvironmentMap	

@@ -6,16 +6,17 @@
 
 // -- Pompeii Includes --
 #include "Renderer.h"
-#include "Camera.h"
 #include "Debugger.h"
-#include "Window.h"
 #include "CommandBuffer.h"
 #include "Timer.h"
+#include "Camera.h"
+#include "Window.h"
+#include "Scene.h"
 
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::Renderer::Renderer(Camera* pCamera, Window* pWindow)
+pompeii::Renderer::Renderer(Camera* pCamera, Window* pWindow)
 {
 	m_pWindow = pWindow;
 	m_pCamera = pCamera;
@@ -24,7 +25,7 @@ pom::Renderer::Renderer(Camera* pCamera, Window* pWindow)
 
 	InitializeVulkan();
 }
-pom::Renderer::~Renderer()
+pompeii::Renderer::~Renderer()
 {
 	// -- Dump VMA --
 	char* StatsString = nullptr;
@@ -44,7 +45,7 @@ pom::Renderer::~Renderer()
 //--------------------------------------------------
 //    Loop
 //--------------------------------------------------
-void pom::Renderer::Update()
+void pompeii::Renderer::Update()
 {
 	static bool pressX = false;
 	if (!pressX && glfwGetKey(m_pWindow->GetHandle(), GLFW_KEY_X) == GLFW_PRESS)
@@ -82,7 +83,7 @@ void pom::Renderer::Update()
 		m_GeometryPass.UpdateTextureDescriptor(m_Context, m_pScene);
 	}
 }
-void pom::Renderer::Render()
+void pompeii::Renderer::Render()
 {
 	// -- Wait for the current frame to be done --
 	const auto& frameSync = m_SyncManager.GetFrameSync(m_CurrentFrame);
@@ -150,7 +151,7 @@ void pom::Renderer::Render()
 //--------------------------------------------------
 //    Vulkan Specific
 //--------------------------------------------------
-void pom::Renderer::InitializeVulkan()
+void pompeii::Renderer::InitializeVulkan()
 {
 	// -- Start Loading Scene on CPU --
 	std::jthread sceneLoader{ &Scene::Initialize, m_pScene};
@@ -388,7 +389,7 @@ void pom::Renderer::InitializeVulkan()
 //--------------------------------------------------
 //    Helpers
 //--------------------------------------------------
-void pom::Renderer::RecreateSwapChain()
+void pompeii::Renderer::RecreateSwapChain()
 {
 	auto size = m_pWindow->GetSize();
 	while (size.x == 0 || size.y == 0)
@@ -430,7 +431,7 @@ void pom::Renderer::RecreateSwapChain()
 	m_pCamera->ChangeSettings(settings);
 }
 
-void pom::Renderer::CreateDepthResources(const Context& context, VkExtent2D extent)
+void pompeii::Renderer::CreateDepthResources(const Context& context, VkExtent2D extent)
 {
 	m_vDepthImages.resize(m_MaxFramesInFlight);
 	for (Image& image : m_vDepthImages)
@@ -452,7 +453,7 @@ void pom::Renderer::CreateDepthResources(const Context& context, VkExtent2D exte
 		image.CreateView(context, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
 	}
 }
-void pom::Renderer::CreateRenderTargetResources(const Context& context, VkExtent2D extent)
+void pompeii::Renderer::CreateRenderTargetResources(const Context& context, VkExtent2D extent)
 {
 	m_vRenderTargets.resize(m_MaxFramesInFlight);
 	for (Image& image : m_vRenderTargets)
@@ -472,7 +473,7 @@ void pom::Renderer::CreateRenderTargetResources(const Context& context, VkExtent
 	}
 }
 
-void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex)
+void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex)
 {
 	Image& presentImage = m_SwapChain.GetImages()[imageIndex];
 	Image& renderImage = m_vRenderTargets[imageIndex];

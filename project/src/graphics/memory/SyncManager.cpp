@@ -13,7 +13,7 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::SyncManager::Create(const Context& context, uint32_t maxFramesInFlight)
+void pompeii::SyncManager::Create(const Context& context, uint32_t maxFramesInFlight)
 {
 	m_MaxFrames = maxFramesInFlight;
 
@@ -25,7 +25,7 @@ void pom::SyncManager::Create(const Context& context, uint32_t maxFramesInFlight
 		m_vFrameSyncs[index].inFlight = CreateFence(context, true);
 	}
 }
-void pom::SyncManager::Cleanup(const Context& context)
+void pompeii::SyncManager::Cleanup(const Context& context)
 {
 	for (auto& semaphore : m_vSemaphores)
 		vkDestroySemaphore(context.device.GetHandle(), semaphore, nullptr);
@@ -41,13 +41,13 @@ void pom::SyncManager::Cleanup(const Context& context)
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const pom::FrameSync& pom::SyncManager::GetFrameSync(uint32_t frame) const { return m_vFrameSyncs[frame % m_MaxFrames]; }
+const pompeii::FrameSync& pompeii::SyncManager::GetFrameSync(uint32_t frame) const { return m_vFrameSyncs[frame % m_MaxFrames]; }
 
 
 //--------------------------------------------------
 //    Makers
 //--------------------------------------------------
-const VkSemaphore& pom::SyncManager::CreateSemaphore(const Context& context)
+const VkSemaphore& pompeii::SyncManager::CreateSemaphore(const Context& context)
 {
 	VkSemaphoreCreateInfo semaphoreInfo{};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -59,7 +59,7 @@ const VkSemaphore& pom::SyncManager::CreateSemaphore(const Context& context)
 	m_vSemaphores.push_back(semaphore);
 	return m_vSemaphores.back();
 }
-const VkFence& pom::SyncManager::CreateFence(const Context& context, bool signaled)
+const VkFence& pompeii::SyncManager::CreateFence(const Context& context, bool signaled)
 {
 	VkFenceCreateInfo fenceInfo{};
 	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;

@@ -6,7 +6,6 @@
 #include "SwapChain.h"
 #include "Context.h"
 #include "Window.h"
-#include "CommandPool.h"
 #include "Debugger.h"
 
 
@@ -17,10 +16,10 @@
 //--------------------------------------------------
 //    Builder
 //--------------------------------------------------
-pom::SwapChainBuilder& pom::SwapChainBuilder::SetDesiredImageCount(uint32_t count) { m_DesiredImageCount = count; return *this; }
-pom::SwapChainBuilder& pom::SwapChainBuilder::SetImageUsage(VkImageUsageFlags usage) { m_CreateInfo.imageUsage = usage; return *this; }
-pom::SwapChainBuilder& pom::SwapChainBuilder::SetImageArrayLayers(uint32_t layerCount) { m_CreateInfo.imageArrayLayers = layerCount; return *this; }
-void pom::SwapChainBuilder::Build(Context& context, const Window& window, SwapChain& swapChain)
+pompeii::SwapChainBuilder& pompeii::SwapChainBuilder::SetDesiredImageCount(uint32_t count) { m_DesiredImageCount = count; return *this; }
+pompeii::SwapChainBuilder& pompeii::SwapChainBuilder::SetImageUsage(VkImageUsageFlags usage) { m_CreateInfo.imageUsage = usage; return *this; }
+pompeii::SwapChainBuilder& pompeii::SwapChainBuilder::SetImageArrayLayers(uint32_t layerCount) { m_CreateInfo.imageArrayLayers = layerCount; return *this; }
+void pompeii::SwapChainBuilder::Build(Context& context, const Window& window, SwapChain& swapChain)
 {
 	// -- Get Support Details --
 	const SwapChainSupportDetails swapChainSupport = context.physicalDevice.GetSwapChainSupportDetails(window.GetVulkanSurface());
@@ -45,7 +44,7 @@ void pom::SwapChainBuilder::Build(Context& context, const Window& window, SwapCh
 	m_CreateInfo.imageExtent = extent;
 
 
-	pom::QueueFamilyIndices indices = context.physicalDevice.GetQueueFamilies();
+	pompeii::QueueFamilyIndices indices = context.physicalDevice.GetQueueFamilies();
 	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 	if (indices.graphicsFamily != indices.presentFamily)
 	{
@@ -101,7 +100,7 @@ void pom::SwapChainBuilder::Build(Context& context, const Window& window, SwapCh
 //--------------------------------------------------
 //    Helpers
 //--------------------------------------------------
-VkExtent2D pom::SwapChainBuilder::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, const Window& window)
+VkExtent2D pompeii::SwapChainBuilder::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, const Window& window)
 {
 	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
 		return capabilities.currentExtent;
@@ -120,7 +119,7 @@ VkExtent2D pom::SwapChainBuilder::ChooseSwapExtent(const VkSurfaceCapabilitiesKH
 		return actualExtent;
 	}
 }
-VkSurfaceFormatKHR pom::SwapChainBuilder::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+VkSurfaceFormatKHR pompeii::SwapChainBuilder::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
 {
 	for (const auto& availableFormat : availableFormats)
 	{
@@ -131,7 +130,7 @@ VkSurfaceFormatKHR pom::SwapChainBuilder::ChooseSwapSurfaceFormat(const std::vec
 
 	return availableFormats[0];
 }
-VkPresentModeKHR pom::SwapChainBuilder::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+VkPresentModeKHR pompeii::SwapChainBuilder::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
 {
 	// See if VK_PRESENT_MODE_MAILBOX_KHR is available
 	for (const auto& availablePresentMode : availablePresentModes)
@@ -152,14 +151,14 @@ VkPresentModeKHR pom::SwapChainBuilder::ChooseSwapPresentMode(const std::vector<
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::SwapChain::Destroy(const Context& context)
+void pompeii::SwapChain::Destroy(const Context& context)
 {
 	for (Image& image : m_vSwapChainImages)
 		image.DestroyAllViews(context);
 
 	vkDestroySwapchainKHR(context.device.GetHandle(), m_SwapChain, nullptr);
 }
-void pom::SwapChain::Recreate(Context& context, const Window& window)
+void pompeii::SwapChain::Recreate(Context& context, const Window& window)
 {
 	m_OriginalBuilder.Build(context, window, *this);
 }
@@ -168,10 +167,10 @@ void pom::SwapChain::Recreate(Context& context, const Window& window)
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkSwapchainKHR& pom::SwapChain::GetHandle()	const		{ return m_SwapChain; }
-std::vector<pom::Image>& pom::SwapChain::GetImages()			{ return m_vSwapChainImages; }
+const VkSwapchainKHR& pompeii::SwapChain::GetHandle()	const		{ return m_SwapChain; }
+std::vector<pompeii::Image>& pompeii::SwapChain::GetImages()			{ return m_vSwapChainImages; }
 
-uint32_t pom::SwapChain::GetImageCount()			const		{ return static_cast<uint32_t>(m_vSwapChainImages.size()); }
+uint32_t pompeii::SwapChain::GetImageCount()			const		{ return static_cast<uint32_t>(m_vSwapChainImages.size()); }
 
-VkFormat pom::SwapChain::GetFormat()				const		{ return m_SwapChainImageFormat; }
-VkExtent2D pom::SwapChain::GetExtent()				const		{ return m_SwapChainExtent; }
+VkFormat pompeii::SwapChain::GetFormat()				const		{ return m_SwapChainImageFormat; }
+VkExtent2D pompeii::SwapChain::GetExtent()				const		{ return m_SwapChainExtent; }

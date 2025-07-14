@@ -12,9 +12,9 @@
 #include <GLFW/glfw3.h>
 
 // -- Forward Declarations --
-namespace pom { class Window; }
+namespace pompeii { class Window; }
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  CameraSettings	

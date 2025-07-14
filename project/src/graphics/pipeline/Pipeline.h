@@ -8,7 +8,7 @@
 #include <vector>
 
 // -- Forward Declarations --
-namespace pom
+namespace pompeii
 {
 	class RenderPass;
 	class ShaderModule;
@@ -16,7 +16,7 @@ namespace pom
 	struct Context;
 }
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  PipelineLayout	
@@ -70,7 +70,7 @@ namespace pom
 		PipelineLayoutBuilder& SetPCSize(uint32_t size);
 
 		//! REQUIRED
-		PipelineLayoutBuilder& AddLayout(const pom::DescriptorSetLayout& descriptorSetLayout);
+		PipelineLayoutBuilder& AddLayout(const pompeii::DescriptorSetLayout& descriptorSetLayout);
 
 		void Build(const Context& context, PipelineLayout& pipelineLayout);
 	private:

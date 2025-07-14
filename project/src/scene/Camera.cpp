@@ -19,7 +19,7 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::Camera::Camera(const CameraSettings& settings, const ExposureSettings& exposureSettings, const Window* pWindow)
+pompeii::Camera::Camera(const CameraSettings& settings, const ExposureSettings& exposureSettings, const Window* pWindow)
 	: m_Settings(settings)
 	, m_ExposureSettings(exposureSettings)
 	, m_pWindow(pWindow->GetHandle())
@@ -29,7 +29,7 @@ pom::Camera::Camera(const CameraSettings& settings, const ExposureSettings& expo
 //--------------------------------------------------
 //    Update
 //--------------------------------------------------
-void pom::Camera::Update()
+void pompeii::Camera::Update()
 {
 	if (!m_pWindow)
 		std::cerr << "Window not valid for Camera!\n";
@@ -46,19 +46,19 @@ void pom::Camera::Update()
 //    Accessors & Mutators
 //--------------------------------------------------
 // -- Data --
-glm::vec3 pom::Camera::GetPosition()										const	{ return m_Position; }
+glm::vec3 pompeii::Camera::GetPosition()										const	{ return m_Position; }
 
 // -- Settings --
-void pom::Camera::ChangeSettings(const CameraSettings& settings)					{ m_Settings = settings; m_SettingsDirty = true; }
-const pom::CameraSettings& pom::Camera::GetSettings()						const	{ return m_Settings; }
-void pom::Camera::ChangeExposureSettings(const ExposureSettings& settings)			{ m_ExposureSettings = settings; }
-const pom::ExposureSettings& pom::Camera::GetExposureSettings()				const	{ return m_ExposureSettings; }
+void pompeii::Camera::ChangeSettings(const CameraSettings& settings)					{ m_Settings = settings; m_SettingsDirty = true; }
+const pompeii::CameraSettings& pompeii::Camera::GetSettings()						const	{ return m_Settings; }
+void pompeii::Camera::ChangeExposureSettings(const ExposureSettings& settings)			{ m_ExposureSettings = settings; }
+const pompeii::ExposureSettings& pompeii::Camera::GetExposureSettings()				const	{ return m_ExposureSettings; }
 
-void pom::Camera::SetSpeed(float speed)												{ m_Speed = speed; }
-void pom::Camera::SetSensitivity(float sensitivity)									{ m_Sensitivity = sensitivity; }
+void pompeii::Camera::SetSpeed(float speed)												{ m_Speed = speed; }
+void pompeii::Camera::SetSensitivity(float sensitivity)									{ m_Sensitivity = sensitivity; }
 
 // -- Matrices --
-glm::mat4 pom::Camera::GetViewMatrix()
+glm::mat4 pompeii::Camera::GetViewMatrix()
 {
 	if (m_CameraDirty)
 	{
@@ -67,7 +67,7 @@ glm::mat4 pom::Camera::GetViewMatrix()
 	}
 	return m_ViewMatrix;
 }
-glm::mat4 pom::Camera::GetProjectionMatrix()
+glm::mat4 pompeii::Camera::GetProjectionMatrix()
 {
 	if (m_SettingsDirty)
 	{
@@ -83,7 +83,7 @@ glm::mat4 pom::Camera::GetProjectionMatrix()
 //--------------------------------------------------
 //    Helpers
 //--------------------------------------------------
-void pom::Camera::HandleMovement()
+void pompeii::Camera::HandleMovement()
 {
 	float speed = m_Speed * Timer::GetDeltaSeconds();
 	speed *= glfwGetKey(m_pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ? 4.f : 1.f;
@@ -123,7 +123,7 @@ void pom::Camera::HandleMovement()
 	if (m_CameraDirty)
 		UpdateCameraVectors();
 }
-void pom::Camera::HandleAim()
+void pompeii::Camera::HandleAim()
 {
 	if (glfwGetMouseButton(m_pWindow, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
 	{
@@ -157,7 +157,7 @@ void pom::Camera::HandleAim()
 		UpdateCameraVectors();
 }
 
-void pom::Camera::UpdateCameraVectors()
+void pompeii::Camera::UpdateCameraVectors()
 {
 	if (!m_CameraDirty)
 		return;

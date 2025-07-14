@@ -11,7 +11,7 @@
 #include "Image.h"
 
 // -- Forward Declarations --
-namespace pom
+namespace pompeii
 {
 	class CommandPool;
 	class Window;
@@ -19,7 +19,7 @@ namespace pom
 	struct Context;
 }
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  SwapChainBuilder	

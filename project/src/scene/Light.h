@@ -11,14 +11,14 @@
 #include "Image.h"
 
 // -- Forward Declarations --
-namespace pom
+namespace pompeii
 {
 	struct AABB;
 	struct Context;
 	class Scene;
 }
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  GPU Representation Light	

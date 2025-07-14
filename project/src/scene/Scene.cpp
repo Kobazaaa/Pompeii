@@ -8,7 +8,7 @@
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Base Scene	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void pom::Scene::AllocateGPU(const Context& context, bool keepHostData)
+void pompeii::Scene::AllocateGPU(const Context& context, bool keepHostData)
 {
 	for (auto& model : m_vModels)
 		model.AllocateResources(context, keepHostData);
@@ -22,7 +22,7 @@ void pom::Scene::AllocateGPU(const Context& context, bool keepHostData)
 			.CreateBRDFLut(context);
 	GenerateDepthMaps(context);
 }
-void pom::Scene::Destroy(const Context& context)
+void pompeii::Scene::Destroy(const Context& context)
 {
 	for (auto& l : std::ranges::reverse_view(m_vLights))
 		l.DestroyDepthMap(context);
@@ -32,18 +32,18 @@ void pom::Scene::Destroy(const Context& context)
 }
 
 // -- Model --
-const std::vector<pom::Model>& pom::Scene::GetModels() const
+const std::vector<pompeii::Model>& pompeii::Scene::GetModels() const
 {
 	return m_vModels;
 }
-pom::Model& pom::Scene::AddModel(const std::string& path)
+pompeii::Model& pompeii::Scene::AddModel(const std::string& path)
 {
 	m_vModels.emplace_back();
 	m_vModels.back().LoadModel(path);
 	m_AABB.GrowToInclude(m_vModels.back().aabb);
 	return m_vModels.back();
 }
-uint32_t pom::Scene::GetImageCount() const
+uint32_t pompeii::Scene::GetImageCount() const
 {
 	return std::accumulate(m_vModels.begin(), m_vModels.end(), 0u, [](uint32_t res, const Model& m2)
 		{
@@ -52,10 +52,10 @@ uint32_t pom::Scene::GetImageCount() const
 }
 
 // -- Light --
-std::vector<pom::Light>& pom::Scene::GetLights()		{ return m_vLights; }
-std::vector<pom::GPULight> pom::Scene::GetLightsGPU()
+std::vector<pompeii::Light>& pompeii::Scene::GetLights()		{ return m_vLights; }
+std::vector<pompeii::GPULight> pompeii::Scene::GetLightsGPU()
 {
-	std::vector<pom::GPULight> res{};
+	std::vector<pompeii::GPULight> res{};
 	res.reserve(m_vLights.size());
 
 	uint32_t matrixIdx = 0;
@@ -91,7 +91,7 @@ std::vector<pom::GPULight> pom::Scene::GetLightsGPU()
 	}
 	return res;
 }
-std::vector<glm::mat4> pom::Scene::GetLightMatrices()
+std::vector<glm::mat4> pompeii::Scene::GetLightMatrices()
 {
 	std::vector<glm::mat4> res{};
 	for (auto& l : m_vLights)
@@ -105,20 +105,20 @@ std::vector<glm::mat4> pom::Scene::GetLightMatrices()
 	}
 	return res;
 }
-uint32_t pom::Scene::GetLightsCount() const { return static_cast<uint32_t>(m_vLights.size()); }
-pom::Light& pom::Scene::AddLight(Light&& light)
+uint32_t pompeii::Scene::GetLightsCount() const { return static_cast<uint32_t>(m_vLights.size()); }
+pompeii::Light& pompeii::Scene::AddLight(Light&& light)
 {
 	m_vLights.push_back(std::move(light));
 	return m_vLights.back();
 }
-void pom::Scene::PopLight()
+void pompeii::Scene::PopLight()
 {
 	if (m_vLights.empty())
 		return;
 	m_vLights.pop_back();
 }
 
-void pom::Scene::CalculateLightMatrices()
+void pompeii::Scene::CalculateLightMatrices()
 {
 	for (auto& light : m_vLights)
 	{
@@ -187,7 +187,7 @@ void pom::Scene::CalculateLightMatrices()
 		}
 	}
 }
-void pom::Scene::GenerateDepthMaps(const Context& context, uint32_t size)
+void pompeii::Scene::GenerateDepthMaps(const Context& context, uint32_t size)
 {
 	CalculateLightMatrices();
 	for (auto& l : m_vLights)
@@ -195,14 +195,14 @@ void pom::Scene::GenerateDepthMaps(const Context& context, uint32_t size)
 }
 
 // -- Environment Map --
-const pom::EnvironmentMap& pom::Scene::GetEnvironmentMap() const { return m_EnvironmentMap; }
-void pom::Scene::SetEnvironmentMap(const std::string& path) { m_EnvMapPath = path; }
+const pompeii::EnvironmentMap& pompeii::Scene::GetEnvironmentMap() const { return m_EnvironmentMap; }
+void pompeii::Scene::SetEnvironmentMap(const std::string& path) { m_EnvMapPath = path; }
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Sponza Scene	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void pom::SponzaScene::Initialize()
+void pompeii::SponzaScene::Initialize()
 {
 	AddModel("models/Sponza.gltf");
 	SetEnvironmentMap("textures/golden_gate_hills_4k.hdr");
@@ -237,7 +237,7 @@ void pom::SponzaScene::Initialize()
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  FlightHelmet Scene	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void pom::FlightHelmetScene::Initialize()
+void pompeii::FlightHelmetScene::Initialize()
 {
 	AddModel("models/FlightHelmet.gltf");
 
@@ -253,7 +253,7 @@ void pom::FlightHelmetScene::Initialize()
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Spheres Scene	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void pom::SpheresScene::Initialize()
+void pompeii::SpheresScene::Initialize()
 {
 	AddModel("models/MetalRoughSpheres.gltf");
 	SetEnvironmentMap("textures/circus_arena_4k.hdr");
@@ -262,7 +262,7 @@ void pom::SpheresScene::Initialize()
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  A Beautiful Game Scene	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void pom::BeautifulGameScene::Initialize()
+void pompeii::BeautifulGameScene::Initialize()
 {
 	AddModel("models/ABeautifulGame.gltf");
 	SetEnvironmentMap("textures/circus_arena_4k.hdr");

@@ -9,10 +9,10 @@
 #include <vector>
 
 // -- Forward Declarations --
-namespace pom { struct Context; }
+namespace pompeii { struct Context; }
 
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  INSTANCE	

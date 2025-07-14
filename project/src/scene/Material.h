@@ -7,14 +7,11 @@
 // -- Standard Library --
 #include <string>
 
-// -- Texture Includes --
-#include "stb_image.h"
-
 // -- Math Includes --
 #include "glm/glm.hpp"
 
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Texture	

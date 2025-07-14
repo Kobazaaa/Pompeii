@@ -17,13 +17,13 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::DescriptorSetLayout::Destroy(const Context& context) const { vkDestroyDescriptorSetLayout(context.device.GetHandle(), m_Layout, nullptr); }
+void pompeii::DescriptorSetLayout::Destroy(const Context& context) const { vkDestroyDescriptorSetLayout(context.device.GetHandle(), m_Layout, nullptr); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkDescriptorSetLayout& pom::DescriptorSetLayout::GetHandle() const { return m_Layout; }
-const std::vector<VkDescriptorSetLayoutBinding>& pom::DescriptorSetLayout::GetBindings() const { return m_vLayoutBindings; }
+const VkDescriptorSetLayout& pompeii::DescriptorSetLayout::GetHandle() const { return m_Layout; }
+const std::vector<VkDescriptorSetLayoutBinding>& pompeii::DescriptorSetLayout::GetBindings() const { return m_vLayoutBindings; }
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -33,12 +33,12 @@ const std::vector<VkDescriptorSetLayoutBinding>& pom::DescriptorSetLayout::GetBi
 //--------------------------------------------------
 //    Builder
 //--------------------------------------------------
-pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetDebugName(const char* name)
+pompeii::DescriptorSetLayoutBuilder& pompeii::DescriptorSetLayoutBuilder::SetDebugName(const char* name)
 {
 	m_pName = name;
 	return *this;
 }
-pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::NewLayoutBinding()
+pompeii::DescriptorSetLayoutBuilder& pompeii::DescriptorSetLayoutBuilder::NewLayoutBinding()
 {
 	m_vLayoutBindings.emplace_back();
 	m_vLayoutBindings.back().binding = static_cast<uint32_t>(m_vLayoutBindings.size() - 1);
@@ -48,12 +48,12 @@ pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::NewLayoutBindi
 	m_vBindingFlags.emplace_back();
 	return *this;
 }
-pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetType(VkDescriptorType type)						{ m_vLayoutBindings.back().descriptorType = type; return *this; }
-pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetCount(uint32_t count)								{ m_vLayoutBindings.back().descriptorCount = count; return *this; }
-pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::SetShaderStages(VkShaderStageFlags flags)				{ m_vLayoutBindings.back().stageFlags = flags; return *this; }
-pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::AddLayoutFlag(VkDescriptorSetLayoutCreateFlags flags) { m_LayoutFlags |= flags; return *this; }
-pom::DescriptorSetLayoutBuilder& pom::DescriptorSetLayoutBuilder::AddBindingFlags(VkDescriptorBindingFlags flags)		{ m_vBindingFlags.back() |= flags; return *this; }
-void pom::DescriptorSetLayoutBuilder::Build(const Context& context, DescriptorSetLayout& descriptorSetLayout)
+pompeii::DescriptorSetLayoutBuilder& pompeii::DescriptorSetLayoutBuilder::SetType(VkDescriptorType type)						{ m_vLayoutBindings.back().descriptorType = type; return *this; }
+pompeii::DescriptorSetLayoutBuilder& pompeii::DescriptorSetLayoutBuilder::SetCount(uint32_t count)								{ m_vLayoutBindings.back().descriptorCount = count; return *this; }
+pompeii::DescriptorSetLayoutBuilder& pompeii::DescriptorSetLayoutBuilder::SetShaderStages(VkShaderStageFlags flags)				{ m_vLayoutBindings.back().stageFlags = flags; return *this; }
+pompeii::DescriptorSetLayoutBuilder& pompeii::DescriptorSetLayoutBuilder::AddLayoutFlag(VkDescriptorSetLayoutCreateFlags flags) { m_LayoutFlags |= flags; return *this; }
+pompeii::DescriptorSetLayoutBuilder& pompeii::DescriptorSetLayoutBuilder::AddBindingFlags(VkDescriptorBindingFlags flags)		{ m_vBindingFlags.back() |= flags; return *this; }
+void pompeii::DescriptorSetLayoutBuilder::Build(const Context& context, DescriptorSetLayout& descriptorSetLayout)
 {
 	VkDescriptorSetLayoutBindingFlagsCreateInfo flagsInfo{};
 	flagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
@@ -92,8 +92,8 @@ void pom::DescriptorSetLayoutBuilder::Build(const Context& context, DescriptorSe
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkDescriptorSet& pom::DescriptorSet::GetHandle() const { return m_DescriptorSet; }
-const pom::DescriptorSetLayout& pom::DescriptorSet::GetLayout() const { return m_Layout; }
+const VkDescriptorSet& pompeii::DescriptorSet::GetHandle() const { return m_DescriptorSet; }
+const pompeii::DescriptorSetLayout& pompeii::DescriptorSet::GetLayout() const { return m_Layout; }
 
 
 
@@ -106,7 +106,7 @@ const pom::DescriptorSetLayout& pom::DescriptorSet::GetLayout() const { return m
 //    Writing
 //--------------------------------------------------
 
-pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddBufferInfo(const Buffer& buffer, uint32_t offset, uint32_t range)
+pompeii::DescriptorSetWriter& pompeii::DescriptorSetWriter::AddBufferInfo(const Buffer& buffer, uint32_t offset, uint32_t range)
 {
 	VkDescriptorBufferInfo bufferInfo{};
 	bufferInfo.buffer = buffer.GetHandle();
@@ -116,7 +116,7 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddBufferInfo(const Buffer& 
 
 	return *this;
 }
-pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteBuffers(const DescriptorSet& set, uint32_t binding, uint32_t count)
+pompeii::DescriptorSetWriter& pompeii::DescriptorSetWriter::WriteBuffers(const DescriptorSet& set, uint32_t binding, uint32_t count)
 {
 	VkWriteDescriptorSet write{};
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -133,7 +133,7 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteBuffers(const Descripto
 	return *this;
 }
 
-pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddImageInfo(const ImageView& view, VkImageLayout layout, const Sampler& sampler)
+pompeii::DescriptorSetWriter& pompeii::DescriptorSetWriter::AddImageInfo(const ImageView& view, VkImageLayout layout, const Sampler& sampler)
 {
 	VkDescriptorImageInfo imageInfo{};
 	imageInfo.imageLayout = layout;
@@ -143,7 +143,7 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddImageInfo(const ImageView
 
 	return *this;
 }
-pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddImageInfo(const ImageView& view, VkImageLayout layout)
+pompeii::DescriptorSetWriter& pompeii::DescriptorSetWriter::AddImageInfo(const ImageView& view, VkImageLayout layout)
 {
 	VkDescriptorImageInfo imageInfo{};
 	imageInfo.imageLayout = layout;
@@ -153,7 +153,7 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::AddImageInfo(const ImageView
 
 	return *this;
 }
-pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteImages(const DescriptorSet& set, uint32_t binding, uint32_t count, uint32_t arraySlot)
+pompeii::DescriptorSetWriter& pompeii::DescriptorSetWriter::WriteImages(const DescriptorSet& set, uint32_t binding, uint32_t count, uint32_t arraySlot)
 {
 	VkWriteDescriptorSet write{};
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -170,7 +170,7 @@ pom::DescriptorSetWriter& pom::DescriptorSetWriter::WriteImages(const Descriptor
 	return *this;
 }
 
-void pom::DescriptorSetWriter::Execute(const Context& context)
+void pompeii::DescriptorSetWriter::Execute(const Context& context)
 {
 	vkUpdateDescriptorSets(context.device.GetHandle(), static_cast<uint32_t>(m_vDescriptorWrites.size()), m_vDescriptorWrites.data(), 0, nullptr);
 

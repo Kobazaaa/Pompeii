@@ -13,10 +13,10 @@
 //--------------------------------------------------
 //    Setup
 //--------------------------------------------------
-void pom::Debugger::SetEnabled(bool enabled)				{ m_IsEnabled = enabled; }
-void pom::Debugger::AddValidationLayer(const char* layer)	{ m_vValidationLayers.push_back(layer); }
+void pompeii::Debugger::SetEnabled(bool enabled)				{ m_IsEnabled = enabled; }
+void pompeii::Debugger::AddValidationLayer(const char* layer)	{ m_vValidationLayers.push_back(layer); }
 
-void pom::Debugger::Setup(const Context& context)
+void pompeii::Debugger::Setup(const Context& context)
 {
 	if (!m_IsEnabled) return;
 
@@ -25,7 +25,7 @@ void pom::Debugger::Setup(const Context& context)
 }
 
 
-void pom::Debugger::Destroy()
+void pompeii::Debugger::Destroy()
 {
 	if (!m_IsEnabled) return;
 
@@ -33,7 +33,7 @@ void pom::Debugger::Destroy()
 		m_InstanceDebugUtils.destroyDebugUtilsMessengerEXT(m_InstanceDebugUtils.instance, m_InstanceDebugUtils.debugUtilsMessenger, nullptr);
 }
 
-void pom::Debugger::SetDebugObjectName(uint64_t objectHandle, VkObjectType objectType, const std::string& name)
+void pompeii::Debugger::SetDebugObjectName(uint64_t objectHandle, VkObjectType objectType, const std::string& name)
 {
 	if (!m_IsEnabled)
 		return;
@@ -46,7 +46,7 @@ void pom::Debugger::SetDebugObjectName(uint64_t objectHandle, VkObjectType objec
 
 	m_DeviceDebugUtils.setDebugUtilsObjectNameEXT(m_DeviceDebugUtils.device, &nameInfo);
 }
-void pom::Debugger::BeginDebugLabel(CommandBuffer& cmdBuffer, const std::string& name, const glm::vec4& color)
+void pompeii::Debugger::BeginDebugLabel(CommandBuffer& cmdBuffer, const std::string& name, const glm::vec4& color)
 {
 	if (!m_IsEnabled)
 		return;
@@ -61,7 +61,7 @@ void pom::Debugger::BeginDebugLabel(CommandBuffer& cmdBuffer, const std::string&
 
 	m_DeviceDebugUtils.cmdBeginDebugUtilsLabelEXT(cmdBuffer.GetHandle(), &labelInfo);
 }
-void pom::Debugger::InsertDebugLabel(CommandBuffer& cmdBuffer, const std::string& name, const glm::vec4& color)
+void pompeii::Debugger::InsertDebugLabel(CommandBuffer& cmdBuffer, const std::string& name, const glm::vec4& color)
 {
 	if (!m_IsEnabled)
 		return;
@@ -76,7 +76,7 @@ void pom::Debugger::InsertDebugLabel(CommandBuffer& cmdBuffer, const std::string
 
 	m_DeviceDebugUtils.cmdInsertDebugUtilsLabelEXT(cmdBuffer.GetHandle(), &labelInfo);
 }
-void pom::Debugger::EndDebugLabel(CommandBuffer& cmdBuffer)
+void pompeii::Debugger::EndDebugLabel(CommandBuffer& cmdBuffer)
 {
 	if (!m_IsEnabled)
 		return;
@@ -87,7 +87,7 @@ void pom::Debugger::EndDebugLabel(CommandBuffer& cmdBuffer)
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-void pom::Debugger::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+void pompeii::Debugger::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 {
 	createInfo = {};
 
@@ -102,7 +102,7 @@ void pom::Debugger::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreate
 	createInfo.pfnUserCallback = DebugCallback;
 	createInfo.pUserData = nullptr;
 }
-bool pom::Debugger::CheckValidationLayerSupport()
+bool pompeii::Debugger::CheckValidationLayerSupport()
 {
 	uint32_t layerCount;
 	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -129,17 +129,17 @@ bool pom::Debugger::CheckValidationLayerSupport()
 	return true;
 }
 
-bool pom::Debugger::IsEnabled()											{ return m_IsEnabled; }
+bool pompeii::Debugger::IsEnabled()											{ return m_IsEnabled; }
 
-const std::vector<const char*>& pom::Debugger::GetValidationLayers()	{ return m_vValidationLayers; }
-uint32_t pom::Debugger::GetNumberOfLayers()								{ return static_cast<uint32_t>(m_vValidationLayers.size()); }
+const std::vector<const char*>& pompeii::Debugger::GetValidationLayers()	{ return m_vValidationLayers; }
+uint32_t pompeii::Debugger::GetNumberOfLayers()								{ return static_cast<uint32_t>(m_vValidationLayers.size()); }
 
 
 
 //--------------------------------------------------
 //    Private
 //--------------------------------------------------
-VkBool32 pom::Debugger::DebugCallback(
+VkBool32 pompeii::Debugger::DebugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType,
 	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
@@ -193,7 +193,7 @@ VkBool32 pom::Debugger::DebugCallback(
 	return VK_FALSE;
 }
 
-void pom::Debugger::SetupInstanceDebugUtils(const Context& context)
+void pompeii::Debugger::SetupInstanceDebugUtils(const Context& context)
 {
 	VkDebugUtilsMessengerCreateInfoEXT createInfo{};
 	PopulateDebugMessengerCreateInfo(createInfo);
@@ -210,7 +210,7 @@ void pom::Debugger::SetupInstanceDebugUtils(const Context& context)
 		throw std::runtime_error("Failed to find vkCreateDebugUtilsMessengerEXT!");
 }
 
-void pom::Debugger::SetupDeviceDebugUtils(const Context& context)
+void pompeii::Debugger::SetupDeviceDebugUtils(const Context& context)
 {
 	m_DeviceDebugUtils.device = context.device.GetHandle();
 

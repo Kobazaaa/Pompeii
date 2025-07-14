@@ -12,12 +12,12 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::Sampler::Destroy(const Context& context)	const { vkDestroySampler(context.device.GetHandle(), m_Sampler, nullptr); }
+void pompeii::Sampler::Destroy(const Context& context)	const { vkDestroySampler(context.device.GetHandle(), m_Sampler, nullptr); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkSampler& pom::Sampler::GetHandle()			const { return m_Sampler; }
+const VkSampler& pompeii::Sampler::GetHandle()			const { return m_Sampler; }
 
 
 
@@ -28,7 +28,7 @@ const VkSampler& pom::Sampler::GetHandle()			const { return m_Sampler; }
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::SamplerBuilder::SamplerBuilder()
+pompeii::SamplerBuilder::SamplerBuilder()
 {
 	m_CreateInfo = {};
 	m_CreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;				// CAN'T CHANGE
@@ -53,42 +53,42 @@ pom::SamplerBuilder::SamplerBuilder()
 //--------------------------------------------------
 //    Builder
 //--------------------------------------------------
-pom::SamplerBuilder& pom::SamplerBuilder::SetFilters(VkFilter magFilter, VkFilter minFilter)
+pompeii::SamplerBuilder& pompeii::SamplerBuilder::SetFilters(VkFilter magFilter, VkFilter minFilter)
 {
 	m_CreateInfo.magFilter = magFilter;
 	m_CreateInfo.minFilter = minFilter;
 	return *this;
 }
-pom::SamplerBuilder& pom::SamplerBuilder::SetAddressMode(VkSamplerAddressMode mode)
+pompeii::SamplerBuilder& pompeii::SamplerBuilder::SetAddressMode(VkSamplerAddressMode mode)
 {
 	m_CreateInfo.addressModeU = mode;
 	m_CreateInfo.addressModeV = mode;
 	m_CreateInfo.addressModeW = mode;
 	return *this;
 }
-pom::SamplerBuilder& pom::SamplerBuilder::EnableAnisotropy(float maxAnisotropy)
+pompeii::SamplerBuilder& pompeii::SamplerBuilder::EnableAnisotropy(float maxAnisotropy)
 {
 	m_CreateInfo.anisotropyEnable = VK_TRUE;
 	m_CreateInfo.maxAnisotropy = maxAnisotropy;
 	return *this;
 }
-pom::SamplerBuilder& pom::SamplerBuilder::SetBorderColor(VkBorderColor color)
+pompeii::SamplerBuilder& pompeii::SamplerBuilder::SetBorderColor(VkBorderColor color)
 {
 	m_CreateInfo.borderColor = color;
 	return *this;
 }
-pom::SamplerBuilder& pom::SamplerBuilder::EnableCompare(VkCompareOp op)
+pompeii::SamplerBuilder& pompeii::SamplerBuilder::EnableCompare(VkCompareOp op)
 {
 	m_CreateInfo.compareEnable = VK_TRUE;
 	m_CreateInfo.compareOp = op;
 	return *this;
 }
-pom::SamplerBuilder& pom::SamplerBuilder::SetMipmapMode(VkSamplerMipmapMode mode)
+pompeii::SamplerBuilder& pompeii::SamplerBuilder::SetMipmapMode(VkSamplerMipmapMode mode)
 {
 	m_CreateInfo.mipmapMode = mode;
 	return *this;
 }
-pom::SamplerBuilder& pom::SamplerBuilder::SetMipLevels(float bias, float min, float max)
+pompeii::SamplerBuilder& pompeii::SamplerBuilder::SetMipLevels(float bias, float min, float max)
 {
 	m_CreateInfo.mipLodBias = bias;
 	m_CreateInfo.minLod = min;
@@ -96,7 +96,7 @@ pom::SamplerBuilder& pom::SamplerBuilder::SetMipLevels(float bias, float min, fl
 	return *this;
 }
 
-void pom::SamplerBuilder::Build(const Context& context, Sampler& sampler) const
+void pompeii::SamplerBuilder::Build(const Context& context, Sampler& sampler) const
 {
 	if (vkCreateSampler(context.device.GetHandle(), &m_CreateInfo, nullptr, &sampler.m_Sampler) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Texture Sampler!");

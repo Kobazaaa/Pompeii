@@ -5,9 +5,9 @@
 #include <vulkan/vulkan.h>
 
 // -- Forward Declarations --
-namespace pom { struct Context; }
+namespace pompeii { struct Context; }
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Sampler	

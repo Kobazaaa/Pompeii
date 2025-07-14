@@ -7,12 +7,12 @@
 #define GLM_FORCE_RADIANS
 
 // -- Pom Includes --
-#include "Camera.h"
 #include "EnvironmentMap.h"
 #include "Light.h"
 #include "Model.h"
+#include "Camera.h"
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Base Scene	

@@ -1,4 +1,4 @@
-// _- Math Includes --
+// -- Math Includes --
 #include <glm/gtc/matrix_transform.hpp>
 
 // -- Pompeii Includes --
@@ -14,18 +14,18 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::Light::Light(const glm::vec3& dirPos, const glm::vec3& col, float luxLumen, Type type)
-	: m_Type(type)
-	, dirPos(type == Type::Directional ? glm::normalize(dirPos) : dirPos)
+pompeii::Light::Light(const glm::vec3& dirPos, const glm::vec3& col, float luxLumen, Type type)
+	: dirPos(type == Type::Directional ? glm::normalize(dirPos) : dirPos)
 	, color(col)
 	, luxLumen(luxLumen)
+	, m_Type(type)
 { }
-void pom::Light::DestroyDepthMap(const Context& context)
+void pompeii::Light::DestroyDepthMap(const Context& context)
 {
 	m_DepthMap.Destroy(context);
 }
 
-pom::Light::Light(Light&& other) noexcept
+pompeii::Light::Light(Light&& other) noexcept
 {
 	m_Type = other.m_Type;
 	dirPos = std::move(other.dirPos);
@@ -36,7 +36,7 @@ pom::Light::Light(Light&& other) noexcept
 	projMatrix = std::move(other.projMatrix);
 	m_DepthMap = std::move(other.m_DepthMap);
 }
-pom::Light& pom::Light::operator=(Light&& other) noexcept
+pompeii::Light& pompeii::Light::operator=(Light&& other) noexcept
 {
 	if (this == &other)
 		return *this;
@@ -54,10 +54,10 @@ pom::Light& pom::Light::operator=(Light&& other) noexcept
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-pom::Light::Type pom::Light::GetType()		const { return m_Type; }
-const pom::Image& pom::Light::GetDepthMap()	const { return m_DepthMap; }
+pompeii::Light::Type pompeii::Light::GetType()		const { return m_Type; }
+const pompeii::Image& pompeii::Light::GetDepthMap()	const { return m_DepthMap; }
 
-void pom::Light::GenerateDepthMap(const Context& context, const Scene* pScene, uint32_t size)
+void pompeii::Light::GenerateDepthMap(const Context& context, const Scene* pScene, uint32_t size)
 {
 	if (m_DepthMap.GetHandle() != VK_NULL_HANDLE)
 		m_DepthMap.Destroy(context);
@@ -89,7 +89,7 @@ void pom::Light::GenerateDepthMap(const Context& context, const Scene* pScene, u
 	// -- Generate a view to all faces --
 	m_DepthMap.CreateView(context, VK_IMAGE_ASPECT_DEPTH_BIT, m_Type == Type::Point ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D, 0, m_DepthMap.GetMipLevels(), 0, m_DepthMap.GetLayerCount());
 }
-void pom::Light::GenerateDepthMap(const Context& context, const Scene* pScene, Image& outImage, std::vector<ImageView>& outViews, uint32_t size)
+void pompeii::Light::GenerateDepthMap(const Context& context, const Scene* pScene, Image& outImage, std::vector<ImageView>& outViews, uint32_t size)
 {
 	// -- Push Constant Struct --
 	struct PC

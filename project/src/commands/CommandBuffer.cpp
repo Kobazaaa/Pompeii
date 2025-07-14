@@ -13,19 +13,19 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::CommandBuffer::CommandBuffer(VkCommandPool pool, VkCommandBuffer buffer)
+pompeii::CommandBuffer::CommandBuffer(VkCommandPool pool, VkCommandBuffer buffer)
 	: m_CmdBuffer(buffer)
 	, m_PoolOwner(pool)
 {}
 
-pom::CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept
+pompeii::CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept
 {
 	m_CmdBuffer = std::move(other.m_CmdBuffer);
 	other.m_CmdBuffer = VK_NULL_HANDLE;
 	m_PoolOwner = std::move(other.m_PoolOwner);
 	other.m_PoolOwner = VK_NULL_HANDLE;
 }
-pom::CommandBuffer& pom::CommandBuffer::operator=(CommandBuffer&& other) noexcept
+pompeii::CommandBuffer& pompeii::CommandBuffer::operator=(CommandBuffer&& other) noexcept
 {
 	if (this == &other)
 		return *this;
@@ -39,13 +39,13 @@ pom::CommandBuffer& pom::CommandBuffer::operator=(CommandBuffer&& other) noexcep
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkCommandBuffer& pom::CommandBuffer::GetHandle() const { return m_CmdBuffer; }
+const VkCommandBuffer& pompeii::CommandBuffer::GetHandle() const { return m_CmdBuffer; }
 
 
 //--------------------------------------------------
 //    Commands
 //--------------------------------------------------
-void pom::CommandBuffer::Begin(VkCommandBufferUsageFlags usage) const
+void pompeii::CommandBuffer::Begin(VkCommandBufferUsageFlags usage) const
 {
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -54,12 +54,12 @@ void pom::CommandBuffer::Begin(VkCommandBufferUsageFlags usage) const
 	if (vkBeginCommandBuffer(m_CmdBuffer, &beginInfo) != VK_SUCCESS)
 		throw std::runtime_error("Failed to begin recording Command Buffer!");
 }
-void pom::CommandBuffer::End() const
+void pompeii::CommandBuffer::End() const
 {
 	if (vkEndCommandBuffer(m_CmdBuffer) != VK_SUCCESS)
 		throw std::runtime_error("Failed to record command buffer!");
 }
-void pom::CommandBuffer::Submit(VkQueue queue, bool waitIdle, const SemaphoreInfo& semaphoreInfo, VkFence fence) const
+void pompeii::CommandBuffer::Submit(VkQueue queue, bool waitIdle, const SemaphoreInfo& semaphoreInfo, VkFence fence) const
 {
 	// -- Submit Info --
 	VkSubmitInfo2 submitInfo{};
@@ -124,5 +124,5 @@ void pom::CommandBuffer::Submit(VkQueue queue, bool waitIdle, const SemaphoreInf
 	if (waitIdle)
 		vkQueueWaitIdle(queue);
 }
-void pom::CommandBuffer::Reset() const { vkResetCommandBuffer(m_CmdBuffer, 0); }
-void pom::CommandBuffer::Free(const Device& device) { vkFreeCommandBuffers(device.GetHandle(), m_PoolOwner, 1, &m_CmdBuffer); m_CmdBuffer = VK_NULL_HANDLE; }
+void pompeii::CommandBuffer::Reset() const { vkResetCommandBuffer(m_CmdBuffer, 0); }
+void pompeii::CommandBuffer::Free(const Device& device) { vkFreeCommandBuffers(device.GetHandle(), m_PoolOwner, 1, &m_CmdBuffer); m_CmdBuffer = VK_NULL_HANDLE; }

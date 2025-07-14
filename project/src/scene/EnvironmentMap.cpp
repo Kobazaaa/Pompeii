@@ -17,7 +17,7 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::EnvironmentMap::Destroy(const Context& context)
+void pompeii::EnvironmentMap::Destroy(const Context& context)
 {
 	m_BRDFLut.Destroy(context);
 	m_SpecularIrradiance.Destroy(context);
@@ -29,7 +29,7 @@ void pom::EnvironmentMap::Destroy(const Context& context)
 //--------------------------------------------------
 //    Initializers
 //--------------------------------------------------
-pom::EnvironmentMap& pom::EnvironmentMap::CreateSampler(const Context& context)
+pompeii::EnvironmentMap& pompeii::EnvironmentMap::CreateSampler(const Context& context)
 {
 	SamplerBuilder builder{};
 	builder
@@ -41,7 +41,7 @@ pom::EnvironmentMap& pom::EnvironmentMap::CreateSampler(const Context& context)
 		.Build(context, m_Sampler);
 	return *this;
 }
-pom::EnvironmentMap& pom::EnvironmentMap::CreateSkyboxCube(const Context& context, const std::string& path, uint32_t size)
+pompeii::EnvironmentMap& pompeii::EnvironmentMap::CreateSkyboxCube(const Context& context, const std::string& path, uint32_t size)
 {
 	// -- Load HDRI Texture on CPU --
 	Texture tex{ path, VK_FORMAT_R32G32B32A32_SFLOAT, true};
@@ -99,7 +99,7 @@ pom::EnvironmentMap& pom::EnvironmentMap::CreateSkyboxCube(const Context& contex
 	return *this;
 }
 
-pom::EnvironmentMap& pom::EnvironmentMap::CreateDiffIrradianceMap(const Context& context, uint32_t size)
+pompeii::EnvironmentMap& pompeii::EnvironmentMap::CreateDiffIrradianceMap(const Context& context, uint32_t size)
 {
 	assert(m_Skybox.GetHandle() && "Cannot create a diffuse irradiance map without the skybox being set up!");
 	
@@ -136,7 +136,7 @@ pom::EnvironmentMap& pom::EnvironmentMap::CreateDiffIrradianceMap(const Context&
 	return *this;
 }
 
-pom::EnvironmentMap& pom::EnvironmentMap::CreateSpecIrradianceMap(const Context& context, uint32_t size)
+pompeii::EnvironmentMap& pompeii::EnvironmentMap::CreateSpecIrradianceMap(const Context& context, uint32_t size)
 {
 	assert(m_Skybox.GetHandle() && "Cannot create a diffuse irradiance map without the skybox being set up!");
 
@@ -177,7 +177,7 @@ pom::EnvironmentMap& pom::EnvironmentMap::CreateSpecIrradianceMap(const Context&
 	return *this;
 }
 
-pom::EnvironmentMap& pom::EnvironmentMap::CreateBRDFLut(const Context& context, uint32_t size)
+pompeii::EnvironmentMap& pompeii::EnvironmentMap::CreateBRDFLut(const Context& context, uint32_t size)
 {
 	assert(m_Skybox.GetHandle() && "Cannot create a diffuse irradiance map without the skybox being set up!");
 
@@ -316,16 +316,16 @@ pom::EnvironmentMap& pom::EnvironmentMap::CreateBRDFLut(const Context& context, 
 //--------------------------------------------------
 //    Accessors
 //--------------------------------------------------
-const pom::Sampler& pom::EnvironmentMap::GetSampler()				const { return m_Sampler; }
-const pom::Image& pom::EnvironmentMap::GetSkybox()					const { return m_Skybox; }
-const pom::Image& pom::EnvironmentMap::GetDiffuseIrradianceMap()	const { return m_DiffuseIrradiance; }
-const pom::Image& pom::EnvironmentMap::GetSpecularIrradianceMap()	const { return m_SpecularIrradiance; }
-const pom::Image& pom::EnvironmentMap::GetBRDFLut()					const { return m_BRDFLut; }
+const pompeii::Sampler& pompeii::EnvironmentMap::GetSampler()				const { return m_Sampler; }
+const pompeii::Image& pompeii::EnvironmentMap::GetSkybox()					const { return m_Skybox; }
+const pompeii::Image& pompeii::EnvironmentMap::GetDiffuseIrradianceMap()	const { return m_DiffuseIrradiance; }
+const pompeii::Image& pompeii::EnvironmentMap::GetSpecularIrradianceMap()	const { return m_SpecularIrradiance; }
+const pompeii::Image& pompeii::EnvironmentMap::GetBRDFLut()					const { return m_BRDFLut; }
 
 //--------------------------------------------------
 //    Helpers
 //--------------------------------------------------
-void pom::EnvironmentMap::RenderToCubeMap(const Context& context, const std::string& vert, const std::string& frag,
+void pompeii::EnvironmentMap::RenderToCubeMap(const Context& context, const std::string& vert, const std::string& frag,
 										  Image&, const ImageView& inView, const Sampler& inSampler,
 										  Image& outImage, std::array<std::vector<ImageView>, 6>& outViews, uint32_t size)
 {

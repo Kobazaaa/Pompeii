@@ -8,7 +8,7 @@
 #include <vector>
 
 // -- Forward Declarations --
-namespace pom
+namespace pompeii
 {
 	class RenderPass;
 	class Image;
@@ -16,7 +16,7 @@ namespace pom
 }
 
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  FrameBuffer	

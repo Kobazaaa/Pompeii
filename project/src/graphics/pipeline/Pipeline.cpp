@@ -16,12 +16,12 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::PipelineLayout::Destroy(const Context& context)	const { vkDestroyPipelineLayout(context.device.GetHandle(), m_Layout, nullptr); }
+void pompeii::PipelineLayout::Destroy(const Context& context)	const { vkDestroyPipelineLayout(context.device.GetHandle(), m_Layout, nullptr); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkPipelineLayout& pom::PipelineLayout::GetHandle()	const { return m_Layout; }
+const VkPipelineLayout& pompeii::PipelineLayout::GetHandle()	const { return m_Layout; }
 
 
 
@@ -32,7 +32,7 @@ const VkPipelineLayout& pom::PipelineLayout::GetHandle()	const { return m_Layout
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::PipelineLayoutBuilder::PipelineLayoutBuilder()
+pompeii::PipelineLayoutBuilder::PipelineLayoutBuilder()
 {
 	m_PipelineLayoutInfo = {};
 
@@ -47,17 +47,17 @@ pom::PipelineLayoutBuilder::PipelineLayoutBuilder()
 //--------------------------------------------------
 //    Builder
 //--------------------------------------------------
-pom::PipelineLayoutBuilder& pom::PipelineLayoutBuilder::NewPushConstantRange()
+pompeii::PipelineLayoutBuilder& pompeii::PipelineLayoutBuilder::NewPushConstantRange()
 {
 	m_vPushConstantRanges.emplace_back();
 	m_vPushConstantRanges.back().offset = 0;
 	return *this;
 }
-pom::PipelineLayoutBuilder& pom::PipelineLayoutBuilder::SetPCStageFlags(VkShaderStageFlags flags) { m_vPushConstantRanges.back().stageFlags = flags; return *this; }
-pom::PipelineLayoutBuilder& pom::PipelineLayoutBuilder::SetPCOffset(uint32_t offset) { m_vPushConstantRanges.back().offset = offset; return *this; }
-pom::PipelineLayoutBuilder& pom::PipelineLayoutBuilder::SetPCSize(uint32_t size) { m_vPushConstantRanges.back().size = size; return *this; }
+pompeii::PipelineLayoutBuilder& pompeii::PipelineLayoutBuilder::SetPCStageFlags(VkShaderStageFlags flags) { m_vPushConstantRanges.back().stageFlags = flags; return *this; }
+pompeii::PipelineLayoutBuilder& pompeii::PipelineLayoutBuilder::SetPCOffset(uint32_t offset) { m_vPushConstantRanges.back().offset = offset; return *this; }
+pompeii::PipelineLayoutBuilder& pompeii::PipelineLayoutBuilder::SetPCSize(uint32_t size) { m_vPushConstantRanges.back().size = size; return *this; }
 
-pom::PipelineLayoutBuilder& pom::PipelineLayoutBuilder::AddLayout(const pom::DescriptorSetLayout& descriptorSetLayout)
+pompeii::PipelineLayoutBuilder& pompeii::PipelineLayoutBuilder::AddLayout(const pompeii::DescriptorSetLayout& descriptorSetLayout)
 {
 	m_vDescriptorLayouts.push_back(descriptorSetLayout.GetHandle());
 	m_PipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(m_vDescriptorLayouts.size());
@@ -65,7 +65,7 @@ pom::PipelineLayoutBuilder& pom::PipelineLayoutBuilder::AddLayout(const pom::Des
 	return *this;
 }
 
-void pom::PipelineLayoutBuilder::Build(const Context& context, PipelineLayout& pipelineLayout)
+void pompeii::PipelineLayoutBuilder::Build(const Context& context, PipelineLayout& pipelineLayout)
 {
 	if (!m_vPushConstantRanges.empty())
 	{
@@ -86,12 +86,12 @@ void pom::PipelineLayoutBuilder::Build(const Context& context, PipelineLayout& p
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-void pom::Pipeline::Destroy(const Context& context) const { vkDestroyPipeline(context.device.GetHandle(), m_Pipeline, nullptr); }
+void pompeii::Pipeline::Destroy(const Context& context) const { vkDestroyPipeline(context.device.GetHandle(), m_Pipeline, nullptr); }
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkPipeline& pom::Pipeline::GetHandle() const { return m_Pipeline; }
+const VkPipeline& pompeii::Pipeline::GetHandle() const { return m_Pipeline; }
 
 
 
@@ -102,7 +102,7 @@ const VkPipeline& pom::Pipeline::GetHandle() const { return m_Pipeline; }
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pom::GraphicsPipelineBuilder::GraphicsPipelineBuilder()
+pompeii::GraphicsPipelineBuilder::GraphicsPipelineBuilder()
 {
 	m_VertexInputInfo = {};
 	m_VertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;		// CAN'T CHANGE
@@ -180,14 +180,14 @@ pom::GraphicsPipelineBuilder::GraphicsPipelineBuilder()
 //    Builder
 //--------------------------------------------------
 // Debug Info
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetDebugName(const char* name)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::SetDebugName(const char* name)
 {
 	m_pName = name;
 	return *this;
 }
 
 // Shader Info
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::AddShader(const ShaderModule& shader, VkShaderStageFlagBits stage)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::AddShader(const ShaderModule& shader, VkShaderStageFlagBits stage)
 {
 	VkPipelineShaderStageCreateInfo shaderInfo{};
 	shaderInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -200,7 +200,7 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::AddShader(const Shad
 
 	return *this;
 }
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetShaderSpecialization(uint32_t constID, uint32_t offset, uint32_t size, const void* data)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::SetShaderSpecialization(uint32_t constID, uint32_t offset, uint32_t size, const void* data)
 {
 	// -- Create Entry --
 	VkSpecializationMapEntry specializationMapEntry{};
@@ -223,13 +223,13 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetShaderSpecializat
 }
 
 // Vertex Input Info
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetVertexBindingDesc(const VkVertexInputBindingDescription& desc)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::SetVertexBindingDesc(const VkVertexInputBindingDescription& desc)
 {
 	m_VertexInputInfo.vertexBindingDescriptionCount = 1;
 	m_VertexInputInfo.pVertexBindingDescriptions = &desc;
 	return *this;
 }
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetVertexAttributeDesc(const std::vector<VkVertexInputAttributeDescription>& attr)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::SetVertexAttributeDesc(const std::vector<VkVertexInputAttributeDescription>& attr)
 {
 	m_VertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attr.size());
 	m_VertexInputInfo.pVertexAttributeDescriptions = attr.data();
@@ -237,30 +237,30 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetVertexAttributeDe
 }
 
 // Input Assembly Info
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetPrimitiveTopology(VkPrimitiveTopology topology)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::SetPrimitiveTopology(VkPrimitiveTopology topology)
 {
 	m_InputAssembly.topology = topology;
 	return *this;
 }
 
 // Rasterizer Info
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetCullMode(VkCullModeFlags cullMode)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::SetCullMode(VkCullModeFlags cullMode)
 {
 	m_RasterizerInfo.cullMode = cullMode;
 	return *this;
 }
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetPolygonMode(VkPolygonMode polyMode)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::SetPolygonMode(VkPolygonMode polyMode)
 {
 	m_RasterizerInfo.polygonMode = polyMode;
 	return *this;
 }
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetFrontFace(VkFrontFace front)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::SetFrontFace(VkFrontFace front)
 {
 	m_RasterizerInfo.frontFace = front;
 	return *this;
 }
 
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::EnableDepthBias(float constantFactor, float slopeFactor)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::EnableDepthBias(float constantFactor, float slopeFactor)
 {
 	m_RasterizerInfo.depthBiasEnable = VK_TRUE;
 	m_RasterizerInfo.depthBiasConstantFactor = constantFactor;
@@ -269,20 +269,20 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::EnableDepthBias(floa
 }
 
 // Multi Sampling Info
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::EnableSampleShading(float minSampleShading)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::EnableSampleShading(float minSampleShading)
 {
 	m_MultiSamplingInfo.sampleShadingEnable = VK_TRUE;
 	m_MultiSamplingInfo.minSampleShading = minSampleShading;
 	return *this;
 }
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetSampleCount(VkSampleCountFlagBits samples)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::SetSampleCount(VkSampleCountFlagBits samples)
 {
 	m_MultiSamplingInfo.rasterizationSamples = samples;
 	return *this;
 }
 
 // Depth Stencil Info
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetDepthTest(VkBool32 depthRead, VkBool32 depthWrite, VkCompareOp compareOp)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::SetDepthTest(VkBool32 depthRead, VkBool32 depthWrite, VkCompareOp compareOp)
 {
 	m_DepthStencilInfo.depthWriteEnable = depthWrite;
 	m_DepthStencilInfo.depthTestEnable = depthRead;
@@ -291,27 +291,27 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetDepthTest(VkBool3
 }
 
 // Blend Info
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::EnableBlend(uint32_t attachment)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::EnableBlend(uint32_t attachment)
 {
 	m_CurrentAttachment = attachment;
 	m_vColorBlendAttachmentState[m_CurrentAttachment].blendEnable = VK_TRUE;
 	return *this;
 }
 
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetColorWriteMask(VkColorComponentFlags colorComponents, uint32_t attachment)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::SetColorWriteMask(VkColorComponentFlags colorComponents, uint32_t attachment)
 {
 	m_CurrentAttachment = attachment;
 	m_vColorBlendAttachmentState[m_CurrentAttachment].colorWriteMask = colorComponents;
 	return *this;
 }
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetColorBlend(VkBlendFactor src, VkBlendFactor dst, VkBlendOp op)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::SetColorBlend(VkBlendFactor src, VkBlendFactor dst, VkBlendOp op)
 {
 	m_vColorBlendAttachmentState[m_CurrentAttachment].srcColorBlendFactor = src;
 	m_vColorBlendAttachmentState[m_CurrentAttachment].dstColorBlendFactor = dst;
 	m_vColorBlendAttachmentState[m_CurrentAttachment].colorBlendOp = op;
 	return *this;
 }
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetAlphaBlend(VkBlendFactor src, VkBlendFactor dst, VkBlendOp op)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::SetAlphaBlend(VkBlendFactor src, VkBlendFactor dst, VkBlendOp op)
 {
 	m_vColorBlendAttachmentState[m_CurrentAttachment].srcAlphaBlendFactor = src;
 	m_vColorBlendAttachmentState[m_CurrentAttachment].dstAlphaBlendFactor = dst;
@@ -320,7 +320,7 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetAlphaBlend(VkBlen
 }
 
 // Dynamic States Info
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::AddDynamicState(VkDynamicState dynamicState)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::AddDynamicState(VkDynamicState dynamicState)
 {
 	m_vDynamicStates.push_back(dynamicState);
 	m_DynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(m_vDynamicStates.size());
@@ -329,12 +329,12 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::AddDynamicState(VkDy
 }
 
 // Pipeline & Render Pass
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetPipelineLayout(const PipelineLayout& layout)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::SetPipelineLayout(const PipelineLayout& layout)
 {
 	m_PipelineLayout = layout.GetHandle();
 	return *this;
 }
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetRenderPass(const RenderPass& renderPass)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::SetRenderPass(const RenderPass& renderPass)
 {
 	m_RenderPass = renderPass.GetHandle();
 	for (uint32_t i{}; i < renderPass.GetAttachmentCount(); ++i)
@@ -359,7 +359,7 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetRenderPass(const 
 	return *this;
 }
 
-pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetupDynamicRendering(VkPipelineRenderingCreateInfo& dynamicRenderInfo)
+pompeii::GraphicsPipelineBuilder& pompeii::GraphicsPipelineBuilder::SetupDynamicRendering(VkPipelineRenderingCreateInfo& dynamicRenderInfo)
 {
 	m_pNext = &dynamicRenderInfo;
 	for (uint32_t i{}; i < dynamicRenderInfo.colorAttachmentCount; ++i)
@@ -385,7 +385,7 @@ pom::GraphicsPipelineBuilder& pom::GraphicsPipelineBuilder::SetupDynamicRenderin
 }
 
 // Build
-void pom::GraphicsPipelineBuilder::Build(const Context& context, Pipeline& pipeline)
+void pompeii::GraphicsPipelineBuilder::Build(const Context& context, Pipeline& pipeline)
 {
 	m_ColorBlendCreateInfo.attachmentCount = static_cast<uint32_t>(m_vColorBlendAttachmentState.size());
 	m_ColorBlendCreateInfo.pAttachments = m_vColorBlendAttachmentState.data();
@@ -426,7 +426,7 @@ void pom::GraphicsPipelineBuilder::Build(const Context& context, Pipeline& pipel
 //    Constructor & Destructor
 //--------------------------------------------------
 
-pom::ComputePipelineBuilder::ComputePipelineBuilder()
+pompeii::ComputePipelineBuilder::ComputePipelineBuilder()
 {
 	m_PipelineLayout = VK_NULL_HANDLE;									//! REQUIRED CHANGE										
 	m_pName = nullptr;													//? CAN CHANGE
@@ -438,13 +438,13 @@ pom::ComputePipelineBuilder::ComputePipelineBuilder()
 //--------------------------------------------------
 //    Builder
 //--------------------------------------------------
-pom::ComputePipelineBuilder& pom::ComputePipelineBuilder::SetDebugName(const char* name)
+pompeii::ComputePipelineBuilder& pompeii::ComputePipelineBuilder::SetDebugName(const char* name)
 {
 	m_pName = name;
 	return *this;
 }
 
-pom::ComputePipelineBuilder& pom::ComputePipelineBuilder::SetShader(const ShaderModule& shader)
+pompeii::ComputePipelineBuilder& pompeii::ComputePipelineBuilder::SetShader(const ShaderModule& shader)
 {
 	m_ShaderInfo = {};
 	m_ShaderInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -456,7 +456,7 @@ pom::ComputePipelineBuilder& pom::ComputePipelineBuilder::SetShader(const Shader
 	return *this;
 }
 
-pom::ComputePipelineBuilder& pom::ComputePipelineBuilder::SetShaderSpecialization(uint32_t constID, uint32_t offset, uint32_t size, const void* data)
+pompeii::ComputePipelineBuilder& pompeii::ComputePipelineBuilder::SetShaderSpecialization(uint32_t constID, uint32_t offset, uint32_t size, const void* data)
 {
 	// -- Create Entry --
 	m_ShaderSpecializationEntry = {};
@@ -477,13 +477,13 @@ pom::ComputePipelineBuilder& pom::ComputePipelineBuilder::SetShaderSpecializatio
 	return *this;
 }
 
-pom::ComputePipelineBuilder& pom::ComputePipelineBuilder::SetPipelineLayout(const PipelineLayout& layout)
+pompeii::ComputePipelineBuilder& pompeii::ComputePipelineBuilder::SetPipelineLayout(const PipelineLayout& layout)
 {
 	m_PipelineLayout = layout.GetHandle();
 	return *this;
 }
 
-void pom::ComputePipelineBuilder::Build(const Context& context, Pipeline& pipeline) const
+void pompeii::ComputePipelineBuilder::Build(const Context& context, Pipeline& pipeline) const
 {
 	VkComputePipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;

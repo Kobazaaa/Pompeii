@@ -8,11 +8,11 @@
 #include <vector>
 
 // -- Forward Declarations --
-namespace pom { struct Context; }
+namespace pompeii { struct Context; }
 
 
 // -- Class --
-namespace pom
+namespace pompeii
 {
 	// -- Helper Structs --
 	struct FrameSync

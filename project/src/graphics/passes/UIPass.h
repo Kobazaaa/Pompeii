@@ -9,14 +9,14 @@
 #include "imgui.h"
 
 // -- Forward Declarations --
-namespace pom
+namespace pompeii
 {
 	class Image;
 	class CommandBuffer;
 	class Window;
 }
 
-namespace pom
+namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Create Info	
