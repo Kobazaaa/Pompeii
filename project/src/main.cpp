@@ -1,6 +1,5 @@
 ﻿// -- Standard Library --
 #include <iostream>
-#include <stdexcept>
 #include <cstdlib>
 
 // -- Defines --
@@ -34,7 +33,7 @@ int main()
 			.fov = 45.f,
 			.aspectRatio = pWindow->GetAspectRatio(),
 			.nearPlane = 0.001f,
-			.farPlane = 10000.f
+			.farPlane = 1000.f
 		};
 		ExposureSettings sunny16
 		{

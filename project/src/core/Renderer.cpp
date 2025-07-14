@@ -365,6 +365,18 @@ void pom::Renderer::InitializeVulkan()
 		m_Context.deletionQueue.Push([&] { m_BlitPass.Destroy(); });
 	}
 
+	// -- UI Pass --
+	{
+		UIPassCreateInfo createInfo{};
+		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
+		createInfo.swapchainImageCount = m_SwapChain.GetImageCount();
+		createInfo.swapchainImageFormat = m_SwapChain.GetFormat();
+		createInfo.pWindow = m_pWindow;
+
+		m_UIPass.Initialize(m_Context, createInfo);
+		m_Context.deletionQueue.Push([&] { m_UIPass.Destroy(); });
+	}
+
 	// -- Create Sync Objects - Requirements - [Device]
 	{
 		m_SyncManager.Create(m_Context, m_MaxFramesInFlight);
@@ -541,6 +553,16 @@ void pom::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t i
 				0, 1, 0, 1);
 
 			m_BlitPass.RecordGraphic(m_Context, commandBuffer, imageIndex, presentImage, m_pCamera);
+
+			// transition the image to be written to for UI
+			presentImage.InsertBarrier(commandBuffer,
+				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
+		}
+
+		// -- UI Pass --
+		{
+			m_UIPass.Record(commandBuffer, presentImage);
 
 			// At last, transition the current Present Image to be presented
 			presentImage.TransitionLayout(commandBuffer,

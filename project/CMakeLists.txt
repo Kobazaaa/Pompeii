@@ -44,6 +44,7 @@ set(SOURCES
 	"${SOURCE_DIR}/graphics/passes/GeometryPass.h"			"${SOURCE_DIR}/graphics/passes/GeometryPass.cpp"
 	"${SOURCE_DIR}/graphics/passes/LightingPass.h"			"${SOURCE_DIR}/graphics/passes/LightingPass.cpp"
 	"${SOURCE_DIR}/graphics/passes/ShadowPass.h"			"${SOURCE_DIR}/graphics/passes/ShadowPass.cpp"
+	"${SOURCE_DIR}/graphics/passes/UIPass.h"				"${SOURCE_DIR}/graphics/passes/UIPass.cpp"
 	 # graphics/pipeline
 	"${SOURCE_DIR}/graphics/pipeline/DescriptorPool.h"		"${SOURCE_DIR}/graphics/pipeline/DescriptorPool.cpp"
 	"${SOURCE_DIR}/graphics/pipeline/DescriptorSet.h"		"${SOURCE_DIR}/graphics/pipeline/DescriptorSet.cpp"
@@ -95,18 +96,14 @@ target_compile_options(${PROJECT_NAME} PRIVATE
   $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
 )
 
-
 #--------------------------------------------------
 #    LIBRARIES
 #--------------------------------------------------
 include("../cmake/FetchAndIncludeLibraries.cmake")
 
-
-
 #--------------------------------------------------
 #    RESOURCES
 #--------------------------------------------------
-include("../cmake/CompileShaders.cmake")				# Shaders
-
+include("../cmake/CompileShaders.cmake")
 include("../cmake/CopyFolder.cmake")
 copy_repo_to_exe("https://github.com/Kobazaaa/PompeiiResources.git")

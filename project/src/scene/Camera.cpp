@@ -4,6 +4,7 @@
 
 // -- Keyboard --
 #include "GLFW/glfw3.h"
+#include "imgui.h"
 
 // -- Pompeii Includes --
 #include "Camera.h"
@@ -33,8 +34,11 @@ void pom::Camera::Update()
 	if (!m_pWindow)
 		std::cerr << "Window not valid for Camera!\n";
 
-	HandleMovement();
-	HandleAim();
+	const auto& io = ImGui::GetIO();
+	if (!io.WantCaptureMouse)
+		HandleAim();
+	if (!io.WantCaptureKeyboard)
+		HandleMovement();
 }
 
 

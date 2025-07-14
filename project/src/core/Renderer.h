@@ -19,7 +19,7 @@
 #include "Window.h"
 #include "SwapChain.h"
 #include "SyncManager.h"
-#include "ForwardPass.h"
+#include "UIPass.h"
 #include "GeometryPass.h"
 #include "LightingPass.h"
 #include "ShadowPass.h"
@@ -79,6 +79,7 @@ namespace pom
 		GeometryPass				m_GeometryPass			{ };
 		LightingPass				m_LightingPass			{ };
 		BlitPass					m_BlitPass				{ };
+		UIPass						m_UIPass				{ };
 
 		//--------------------------------------------------
 		//    Helpers
