@@ -11,13 +11,6 @@
 #include "Component.h"
 #include "Transform.h"
 
-// -- Forward Declarations --
-namespace pompeii
-{
-	class SceneObject;
-	class Scene;
-}
-
 namespace pompeii
 {
 	class SceneObject final

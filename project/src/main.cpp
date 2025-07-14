@@ -14,6 +14,7 @@
 #include "Camera.h"
 #include "ConsoleTextSettings.h"
 #include "Timer.h"
+#include "ServiceLocator.h"
 
 // -- Using Pompeii namespace --
 using namespace pompeii;
@@ -48,10 +49,12 @@ int main()
 		};
 		Camera* pCamera = new Camera(settings, sunny16, pWindow);
 
-		// -- Create Renderer --
-		Renderer* pRenderer = new Renderer(pCamera, pWindow);
+		// -- Register Services --
+		ServiceLocator::RegisterRenderer(std::make_unique<Renderer>(pCamera, pWindow));
+		ServiceLocator::RegisterSceneManager(std::make_unique<SceneManager>());
 
 		// -- Main Loop --
+		ServiceLocator::GetSceneManager().Start();
 		Timer::Start();
 		bool wasPressed = false;
 		bool isPressed = false;
@@ -59,8 +62,10 @@ int main()
 
 		while (!glfwWindowShouldClose(pWindow->GetHandle()))
 		{
+			// -- Timer Update --
 			Timer::Update();
 
+			// -- Input Update --
 			isPressed = glfwGetKey(pWindow->GetHandle(), GLFW_KEY_F11) == GLFW_PRESS;
 			if (isPressed && !wasPressed)
 				pWindow->ToggleFullScreen();
@@ -69,10 +74,12 @@ int main()
 				pWindow->ToggleFullScreen();
 
 			glfwPollEvents();
-			pCamera->Update();
-			pRenderer->Update();
-			pRenderer->Render();
 
+			// -- Update --
+			ServiceLocator::GetSceneManager().Update();
+			ServiceLocator::GetRenderer().Render();
+
+			// -- Print --
 			printTime -= Timer::GetDeltaSeconds();
 			if (printTime <= 0)
 			{
@@ -84,7 +91,6 @@ int main()
 		}
 
 		// -- Cleanup --
-		delete pRenderer;
 		delete pCamera;
 		delete pWindow;
 	}

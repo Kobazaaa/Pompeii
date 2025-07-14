@@ -6,7 +6,11 @@
 #define GLM_FORCE_LEFT_HANDED
 #define GLM_FORCE_RADIANS
 
+// -- Standard Library --
+#include <memory>
+
 // -- Pom Includes --
+#include "SceneObject.h"
 #include "EnvironmentMap.h"
 #include "Light.h"
 #include "Model.h"
@@ -23,15 +27,79 @@ namespace pompeii
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit Scene() = default;
-		virtual ~Scene() = default;
+		explicit Scene(std::string sceneName);
+		virtual ~Scene() = default; //todo remove virtual when class is made final
 
 		Scene(const Scene& other) = delete;
-		Scene(Scene&& other) noexcept = delete;
+		Scene(Scene&& other) = delete;
 		Scene& operator=(const Scene& other) = delete;
-		Scene& operator=(Scene&& other) noexcept = delete;
+		Scene& operator=(Scene&& other) = delete;
 
-		virtual void Initialize() = 0;
+		//--------------------------------------------------
+		//    Adding & Removing SceneObject
+		//--------------------------------------------------
+		[[nodiscard]] SceneObject& AddEmpty(const std::string& sceneName = "SceneObject");
+
+		//--------------------------------------------------
+		//    Loop
+		//--------------------------------------------------
+		void Start() const;
+		void Update();
+		void OnImGuiRender() const;
+
+		//--------------------------------------------------
+		//    Accessors
+		//--------------------------------------------------
+		std::string name{ "EmptyScene" };
+		std::vector<SceneObject*> GetObjectsByName(const std::string& objectName) const;
+
+	private:
+		void CleanupDeletedObjects();
+		void AddPendingObjects();
+
+		std::vector<std::unique_ptr<SceneObject>> m_vObjects{};
+		std::vector<std::unique_ptr<SceneObject>> m_vPendingObjects{};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	public:
+		//--------------------------------------------------
+		//    Constructor & Destructor
+		//--------------------------------------------------
+		explicit Scene() = default;
+
+		virtual void Initialize() {};
 		virtual void AllocateGPU(const Context& context, bool keepHostData = false);
 		virtual void Destroy(const Context& context);
 

@@ -57,12 +57,15 @@ set(SOURCES
 	"${SOURCE_DIR}/helper/ConsoleTextSettings.h"
 	"${SOURCE_DIR}/helper/Debugger.h"						"${SOURCE_DIR}/helper/Debugger.cpp"
 	"${SOURCE_DIR}/helper/DeletionQueue.h"					"${SOURCE_DIR}/helper/DeletionQueue.cpp"
+	"${SOURCE_DIR}/helper/ServiceLocator.h"
 	"${SOURCE_DIR}/helper/Timer.h"							"${SOURCE_DIR}/helper/Timer.cpp"
 
 	# presentation
 	"${SOURCE_DIR}/presentation/SwapChain.h"				"${SOURCE_DIR}/presentation/SwapChain.cpp"
 
 	# scene
+	 # scene/base
+	"${SOURCE_DIR}/scene/base/SceneManager.h"				"${SOURCE_DIR}/scene/base/SceneManager.cpp"
 	 # scene/components
 	"${SOURCE_DIR}/scene/components/Component.h"
 	 # scene/sceneelement
@@ -94,6 +97,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"${SOURCE_DIR}/helper"
 	"${SOURCE_DIR}/presentation"
 	"${SOURCE_DIR}/scene"
+	"${SOURCE_DIR}/scene/base"
 	"${SOURCE_DIR}/scene/components"
 	"${SOURCE_DIR}/scene/sceneobject"
 )
