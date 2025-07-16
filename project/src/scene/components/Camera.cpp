@@ -8,7 +8,7 @@
 
 // -- Pompeii Includes --
 #include "Camera.h"
-
+#include "ServiceLocator.h"
 #include "Scene.h"
 #include "SceneObject.h"
 #include "Window.h"
@@ -29,7 +29,7 @@ pompeii::Camera::Camera(SceneObject& parent, const CameraSettings& settings, con
 	, m_pWindow(pWindow->GetHandle())
 {
 	if (mainCam)
-		GetSceneObject().GetScene().pMainCamera = this;
+		ServiceLocator::Get<RenderSystem>().SetMainCamera(*this);
 }
 
 

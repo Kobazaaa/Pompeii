@@ -168,12 +168,12 @@ void pompeii::GeometryPass::Resize(const Context& context, VkExtent2D extent)
 	for (GBuffer& gBuffer : m_vGBuffers)
 		gBuffer.Resize(context, extent);
 }
-void pompeii::GeometryPass::UpdateTextureDescriptor(const Context& context, const Scene* pScene)
+void pompeii::GeometryPass::UpdateTextureDescriptor(const Context& context)
 {
 	if (m_TextureDS.GetHandle())
 		vkFreeDescriptorSets(context.device.GetHandle(), context.descriptorPool->GetHandle(), 1, &m_TextureDS.GetHandle());
 
-	const uint32_t variableCount = pScene->GetImageCount();
+	const uint32_t variableCount = ServiceLocator::Get<RenderSystem>().GetTextureCount();
 	VkDescriptorSetVariableDescriptorCountAllocateInfo variableCountInfo{};
 	variableCountInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
 	variableCountInfo.descriptorSetCount = 1;
@@ -181,13 +181,13 @@ void pompeii::GeometryPass::UpdateTextureDescriptor(const Context& context, cons
 	m_TextureDS = context.descriptorPool->AllocateSets(context, m_TextureDSL, 1, "Texture Array DS", &variableCountInfo).front();
 
 	// -- Write Textures --
-	auto imageCount = pScene->GetImageCount();
+	auto imageCount = ServiceLocator::Get<RenderSystem>().GetTextureCount();
 	if (imageCount <= 0)
 		return;
 
 	DescriptorSetWriter writer{};
 	std::cout << "Scene has " << imageCount << " images, descriptor layout allows " << 256 << "\n";
-	for (const Model* model : pScene->GetModels())
+	for (const Model* model : ServiceLocator::Get<RenderSystem>().GetVisibleModels())
 	{
 		for (const Image& image : model->images)
 		{
@@ -197,7 +197,7 @@ void pompeii::GeometryPass::UpdateTextureDescriptor(const Context& context, cons
 	writer.WriteImages(m_TextureDS, 0, imageCount).Execute(context);
 	m_TextureCount = imageCount;
 }
-void pompeii::GeometryPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, const Scene* pScene, Camera* pCamera)
+void pompeii::GeometryPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, Camera* pCamera)
 {
 	// Update VS UBO
 	UniformBufferVS ubo;
@@ -264,7 +264,7 @@ void pompeii::GeometryPass::Record(const Context& context, CommandBuffer& comman
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
 
 		// -- Draw Models --
-		for (const Model* model : pScene->GetModels())
+		for (const Model* model : ServiceLocator::Get<RenderSystem>().GetVisibleModels())
 		{
 			// -- Bind Model Data --
 			model->Bind(commandBuffer);

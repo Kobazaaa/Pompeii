@@ -53,34 +53,12 @@ namespace pompeii
 		std::vector<SceneObject*> GetObjectsByName(const std::string& objectName) const;
 		const AABB& GetAABB() const;
 
-
-		//--------------------------------------------------
-		//    Registrators
-		//--------------------------------------------------
-		// -- Models --
-		void RegisterModel(Model& model);
-		const std::vector<Model*>& GetModels() const;
-		uint32_t GetImageCount() const;
-
-		// -- Lights --
-		void RegisterLight(Light& light);
-		std::vector<Light*>& GetLights();
-		std::vector<GPULight> GetLightsGPU() const;
-		uint32_t GetLightsCount() const;
-		std::vector<glm::mat4> GetLightMatrices() const;
-
-		Camera* pMainCamera = nullptr;
-
 	private:
 		void CleanupDeletedObjects();
 		void AddPendingObjects();
 
 		std::vector<std::unique_ptr<SceneObject>> m_vObjects{};
 		std::vector<std::unique_ptr<SceneObject>> m_vPendingObjects{};
-
-		std::vector<Model*> m_vModelComponents{};
-		std::vector<Light*> m_vLightComponents{};
-
 		AABB m_AABB;
 	};
 }

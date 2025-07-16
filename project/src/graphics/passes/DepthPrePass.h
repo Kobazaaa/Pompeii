@@ -51,7 +51,7 @@ namespace pompeii
 
 		void Initialize(const Context& context, const DepthPrePassCreateInfo& createInfo);
 		void Destroy();
-		void Record(const Context& context, CommandBuffer& commandBuffer, const GeometryPass& gPass, uint32_t imageIndex, const Image& depthImage, const Scene* pScene, Camera* pCamera) const;
+		void Record(const Context& context, CommandBuffer& commandBuffer, const GeometryPass& gPass, uint32_t imageIndex, const Image& depthImage, Camera* pCamera) const;
 
 		//--------------------------------------------------
 		//    Shader Infos

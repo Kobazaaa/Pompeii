@@ -18,12 +18,13 @@ pompeii::Light::Light(SceneObject& parent, const glm::vec3& dirPos, const glm::v
 	, luxLumen(luxLumen)
 	, m_Type(type)
 {
-	GetSceneObject().GetScene().RegisterLight(*this);
+	ServiceLocator::Get<LightingSystem>().RegisterLight(*this);
 }
 
 pompeii::Light::~Light()
 {
-	DestroyDepthMap(ServiceLocator::GetRenderer().GetContext());
+	DestroyDepthMap(ServiceLocator::Get<Renderer>().GetContext());
+	ServiceLocator::Get<LightingSystem>().UnregisterLight(*this);
 }
 
 
@@ -33,8 +34,8 @@ pompeii::Light::~Light()
 void pompeii::Light::Start()
 {
 	CalculateLightMatrices();
-	GenerateDepthMap(ServiceLocator::GetRenderer().GetContext(), &GetSceneObject().GetScene());
-	ServiceLocator::GetRenderer().UpdateLights();
+	GenerateDepthMap(ServiceLocator::Get<Renderer>().GetContext());
+	ServiceLocator::Get<Renderer>().UpdateLights();
 }
 void pompeii::Light::OnImGuiRender()
 {
@@ -47,7 +48,7 @@ void pompeii::Light::OnImGuiRender()
 pompeii::Light::Type pompeii::Light::GetType()		const { return m_Type; }
 const pompeii::Image& pompeii::Light::GetDepthMap()	const { return m_DepthMap; }
 
-void pompeii::Light::GenerateDepthMap(const Context& context, const Scene* pScene, uint32_t size)
+void pompeii::Light::GenerateDepthMap(const Context& context, uint32_t size)
 {
 	if (m_DepthMap.GetHandle() != VK_NULL_HANDLE)
 		m_DepthMap.Destroy(context);
@@ -73,7 +74,7 @@ void pompeii::Light::GenerateDepthMap(const Context& context, const Scene* pScen
 		faces[i] = m_DepthMap.CreateView(context, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, i, 1);
 
 	// -- Render To CubeMap --
-	GenerateDepthMap(context, pScene, m_DepthMap, faces, size);
+	GenerateDepthMap(context, m_DepthMap, faces, size);
 	m_DepthMap.DestroyAllViews(context);
 
 	// -- Generate a view to all faces --
@@ -155,7 +156,7 @@ void pompeii::Light::CalculateLightMatrices()
 //--------------------------------------------------
 //    Helper
 //--------------------------------------------------
-void pompeii::Light::GenerateDepthMap(const Context& context, const Scene* pScene, Image& outImage, std::vector<ImageView>& outViews, uint32_t size) const
+void pompeii::Light::GenerateDepthMap(const Context& context, Image& outImage, std::vector<ImageView>& outViews, uint32_t size) const
 {
 	// -- Push Constant Struct --
 	struct PC
@@ -263,7 +264,7 @@ void pompeii::Light::GenerateDepthMap(const Context& context, const Scene* pScen
 				vkCmdBindPipeline(vCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.GetHandle());
 
 				// -- Draw Models --
-				for (const Model* model : pScene->GetModels())
+				for (const Model* model : ServiceLocator::Get<RenderSystem>().GetVisibleModels())
 				{
 					// -- Bind Model Data --
 					model->Bind(cmd);

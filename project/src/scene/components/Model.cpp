@@ -89,11 +89,12 @@ pompeii::Model::Model(SceneObject& sceneObj, const std::string& path)
 	: Component(sceneObj)
 {
 	LoadModel(path);
-	GetSceneObject().GetScene().RegisterModel(*this);
+	ServiceLocator::Get<RenderSystem>().RegisterModel(*this);
 }
 pompeii::Model::~Model()
 {
-	Destroy(ServiceLocator::GetRenderer().GetContext());
+	Destroy(ServiceLocator::Get<Renderer>().GetContext());
+	ServiceLocator::Get<RenderSystem>().UnregisterModel(*this);
 }
 
 
@@ -102,9 +103,9 @@ pompeii::Model::~Model()
 //--------------------------------------------------
 void pompeii::Model::Start()
 {
-	const auto& ctx = ServiceLocator::GetRenderer().GetContext();
+	const auto& ctx = ServiceLocator::Get<Renderer>().GetContext();
 	AllocateResources(ctx, true);
-	ServiceLocator::GetRenderer().UpdateTextures();
+	ServiceLocator::Get<Renderer>().UpdateTextures();
 }
 void pompeii::Model::OnImGuiRender()
 {

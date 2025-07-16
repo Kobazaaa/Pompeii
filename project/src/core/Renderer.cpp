@@ -108,11 +108,11 @@ pompeii::Context& pompeii::Renderer::GetContext()
 
 void pompeii::Renderer::UpdateLights()
 {
-	m_LightingPass.UpdateLightDescriptors(m_Context, &ServiceLocator::GetSceneManager().GetActiveScene());
+	m_LightingPass.UpdateLightDescriptors(m_Context);
 }
 void pompeii::Renderer::UpdateTextures()
 {
-	m_GeometryPass.UpdateTextureDescriptor(m_Context, &ServiceLocator::GetSceneManager().GetActiveScene());
+	m_GeometryPass.UpdateTextureDescriptor(m_Context);
 }
 void pompeii::Renderer::UpdateEnvironmentMap() const
 {
@@ -389,7 +389,7 @@ void pompeii::Renderer::RecreateSwapChain()
 	m_BlitPass.UpdateDescriptors(m_Context, m_vRenderTargets);
 
 	// -- Update Camera Settings --
-	const auto& camera = ServiceLocator::GetSceneManager().GetActiveScene().pMainCamera;
+	const auto& camera = ServiceLocator::Get<RenderSystem>().GetMainCamera();
 	const CameraSettings& oldSettings = camera->GetSettings();
 	const CameraSettings settings
 	{
@@ -445,8 +445,7 @@ void pompeii::Renderer::CreateRenderTargetResources(const Context& context, VkEx
 
 void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex)
 {
-	const auto& scene = ServiceLocator::GetSceneManager().GetActiveScene();
-	const auto& camera = scene.pMainCamera;
+	const auto& camera = ServiceLocator::Get<RenderSystem>().GetMainCamera();
 	Image& presentImage = m_SwapChain.GetImages()[imageIndex];
 	Image& renderImage = m_vRenderTargets[imageIndex];
 	Image& depthImage = m_vDepthImages[imageIndex];
@@ -463,7 +462,7 @@ void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32
 				0, 1, 0, 1);
 
 			// The Depth Pre-Pass renders the entire scene to the provided depth buffer.
-			m_DepthPrePass.Record(m_Context, commandBuffer, m_GeometryPass, imageIndex, depthImage, &scene, camera);
+			m_DepthPrePass.Record(m_Context, commandBuffer, m_GeometryPass, imageIndex, depthImage, camera);
 
 			// Transition the current Depth Image to be read from
 			depthImage.TransitionLayout(commandBuffer,
@@ -476,7 +475,7 @@ void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32
 		// -- Geometry Pass --
 		{
 			// The Geometry Pass renders the entire scene to a GBuffer.
-			m_GeometryPass.Record(m_Context, commandBuffer, imageIndex, depthImage, &scene, camera);
+			m_GeometryPass.Record(m_Context, commandBuffer, imageIndex, depthImage, camera);
 			// After it is done, the GBuffers are transitioned to a layout ready for being sampled from.
 		}
 

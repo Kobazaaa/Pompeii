@@ -7,6 +7,7 @@
 #include "Camera.h"
 #include "GeometryPass.h"
 #include "Scene.h"
+#include "ServiceLocator.h"
 
 void pompeii::DepthPrePass::Initialize(const Context& context, const DepthPrePassCreateInfo& createInfo)
 {
@@ -118,7 +119,7 @@ void pompeii::DepthPrePass::Destroy()
 	m_DeletionQueue.Flush();
 }
 
-void pompeii::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuffer, const GeometryPass& gPass, uint32_t imageIndex, const Image& depthImage, const Scene* pScene, Camera* pCamera) const
+void pompeii::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuffer, const GeometryPass& gPass, uint32_t imageIndex, const Image& depthImage, Camera* pCamera) const
 {
 	// -- Update Vertex UBO --
 	UniformBufferVS ubo;
@@ -177,7 +178,7 @@ void pompeii::DepthPrePass::Record(const Context& context, CommandBuffer& comman
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
 
 		// -- Draw Models --
-		for (const auto& model : pScene->GetModels())
+		for (const auto& model : ServiceLocator::Get<RenderSystem>().GetVisibleModels())
 		{
 			// -- Bind Model Data --
 			model->Bind(commandBuffer);

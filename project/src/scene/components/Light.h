@@ -80,13 +80,13 @@ namespace pompeii
 		glm::mat4 projMatrix;
 
 		const Image& GetDepthMap() const;
-		void GenerateDepthMap(const Context& context, const Scene* pScene, uint32_t size = 2048);
+		void GenerateDepthMap(const Context& context, uint32_t size = 2048);
 		void DestroyDepthMap(const Context& context);
 		void CalculateLightMatrices();
 
 	private:
 		// -- Helper --
-		void GenerateDepthMap(const Context& context, const Scene* pScene, Image& outImage, std::vector<ImageView>& outViews, uint32_t size) const;
+		void GenerateDepthMap(const Context& context, Image& outImage, std::vector<ImageView>& outViews, uint32_t size) const;
 
 		// -- Data --
 		Type m_Type;

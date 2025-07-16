@@ -77,6 +77,11 @@ set(SOURCES
 	 # scene/sceneobject
 	"${SOURCE_DIR}/scene/sceneobject/SceneObject.h"			"${SOURCE_DIR}/scene/sceneobject/SceneObject.cpp"
 	"${SOURCE_DIR}/scene/sceneobject/Transform.h"			"${SOURCE_DIR}/scene/sceneobject/Transform.cpp"
+
+	# systems
+	"${SOURCE_DIR}/systems/ISystem.h"
+	"${SOURCE_DIR}/systems/LightingSystem.h"				"${SOURCE_DIR}/systems/LightingSystem.cpp"
+	"${SOURCE_DIR}/systems/RenderSystem.h"					"${SOURCE_DIR}/systems/RenderSystem.cpp"
 )
 
 # Create the executable
@@ -98,6 +103,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"${SOURCE_DIR}/scene/base"
 	"${SOURCE_DIR}/scene/components"
 	"${SOURCE_DIR}/scene/sceneobject"
+	"${SOURCE_DIR}/systems"
 )
 
 # Max Warning Level & Warnings as Errors

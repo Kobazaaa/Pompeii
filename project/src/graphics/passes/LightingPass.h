@@ -57,13 +57,13 @@ namespace pompeii
 		void Destroy();
 		void UpdateGBufferDescriptors(const Context& context, const GeometryPass& pGeometryPass, const std::vector<Image>& depthImages) const;
 		void UpdateEnvironmentMap(const Context& context, const EnvironmentMap& envMap) const;
-		void UpdateLightDescriptors(const Context& context, Scene* pScene);
+		void UpdateLightDescriptors(const Context& context);
 		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, Camera* pCamera) const;
 
 	private:
 		// -- Pipeline --
-		PipelineLayout		m_PipelineLayout		{ };
-		Pipeline			m_Pipeline				{ };
+		PipelineLayout				m_PipelineLayout		{ };
+		Pipeline					m_Pipeline				{ };
 
 		// -- Image --
 		Sampler						m_GBufferSampler		{ };

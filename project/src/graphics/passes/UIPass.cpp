@@ -168,12 +168,12 @@ void pompeii::UIPass::ImGuiLogic()
 		{
 			const std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
 			char* StatsString = nullptr;
-			vmaBuildStatsString(ServiceLocator::GetRenderer().GetContext().allocator, &StatsString, true);
+			vmaBuildStatsString(ServiceLocator::Get<Renderer>().GetContext().allocator, &StatsString, true);
 			{
 				std::ofstream OutStats{ path };
 				OutStats << StatsString;
 			}
-			vmaFreeStatsString(ServiceLocator::GetRenderer().GetContext().allocator, StatsString);
+			vmaFreeStatsString(ServiceLocator::Get<Renderer>().GetContext().allocator, StatsString);
 		}
 		ImGuiFileDialog::Instance()->Close();
 	}
@@ -190,14 +190,14 @@ void pompeii::UIPass::ImGuiLogic()
 			if (ImGuiFileDialog::Instance()->IsOk())
 			{
 				const std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
-				auto& obj = ServiceLocator::GetSceneManager().GetActiveScene().AddEmpty();
+				auto& obj = ServiceLocator::Get<SceneManager>().GetActiveScene().AddEmpty();
 				obj.AddComponent<Model>(path);
 			}
 			ImGuiFileDialog::Instance()->Close();
 		}
 
 		ImGui::Text("Custom");
-		ServiceLocator::GetSceneManager().GetActiveScene().OnImGuiRender();
+		ServiceLocator::Get<SceneManager>().GetActiveScene().OnImGuiRender();
 	}
 	ImGui::End();
 }

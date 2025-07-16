@@ -13,11 +13,34 @@
 #include "Window.h"
 #include "Camera.h"
 #include "ConsoleTextSettings.h"
-#include "Timer.h"
 #include "ServiceLocator.h"
+#include "Timer.h"
 
 // -- Using Pompeii namespace --
 using namespace pompeii;
+
+static void CreateDefaultScene(Window* pWindow)
+{
+	auto& scene = ServiceLocator::Get<SceneManager>().CreateScene("DefaultScene");
+	ServiceLocator::Get<SceneManager>().SetActiveScene(scene);
+
+	// cam
+	auto& camera = scene.AddEmpty("Camera");
+	camera.AddComponent<Camera>(CameraSettings{ .fov = 45.f, .aspectRatio = pWindow->GetAspectRatio(), .nearPlane = 0.001f, .farPlane = 1000.f },
+		ExposureSettings{ .aperture = 16.f, .shutterSpeed = 1.f / 100.f, .iso = 100.f }, pWindow, true);
+
+	// model
+	auto& model = scene.AddEmpty("Model");
+	model.AddComponent<Model>("models/Sponza.gltf");
+
+	// light
+	auto& light = scene.AddEmpty("Light");
+	light.AddComponent<Light>(
+		/* direction */	glm::vec3{ 0.f, -1.f, 0.f },
+		/* color */		glm::vec3{ 1.f, 1.f, 1.f },
+		/* lux */			100'000.f, Light::Type::Directional
+	);
+}
 
 int main()
 {
@@ -27,54 +50,17 @@ int main()
 		// -- Create Window --
 		Window* pWindow = new Window("V - Pompeii", false, 800, 600);
 
-		// -- Create Camera --
-		CameraSettings settings
-		{
-			.fov = 45.f,
-			.aspectRatio = pWindow->GetAspectRatio(),
-			.nearPlane = 0.001f,
-			.farPlane = 1000.f
-		};
-		ExposureSettings sunny16
-		{
-			.aperture = 16.f,
-			.shutterSpeed = 1.f / 100.f,
-			.iso = 100.f,
-		};
-		ExposureSettings indoor
-		{
-			.aperture = 1.4f,
-			.shutterSpeed = 1.f / 60.f,
-			.iso = 1600.f,
-		};
-
 		// -- Register Services --
-		ServiceLocator::RegisterSceneManager(std::make_unique<SceneManager>());
+		ServiceLocator::Register(std::make_unique<SceneManager>());
+		ServiceLocator::Register(std::make_unique<RenderSystem>());
+		ServiceLocator::Register(std::make_unique<LightingSystem>());
+		ServiceLocator::Register(std::make_unique<Renderer>(pWindow));
 
-		// -- Create Test Scene --
-		auto& scene = ServiceLocator::GetSceneManager().CreateScene("TestScene");
-		ServiceLocator::GetSceneManager().SetActiveScene(scene);
-
-		// cam
-		auto& camera = scene.AddEmpty("Camera");
-		camera.AddComponent<Camera>(settings, sunny16, pWindow, true);
-
-		// model
-		auto& model = scene.AddEmpty("Model");
-		model.AddComponent<Model>("models/Sponza.gltf");
-
-		// light
-		auto& light = scene.AddEmpty("Light");
-		light.AddComponent<Light>(
-			/* direction */	glm::vec3{ 0.f, -1.f, 0.f },
-			/* color */		glm::vec3{ 1.f, 1.f, 1.f },
-			/* lux */			100'000.f, Light::Type::Directional
-		);
-
-		ServiceLocator::RegisterRenderer(std::make_unique<Renderer>(pWindow));
+		// -- Create Default Scene --
+		CreateDefaultScene(pWindow);
 
 		// -- Main Loop --
-		ServiceLocator::GetSceneManager().Start();
+		ServiceLocator::Get<SceneManager>().Start();
 		Timer::Start();
 		bool wasPressed = false;
 		bool isPressed = false;
@@ -95,9 +81,23 @@ int main()
 
 			glfwPollEvents();
 
-			// -- Update --
-			ServiceLocator::GetSceneManager().Update();
-			ServiceLocator::GetRenderer().Render();
+
+
+			// --- Begin Frame Phase ---
+			ServiceLocator::Get<RenderSystem>().BeginFrame();
+			ServiceLocator::Get<LightingSystem>().BeginFrame();
+
+			// -- Update Phase --
+			ServiceLocator::Get<SceneManager>().Update();
+
+			// -- Render Phase --
+			ServiceLocator::Get<Renderer>().Render();
+
+			// -- End Frame Phase --
+			ServiceLocator::Get<RenderSystem>().EndFrame();
+			ServiceLocator::Get<LightingSystem>().EndFrame();
+
+
 
 			// -- Print --
 			printTime -= Timer::GetDeltaSeconds();
@@ -111,8 +111,11 @@ int main()
 		}
 
 		// -- Cleanup --
-		ServiceLocator::DeregisterSceneManager();
-		ServiceLocator::DeregisterRenderer();
+		ServiceLocator::Get<Renderer>().GetContext().device.WaitIdle();
+		ServiceLocator::Deregister<SceneManager>();
+		ServiceLocator::Deregister<LightingSystem>();
+		ServiceLocator::Deregister<RenderSystem>();
+		ServiceLocator::Deregister<Renderer>();
 		delete pWindow;
 	}
 	// -- Catch Failures --

@@ -1,42 +1,85 @@
 #ifndef SERVICE_LOCATOR_H
 #define SERVICE_LOCATOR_H
 
+// -- Standard Library --
+#include <memory>
+#include <typeindex>
+#include <stdexcept>
+
 // -- Pompeii Includes --
 #include "SceneManager.h"
 #include "Renderer.h"
+#include "RenderSystem.h"
+#include "LightingSystem.h"
 
 namespace pompeii
 {
 	class ServiceLocator final
 	{
 	public:
-		//--------------------------------------------------
-		//    Constructors and Destructors
-		//--------------------------------------------------
 		ServiceLocator() = delete;
 		~ServiceLocator() = delete;
 
-		ServiceLocator(const ServiceLocator& other) = delete;
-		ServiceLocator(ServiceLocator&& other) = delete;
-		ServiceLocator& operator=(const ServiceLocator& other) = delete;
-		ServiceLocator& operator=(ServiceLocator&& other) = delete;
+		ServiceLocator(const ServiceLocator&) = delete;
+		ServiceLocator(ServiceLocator&&) = delete;
+		ServiceLocator& operator=(const ServiceLocator&) = delete;
+		ServiceLocator& operator=(ServiceLocator&&) = delete;
 
 		//--------------------------------------------------
 		//    Services
 		//--------------------------------------------------
-		// -- SceneManager --
-		static SceneManager& GetSceneManager() { return *m_pSceneManagerService; }
-		static void RegisterSceneManager(std::unique_ptr<SceneManager>&& service) { m_pSceneManagerService = std::move(service); }
-		static void DeregisterSceneManager() { m_pSceneManagerService.release(); }
+		template<typename ServiceType>
+		static ServiceType& Get()
+		{
+			const auto it = m_Services.find(std::type_index(typeid(ServiceType)));
+			if (it == m_Services.end())
+				throw std::runtime_error("ServiceLocator: Requested service not registered!");
 
-		// -- Renderer --
-		static Renderer& GetRenderer() { return *m_pRendererService; }
-		static void RegisterRenderer(std::unique_ptr<Renderer>&& service) { m_pRendererService = std::move(service); }
-		static void DeregisterRenderer() { m_pRendererService.release(); }
+			auto* base = it->second.get();
+			auto* derived = dynamic_cast<Service<ServiceType>*>(base);
+			if (!derived)
+				throw std::runtime_error("ServiceLocator: Type mismatch in service access");
+
+			return *(derived->pService);
+		}
+		template<typename ServiceType>
+		static bool TryGet(ServiceType* pService)
+		{
+			const auto it = m_Services.find(std::type_index(typeid(ServiceType)));
+			if (it == m_Services.end())
+			{
+				pService = nullptr;
+				return false;
+			}
+
+			auto* base = it->second.get();
+			auto* derived = dynamic_cast<Service<ServiceType>*>(base);
+			if (!derived)
+			{
+				pService = nullptr;
+				return false;
+			}
+
+			pService = derived->pService;
+			return true;
+		}
+
+		template<typename ServiceType>
+		static void Register(std::unique_ptr<ServiceType> service) { m_Services[std::type_index(typeid(ServiceType))] = std::make_unique<Service<ServiceType>>(std::move(service)); }
+		template<typename ServiceType>
+		static void Deregister() { m_Services.erase(std::type_index(typeid(ServiceType))); }
 
 	private:
-		inline static std::unique_ptr<SceneManager> m_pSceneManagerService {};
-		inline static std::unique_ptr<Renderer> m_pRendererService {};
+		struct IService { virtual ~IService() = default; };
+		template<typename ServiceType>
+		struct Service final : IService
+		{
+			explicit Service(std::unique_ptr<ServiceType> service)
+				: pService(std::move(service)) {
+			}
+			std::unique_ptr<ServiceType> pService;
+		};
+		inline static std::unordered_map<std::type_index, std::unique_ptr<IService>> m_Services;
 	};
 }
 

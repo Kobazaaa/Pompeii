@@ -8,6 +8,7 @@
 #include "GeometryPass.h"
 #include "Shader.h"
 #include "Scene.h"
+#include "ServiceLocator.h"
 
 void pompeii::LightingPass::Initialize(const Context& context, const LightingPassCreateInfo& createInfo)
 {
@@ -278,16 +279,16 @@ void pompeii::LightingPass::UpdateEnvironmentMap(const Context& context, const E
 	}
 }
 
-void pompeii::LightingPass::UpdateLightDescriptors(const Context& context, Scene* pScene)
+void pompeii::LightingPass::UpdateLightDescriptors(const Context& context)
 {
-	uint32_t lightCount = pScene->GetLightsCount();
+	uint32_t lightCount = ServiceLocator::Get<LightingSystem>().GetLightsCount();
 
 	// -- Prepare and Count Light Depth Maps --
 	DescriptorSetWriter directionalWriter{};
 	DescriptorSetWriter pointWriter{};
 	uint32_t dirCount = 0;
 	uint32_t pointCount = 0;
-	for (const Light* light : pScene->GetLights())
+	for (const Light* light : ServiceLocator::Get<LightingSystem>().GetLights())
 	{
 		if (light->GetDepthMap().GetHandle() == VK_NULL_HANDLE)
 			continue;
@@ -345,7 +346,7 @@ void pompeii::LightingPass::UpdateLightDescriptors(const Context& context, Scene
 			.SetUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
 			.SetSize(static_cast<uint32_t>(totalLightSize))
 			.AddInitialData(&lightCount, 0, sizeof(uint32_t))
-			.AddInitialData(pScene->GetLightsGPU().data(), 4 * sizeof(uint32_t), sizeof(GPULight) * lightCount)
+			.AddInitialData(ServiceLocator::Get<LightingSystem>().GetLightsGPU().data(), 4 * sizeof(uint32_t), sizeof(GPULight) * lightCount)
 			.Allocate(context, m_SSBOLights);
 
 		// -- Allocate Light Matrices Buffer --
@@ -355,7 +356,7 @@ void pompeii::LightingPass::UpdateLightDescriptors(const Context& context, Scene
 			.SetUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
 			.SetSize(static_cast<uint32_t>(totalMatricesSize))
 			.AddInitialData(&dirCount, 0, sizeof(uint32_t))
-			.AddInitialData(pScene->GetLightMatrices().data(), 4 * sizeof(uint32_t), sizeof(glm::mat4) * dirCount)
+			.AddInitialData(ServiceLocator::Get<LightingSystem>().GetLightMatrices().data(), 4 * sizeof(uint32_t), sizeof(glm::mat4) * dirCount)
 			.Allocate(context, m_SSBOLightsMatrices);
 
 		static uint32_t prevIdx = 0xFFFFFFFF;

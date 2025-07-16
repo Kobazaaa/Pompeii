@@ -53,8 +53,8 @@ namespace pompeii
 		void Initialize(const Context& context, const GeometryPassCreateInfo& createInfo);
 		void Destroy();
 		void Resize(const Context& context, VkExtent2D extent);
-		void UpdateTextureDescriptor(const Context& context, const Scene* pScene);
-		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, const Scene* pScene, Camera* pCamera);
+		void UpdateTextureDescriptor(const Context& context);
+		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, Camera* pCamera);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
