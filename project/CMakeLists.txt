@@ -30,6 +30,11 @@ set(SOURCES
 	"${SOURCE_DIR}/core/Renderer.h"							"${SOURCE_DIR}/core/Renderer.cpp"
 	"${SOURCE_DIR}/core/Window.h"							"${SOURCE_DIR}/core/Window.cpp"
 
+	# datatypes
+	"${SOURCE_DIR}/datatypes/Material.h"					"${SOURCE_DIR}/datatypes/Material.cpp"
+	"${SOURCE_DIR}/datatypes/Model.h"						"${SOURCE_DIR}/datatypes/Model.cpp"
+	"${SOURCE_DIR}/datatypes/Shapes.h"						"${SOURCE_DIR}/datatypes/Shapes.cpp"
+
 	# graphics
 	 # graphics/memory
 	"${SOURCE_DIR}/graphics/memory/Buffer.h"				"${SOURCE_DIR}/graphics/memory/Buffer.cpp"
@@ -65,7 +70,6 @@ set(SOURCES
 
 	# scene
 	"${SOURCE_DIR}/scene/EnvironmentMap.h"					"${SOURCE_DIR}/scene/EnvironmentMap.cpp"
-	"${SOURCE_DIR}/scene/Material.h"						"${SOURCE_DIR}/scene/Material.cpp"
 	"${SOURCE_DIR}/scene/Scene.h"							"${SOURCE_DIR}/scene/Scene.cpp"
 	 # scene/base
 	"${SOURCE_DIR}/scene/base/SceneManager.h"				"${SOURCE_DIR}/scene/base/SceneManager.cpp"
@@ -73,7 +77,7 @@ set(SOURCES
 	"${SOURCE_DIR}/scene/components/Camera.h"				"${SOURCE_DIR}/scene/components/Camera.cpp"
 	"${SOURCE_DIR}/scene/components/Component.h"
 	"${SOURCE_DIR}/scene/components/Light.h"				"${SOURCE_DIR}/scene/components/Light.cpp"
-	"${SOURCE_DIR}/scene/components/Model.h"				"${SOURCE_DIR}/scene/components/Model.cpp"
+	"${SOURCE_DIR}/scene/components/ModelRenderer.h"		"${SOURCE_DIR}/scene/components/ModelRenderer.cpp"
 	 # scene/sceneobject
 	"${SOURCE_DIR}/scene/sceneobject/SceneObject.h"			"${SOURCE_DIR}/scene/sceneobject/SceneObject.cpp"
 	"${SOURCE_DIR}/scene/sceneobject/Transform.h"			"${SOURCE_DIR}/scene/sceneobject/Transform.cpp"
@@ -93,6 +97,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"${SOURCE_DIR}/commands"
 	"${SOURCE_DIR}/context"
 	"${SOURCE_DIR}/core"
+	"${SOURCE_DIR}/datatypes"
 	"${SOURCE_DIR}/graphics"
 	"${SOURCE_DIR}/graphics/memory"
 	"${SOURCE_DIR}/graphics/passes"

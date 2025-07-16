@@ -1,5 +1,6 @@
 // -- Pompeii Includes --
 #include "BlitPass.h"
+#include "Camera.h"
 #include "Context.h"
 #include "Debugger.h"
 #include "DescriptorPool.h"
@@ -332,7 +333,7 @@ void pompeii::BlitPass::RecordGraphic(const Context& context, CommandBuffer& com
 	vkCmdEndRendering(vCmdBuffer);
 	Debugger::EndDebugLabel(commandBuffer);
 }
-void pompeii::BlitPass::RecordCompute(const Context&, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage)
+void pompeii::BlitPass::RecordCompute(CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage)
 {
 	// -- Compute --
 	Debugger::BeginDebugLabel(commandBuffer, "Compute Luminance | Exposure Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));

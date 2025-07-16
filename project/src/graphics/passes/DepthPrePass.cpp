@@ -181,10 +181,10 @@ void pompeii::DepthPrePass::Record(const Context& context, CommandBuffer& comman
 		for (const auto& model : ServiceLocator::Get<RenderSystem>().GetVisibleModels())
 		{
 			// -- Bind Model Data --
-			model->Bind(commandBuffer);
+			model->GetModel()->Bind(commandBuffer);
 
 			// -- Draw Opaque --
-			for (const Mesh& mesh : model->opaqueMeshes)
+			for (const Mesh& mesh : model->GetModel()->opaqueMeshes)
 			{
 				// -- Bind Push Constants --
 				Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));

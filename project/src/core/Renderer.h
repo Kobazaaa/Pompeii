@@ -23,6 +23,9 @@ namespace pompeii
 {
 	class Window;
 	class Camera;
+	class ModelRenderer;
+	struct Model;
+	struct Material;
 }
 
 namespace pompeii

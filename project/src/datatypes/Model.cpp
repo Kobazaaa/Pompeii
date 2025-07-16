@@ -1,27 +1,17 @@
-// -- Standard Library --
-#include <iostream>
-#include <sstream>
+// -- Pompeii Includes --
+#include "Model.h"
+#include "CommandBuffer.h"
+#include "Debugger.h"
 
 // -- Model Loading --
 #include <assimp/postprocess.h>
 
-// -- Pompeii Includes --
-#include "Model.h"
-#include "Pipeline.h"
-#include "Context.h"
-#include "CommandBuffer.h"
-#include "Debugger.h"
-#include "ServiceLocator.h"
-
+// -- Standard Library --
+#include <iostream>
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Vertex	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-//--------------------------------------------------
-//    Helpers
-//--------------------------------------------------
-
 VkVertexInputBindingDescription pompeii::Vertex::GetBindingDescription()
 {
 	VkVertexInputBindingDescription bindingDescription{};
@@ -66,7 +56,6 @@ std::vector<VkVertexInputAttributeDescription> pompeii::Vertex::GetAttributeDesc
 
 	return attributeDescriptions;
 }
-
 bool pompeii::Vertex::operator==(const Vertex& other) const
 {
 	return position == other.position &&
@@ -81,35 +70,6 @@ bool pompeii::Vertex::operator==(const Vertex& other) const
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Model	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-//--------------------------------------------------
-//    Constructor & Destructor
-//--------------------------------------------------
-pompeii::Model::Model(SceneObject& sceneObj, const std::string& path)
-	: Component(sceneObj)
-{
-	LoadModel(path);
-	ServiceLocator::Get<RenderSystem>().RegisterModel(*this);
-}
-pompeii::Model::~Model()
-{
-	Destroy(ServiceLocator::Get<Renderer>().GetContext());
-	ServiceLocator::Get<RenderSystem>().UnregisterModel(*this);
-}
-
-
-//--------------------------------------------------
-//    Loop
-//--------------------------------------------------
-void pompeii::Model::Start()
-{
-	const auto& ctx = ServiceLocator::Get<Renderer>().GetContext();
-	AllocateResources(ctx, true);
-	ServiceLocator::Get<Renderer>().UpdateTextures();
-}
-void pompeii::Model::OnImGuiRender()
-{
-}
 
 //--------------------------------------------------
 //    Helpers
@@ -205,7 +165,7 @@ void pompeii::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene, con
 }
 void pompeii::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, glm::mat4 transform)
 {
-	opaqueMeshes.push_back(Mesh());
+	opaqueMeshes.emplace_back();
 	opaqueMeshes.back().name = pMesh->mName.C_Str();
 	opaqueMeshes.back().matrix = transform;
 
@@ -216,13 +176,13 @@ void pompeii::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, glm
 		Vertex vertex{};
 
 		vertex.position = glm::vec3(pMesh->mVertices[vIdx].x,
-									pMesh->mVertices[vIdx].y,
-									pMesh->mVertices[vIdx].z);
+			pMesh->mVertices[vIdx].y,
+			pMesh->mVertices[vIdx].z);
 
 		if (pMesh->HasNormals())
 			vertex.normal = glm::vec3(pMesh->mNormals[vIdx].x,
-									  pMesh->mNormals[vIdx].y,
-									  pMesh->mNormals[vIdx].z);
+				pMesh->mNormals[vIdx].y,
+				pMesh->mNormals[vIdx].z);
 
 		if (pMesh->mTextureCoords[0])
 			vertex.texCoord = glm::vec2(pMesh->mTextureCoords[0][vIdx].x, pMesh->mTextureCoords[0][vIdx].y);
@@ -239,11 +199,11 @@ void pompeii::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, glm
 		if (pMesh->HasTangentsAndBitangents())
 		{
 			vertex.tangent = glm::vec3(pMesh->mTangents[vIdx].x,
-									   pMesh->mTangents[vIdx].y,
-									   pMesh->mTangents[vIdx].z);
+				pMesh->mTangents[vIdx].y,
+				pMesh->mTangents[vIdx].z);
 			vertex.bitangent = glm::vec3(pMesh->mBitangents[vIdx].x,
-										 pMesh->mBitangents[vIdx].y,
-										 pMesh->mBitangents[vIdx].z);
+				pMesh->mBitangents[vIdx].y,
+				pMesh->mBitangents[vIdx].z);
 		}
 		vertices.push_back(vertex);
 		opaqueMeshes.back().aabb.GrowToInclude(vertex.position);
@@ -284,16 +244,16 @@ void pompeii::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, glm
 
 	// -- Diffuse --
 	auto& mat = opaqueMeshes.back().material;
-	LoadMatTexture(aiTextureType_DIFFUSE,			mat.albedoIdx,		VK_FORMAT_R8G8B8A8_SRGB);
+	LoadMatTexture(aiTextureType_DIFFUSE, mat.albedoIdx, VK_FORMAT_R8G8B8A8_SRGB);
 
-	LoadMatTexture(aiTextureType_SPECULAR,			mat.specularIdx,		VK_FORMAT_R8G8B8A8_UNORM);
-	LoadMatTexture(aiTextureType_SHININESS,			mat.shininessIdx,	VK_FORMAT_R8G8B8A8_UNORM);
+	LoadMatTexture(aiTextureType_SPECULAR, mat.specularIdx, VK_FORMAT_R8G8B8A8_UNORM);
+	LoadMatTexture(aiTextureType_SHININESS, mat.shininessIdx, VK_FORMAT_R8G8B8A8_UNORM);
 
-	LoadMatTexture(aiTextureType_HEIGHT,			mat.heightIdx,		VK_FORMAT_R8G8B8A8_UNORM);
-	LoadMatTexture(aiTextureType_NORMALS,			mat.normalIdx,		VK_FORMAT_R8G8B8A8_UNORM);
+	LoadMatTexture(aiTextureType_HEIGHT, mat.heightIdx, VK_FORMAT_R8G8B8A8_UNORM);
+	LoadMatTexture(aiTextureType_NORMALS, mat.normalIdx, VK_FORMAT_R8G8B8A8_UNORM);
 
-	LoadMatTexture(aiTextureType_DIFFUSE_ROUGHNESS, mat.roughnessIdx,	VK_FORMAT_R8G8B8A8_UNORM);
-	LoadMatTexture(aiTextureType_METALNESS,			mat.metalnessIdx,	VK_FORMAT_R8G8B8A8_UNORM);
+	LoadMatTexture(aiTextureType_DIFFUSE_ROUGHNESS, mat.roughnessIdx, VK_FORMAT_R8G8B8A8_UNORM);
+	LoadMatTexture(aiTextureType_METALNESS, mat.metalnessIdx, VK_FORMAT_R8G8B8A8_UNORM);
 
 	// Transparency Maps Separate --
 	if (material->GetTextureCount(aiTextureType_OPACITY) > 0)

@@ -1,8 +1,5 @@
 // -- Pompeii Includes --
 #include "GeometryPass.h"
-
-#include <iostream>
-
 #include "Camera.h"
 #include "Scene.h"
 #include "Shader.h"
@@ -186,10 +183,9 @@ void pompeii::GeometryPass::UpdateTextureDescriptor(const Context& context)
 		return;
 
 	DescriptorSetWriter writer{};
-	std::cout << "Scene has " << imageCount << " images, descriptor layout allows " << 256 << "\n";
-	for (const Model* model : ServiceLocator::Get<RenderSystem>().GetVisibleModels())
+	for (const ModelRenderer* model : ServiceLocator::Get<RenderSystem>().GetVisibleModels())
 	{
-		for (const Image& image : model->images)
+		for (const Image& image : model->GetModel()->images)
 		{
 			writer.AddImageInfo(image.GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_TextureSampler);
 		}
@@ -264,13 +260,13 @@ void pompeii::GeometryPass::Record(const Context& context, CommandBuffer& comman
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
 
 		// -- Draw Models --
-		for (const Model* model : ServiceLocator::Get<RenderSystem>().GetVisibleModels())
+		for (const ModelRenderer* model : ServiceLocator::Get<RenderSystem>().GetVisibleModels())
 		{
 			// -- Bind Model Data --
-			model->Bind(commandBuffer);
+			model->GetModel()->Bind(commandBuffer);
 
 			// -- Draw Opaque --
-			for (const Mesh& mesh : model->opaqueMeshes)
+			for (const Mesh& mesh : model->GetModel()->opaqueMeshes)
 			{
 				// -- Bind Push Constants --
 				Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
@@ -299,7 +295,7 @@ void pompeii::GeometryPass::Record(const Context& context, CommandBuffer& comman
 			}
 
 			// -- Draw Transparent using Alpha Cut-Off --
-			for (const Mesh& mesh : model->transparentMeshes)
+			for (const Mesh& mesh : model->GetModel()->transparentMeshes)
 			{
 				// -- Bind Push Constants --
 				Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));

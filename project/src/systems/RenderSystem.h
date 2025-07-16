@@ -10,7 +10,7 @@
 // -- Forward Declarations --
 namespace pompeii
 {
-	class Model;
+	class ModelRenderer;
 	class Camera;
 }
 
@@ -25,10 +25,10 @@ namespace pompeii
 		//--------------------------------------------------
 		//    Models
 		//--------------------------------------------------
-		void RegisterModel(Model& model);
-		void UnregisterModel(const Model& model);
-		const std::vector<Model*>& GetVisibleModels() const;
-		const std::vector<Model*>& GetAllModels() const;
+		void RegisterModel(ModelRenderer& model);
+		void UnregisterModel(const ModelRenderer& model);
+		const std::vector<ModelRenderer*>& GetVisibleModels() const;
+		const std::vector<ModelRenderer*>& GetAllModels() const;
 
 		//--------------------------------------------------
 		//    Textures
@@ -45,11 +45,12 @@ namespace pompeii
 		//    Interface
 		//--------------------------------------------------
 		void BeginFrame() override;
+		void Update() override;
 		void EndFrame() override;
 
 	private:
-		std::vector<Model*> m_vRegisteredModels{};
-		std::vector<Model*> m_vVisibleModels{};
+		std::vector<ModelRenderer*> m_vRegisteredModels{};
+		std::vector<ModelRenderer*> m_vVisibleModels{};
 		Camera* m_pMainCamera{};
 
 		//--------------------------------------------------

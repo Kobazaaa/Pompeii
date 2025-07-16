@@ -1,31 +1,29 @@
 // -- Pompeii Includes --
 #include "RenderSystem.h"
-#include "Model.h"
+#include "ModelRenderer.h"
 
 // -- Standard Library --
 #include <numeric>
 
-#include "Scene.h"
-
 //--------------------------------------------------
 //    Models
 //--------------------------------------------------
-void pompeii::RenderSystem::RegisterModel(Model& model)
+void pompeii::RenderSystem::RegisterModel(ModelRenderer& model)
 {
 	if (std::ranges::find(m_vRegisteredModels, &model) != m_vRegisteredModels.end())
 		return;
 	m_vRegisteredModels.emplace_back(&model);
 }
-void pompeii::RenderSystem::UnregisterModel(const Model& model)
+void pompeii::RenderSystem::UnregisterModel(const ModelRenderer& model)
 {
-	std::erase_if(m_vRegisteredModels, [&](const Model* pModel) { return pModel == &model; });
+	std::erase_if(m_vRegisteredModels, [&](const ModelRenderer* pModel) { return pModel == &model; });
 }
 
-const std::vector<pompeii::Model*>& pompeii::RenderSystem::GetVisibleModels() const
+const std::vector<pompeii::ModelRenderer*>& pompeii::RenderSystem::GetVisibleModels() const
 {
 	return m_vVisibleModels;
 }
-const std::vector<pompeii::Model*>& pompeii::RenderSystem::GetAllModels() const
+const std::vector<pompeii::ModelRenderer*>& pompeii::RenderSystem::GetAllModels() const
 {
 	return m_vRegisteredModels;
 }
@@ -36,9 +34,9 @@ const std::vector<pompeii::Model*>& pompeii::RenderSystem::GetAllModels() const
 //--------------------------------------------------
 uint32_t pompeii::RenderSystem::GetTextureCount() const
 {
-	return std::accumulate(m_vRegisteredModels.begin(), m_vRegisteredModels.end(), 0u, [](uint32_t res, const Model* m2)
+	return std::accumulate(m_vRegisteredModels.begin(), m_vRegisteredModels.end(), 0u, [](uint32_t res, const ModelRenderer* m2)
 		{
-			return res + static_cast<uint32_t>(m2->images.size());
+			return res + static_cast<uint32_t>(m2->GetModel()->images.size());
 		});
 }
 
@@ -57,6 +55,10 @@ void pompeii::RenderSystem::SetMainCamera(Camera& camera)
 //--------------------------------------------------
 //    Interface
 //--------------------------------------------------
+void pompeii::RenderSystem::Update()
+{
+}
+
 void pompeii::RenderSystem::BeginFrame()
 {
 	FrustumCull();
@@ -73,7 +75,7 @@ void pompeii::RenderSystem::EndFrame()
 
 void pompeii::RenderSystem::FrustumCull()
 {
-	for (Model* pModel : m_vRegisteredModels)
+	for (ModelRenderer* pModel : m_vRegisteredModels)
 	{
 		m_vVisibleModels.push_back(pModel);
 	}

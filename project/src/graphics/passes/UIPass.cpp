@@ -191,7 +191,7 @@ void pompeii::UIPass::ImGuiLogic() const
 			{
 				const std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
 				auto& obj = ServiceLocator::Get<SceneManager>().GetActiveScene().AddEmpty();
-				obj.AddComponent<Model>(path);
+				obj.AddComponent<ModelRenderer>(path);
 			}
 			ImGuiFileDialog::Instance()->Close();
 		}

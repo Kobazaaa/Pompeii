@@ -1,18 +1,21 @@
-#ifndef MODEL_MESH_H
-#define MODEL_MESH_H
+#ifndef MODEL_DATA_TYPE_H
+#define MODEL_DATA_TYPE_H
 
 // -- Standard Library --
+#include <vector>
 #include <unordered_map>
+
+// -- Pompeii Includes --
+#include "Material.h"
+#include "Shapes.h"
 
 // -- Vulkan Includes
 #include <vulkan/vulkan.h>
 
-// -- Defines --
+// -- Math Includes --
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_LEFT_HANDED
 #define GLM_FORCE_RADIANS
-
-// -- Math Includes --
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -21,21 +24,9 @@
 #include <assimp/scene.h>
 
 // -- Pompeii Includes --
-#include "Material.h"
 #include "Buffer.h"
 #include "Component.h"
 #include "Image.h"
-
-// -- Forward Declarations --
-struct aiNode;
-struct aiScene;
-struct aiMesh;
-namespace pompeii
-{
-	class CommandBuffer;
-	class PipelineLayout;
-	struct Context;
-}
 
 namespace pompeii
 {
@@ -60,31 +51,11 @@ namespace pompeii
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  AABB	
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	struct AABB
-	{
-		glm::vec3 min{  FLT_MAX };
-		glm::vec3 max{ -FLT_MAX };
-
-		void GrowToInclude(const glm::vec3& p)
-		{
-			min = glm::min(min, p);
-			max = glm::max(max, p);
-		}
-		void GrowToInclude(const AABB& aabb)
-		{
-			min = glm::min(min, aabb.min);
-			max = glm::max(max, aabb.max);
-		}
-};
-
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Mesh	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	struct Mesh final
+	struct Mesh
 	{
-		uint32_t vertexOffset;
+		std::uint32_t vertexOffset;
 		uint32_t indexOffset;
 		uint32_t indexCount;
 
@@ -96,27 +67,22 @@ namespace pompeii
 		std::string name;
 	};
 
+
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Model	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	class Model final : public Component
+	struct Model
 	{
 	public:
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit Model(SceneObject& sceneObj, const std::string& path);
-		~Model() override;
+		explicit Model() = default;
+		virtual ~Model() = default;
 		Model(const Model& other) = delete;
 		Model(Model&& other) noexcept = delete;
 		Model& operator=(const Model& other) = delete;
 		Model& operator=(Model&& other) noexcept = delete;
-
-		//--------------------------------------------------
-		//    Loop
-		//--------------------------------------------------
-		void Start() override;
-		void OnImGuiRender() override;
 
 		//--------------------------------------------------
 		//    Helpers
@@ -162,4 +128,4 @@ namespace pompeii
 	};
 }
 
-#endif // MODEL_MESH_H
+#endif // MODEL_DATA_TYPE_H

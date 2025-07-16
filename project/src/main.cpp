@@ -29,17 +29,6 @@ static void CreateDefaultScene(Window* pWindow)
 	camera.AddComponent<Camera>(CameraSettings{ .fov = 45.f, .aspectRatio = pWindow->GetAspectRatio(), .nearPlane = 0.001f, .farPlane = 1000.f },
 		ExposureSettings{ .aperture = 16.f, .shutterSpeed = 1.f / 100.f, .iso = 100.f }, pWindow, true);
 
-	// model
-	auto& model = scene.AddEmpty("Model");
-	model.AddComponent<Model>("models/Sponza.gltf");
-
-	// light
-	auto& light = scene.AddEmpty("Light");
-	light.AddComponent<Light>(
-		/* direction */	glm::vec3{ 0.f, -1.f, 0.f },
-		/* color */		glm::vec3{ 1.f, 1.f, 1.f },
-		/* lux */			100'000.f, Light::Type::Directional
-	);
 }
 
 int main()
@@ -56,6 +45,7 @@ int main()
 		ServiceLocator::Register(std::make_unique<LightingSystem>());
 		ServiceLocator::Register(std::make_unique<Renderer>(pWindow));
 
+
 		// -- Create Default Scene --
 		CreateDefaultScene(pWindow);
 
@@ -65,6 +55,10 @@ int main()
 		bool wasPressed = false;
 		bool isPressed = false;
 		float printTime = 1.f;
+
+		ServiceLocator::Get<Renderer>().UpdateEnvironmentMap();
+		ServiceLocator::Get<Renderer>().UpdateLights();
+		ServiceLocator::Get<Renderer>().UpdateTextures();
 
 		while (!glfwWindowShouldClose(pWindow->GetHandle()))
 		{

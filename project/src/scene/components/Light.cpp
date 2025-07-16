@@ -1,6 +1,6 @@
 // -- Pompeii Includes --
 #include "Light.h"
-#include "Model.h"
+#include "ModelRenderer.h"
 #include "Context.h"
 #include "Shader.h"
 #include "Pipeline.h"
@@ -19,6 +19,7 @@ pompeii::Light::Light(SceneObject& parent, const glm::vec3& dirPos, const glm::v
 	, m_Type(type)
 {
 	ServiceLocator::Get<LightingSystem>().RegisterLight(*this);
+	CalculateLightMatrices();
 }
 
 pompeii::Light::~Light()
@@ -33,7 +34,6 @@ pompeii::Light::~Light()
 //--------------------------------------------------
 void pompeii::Light::Start()
 {
-	CalculateLightMatrices();
 	GenerateDepthMap(ServiceLocator::Get<Renderer>().GetContext());
 	ServiceLocator::Get<Renderer>().UpdateLights();
 }
@@ -264,13 +264,13 @@ void pompeii::Light::GenerateDepthMap(const Context& context, Image& outImage, s
 				vkCmdBindPipeline(vCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.GetHandle());
 
 				// -- Draw Models --
-				for (const Model* model : ServiceLocator::Get<RenderSystem>().GetVisibleModels())
+				for (const ModelRenderer* model : ServiceLocator::Get<RenderSystem>().GetVisibleModels())
 				{
 					// -- Bind Model Data --
-					model->Bind(cmd);
+					model->GetModel()->Bind(cmd);
 
 					// -- Draw Opaque --
-					for (const Mesh& mesh : model->opaqueMeshes)
+					for (const Mesh& mesh : model->GetModel()->opaqueMeshes)
 					{
 						// -- Bind Push Constants --
 						PC pc
@@ -285,7 +285,7 @@ void pompeii::Light::GenerateDepthMap(const Context& context, Image& outImage, s
 					}
 
 					// -- Draw Transparent using Alpha Cut-Off --
-					for (const Mesh& mesh : model->transparentMeshes)
+					for (const Mesh& mesh : model->GetModel()->transparentMeshes)
 					{
 						// -- Bind Push Constants --
 						PC pc
