@@ -49,7 +49,7 @@ void pompeii::UIPass::Initialize(const Context& context, const UIPassCreateInfo&
 		io.IniFilename = nullptr;
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 		SetupImGuiStyle();
 
@@ -119,7 +119,7 @@ void pompeii::UIPass::BeginImGuiFrame()
 		SetupDockSpace();
 }
 // ReSharper disable once CppMemberFunctionMayBeStatic
-void pompeii::UIPass::ImGuiLogic()
+void pompeii::UIPass::ImGuiLogic() const
 {
 	// -- Menu --
 	if (ImGui::BeginMainMenuBar())
@@ -200,6 +200,27 @@ void pompeii::UIPass::ImGuiLogic()
 		ServiceLocator::Get<SceneManager>().GetActiveScene().OnImGuiRender();
 	}
 	ImGui::End();
+
+	// -- Scene Hierarchy --
+	ImGui::SetNextWindowDockID(m_DockLeftID, ImGuiCond_Once);
+	ImGui::Begin("Scene Hierarchy", nullptr, ImGuiWindowFlags_None);
+	{
+		auto sceneObjects = ServiceLocator::Get<SceneManager>().GetActiveScene().GetAllObjects();
+		int index = 0;
+		for (SceneObject* obj : sceneObjects)
+		{
+			ImGui::PushID(index);
+			bool treeNodeOpen = ImGui::TreeNodeEx(obj->name.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_FramePadding |
+				ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth, obj->name.c_str());
+			ImGui::PopID();
+
+			if (treeNodeOpen)
+				ImGui::TreePop();
+			++index;
+		}
+	}
+	ImGui::End();
+
 }
 // ReSharper disable once CppMemberFunctionMayBeStatic
 void pompeii::UIPass::EndImGuiFrame(CommandBuffer& commandBuffer, const Image& renderImage)
@@ -208,8 +229,10 @@ void pompeii::UIPass::EndImGuiFrame(CommandBuffer& commandBuffer, const Image& r
 	ImGui::Render();
 	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 	{
+		auto backupWindowPtr = glfwGetCurrentContext();
 		ImGui::UpdatePlatformWindows();
 		ImGui::RenderPlatformWindowsDefault();
+		glfwMakeContextCurrent(backupWindowPtr);
 	}
 
 	// -- Setup Attachment --

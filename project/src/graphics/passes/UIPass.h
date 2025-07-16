@@ -52,7 +52,7 @@ namespace pompeii
 	private:
 		// -- Helpers --
 		void BeginImGuiFrame();
-		void ImGuiLogic();
+		void ImGuiLogic() const;
 		void EndImGuiFrame(CommandBuffer& commandBuffer, const Image& renderImage);
 
 		void SetupDockSpace() const;

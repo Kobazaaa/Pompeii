@@ -51,6 +51,7 @@ namespace pompeii
 		//--------------------------------------------------
 		std::string name{ "EmptyScene" };
 		std::vector<SceneObject*> GetObjectsByName(const std::string& objectName) const;
+		std::vector<SceneObject*> GetAllObjects() const;
 		const AABB& GetAABB() const;
 
 	private:

@@ -76,6 +76,17 @@ std::vector<pompeii::SceneObject*> pompeii::Scene::GetObjectsByName(const std::s
 	}
 	return result;
 }
+std::vector<pompeii::SceneObject*> pompeii::Scene::GetAllObjects() const
+{
+	std::vector<SceneObject*> result{};
+	result.reserve(m_vObjects.size() + m_vPendingObjects.size());
+	for (auto& object : m_vObjects)
+		result.push_back(object.get());
+	for (auto& object : m_vPendingObjects)
+		result.push_back(object.get());
+	return result;
+}
+
 const pompeii::AABB& pompeii::Scene::GetAABB() const
 {
 	return m_AABB;
