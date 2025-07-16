@@ -47,11 +47,31 @@ int main()
 			.shutterSpeed = 1.f / 60.f,
 			.iso = 1600.f,
 		};
-		Camera* pCamera = new Camera(settings, sunny16, pWindow);
 
 		// -- Register Services --
-		ServiceLocator::RegisterRenderer(std::make_unique<Renderer>(pCamera, pWindow));
 		ServiceLocator::RegisterSceneManager(std::make_unique<SceneManager>());
+
+		// -- Create Test Scene --
+		auto& scene = ServiceLocator::GetSceneManager().CreateScene("TestScene");
+		ServiceLocator::GetSceneManager().SetActiveScene(scene);
+
+		// cam
+		auto& camera = scene.AddEmpty("Camera");
+		camera.AddComponent<Camera>(settings, sunny16, pWindow, true);
+
+		// model
+		auto& model = scene.AddEmpty("Model");
+		model.AddComponent<Model>("models/Sponza.gltf");
+
+		// light
+		auto& light = scene.AddEmpty("Light");
+		light.AddComponent<Light>(
+			/* direction */	glm::vec3{ 0.f, -1.f, 0.f },
+			/* color */		glm::vec3{ 1.f, 1.f, 1.f },
+			/* lux */			100'000.f, Light::Type::Directional
+		);
+
+		ServiceLocator::RegisterRenderer(std::make_unique<Renderer>(pWindow));
 
 		// -- Main Loop --
 		ServiceLocator::GetSceneManager().Start();
@@ -91,7 +111,8 @@ int main()
 		}
 
 		// -- Cleanup --
-		delete pCamera;
+		ServiceLocator::DeregisterSceneManager();
+		ServiceLocator::DeregisterRenderer();
 		delete pWindow;
 	}
 	// -- Catch Failures --

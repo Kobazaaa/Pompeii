@@ -11,6 +11,7 @@
 #include "BlitPass.h"
 #include "Context.h"
 #include "DepthPrePass.h"
+#include "EnvironmentMap.h"
 #include "SwapChain.h"
 #include "SyncManager.h"
 #include "UIPass.h"
@@ -35,7 +36,7 @@ namespace pompeii
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit Renderer(Camera* pCamera, Window* pWindow);
+		explicit Renderer(Window* pWindow);
 		~Renderer();
 		Renderer(const Renderer& other) = delete;
 		Renderer(Renderer&& other) noexcept = delete;
@@ -45,8 +46,16 @@ namespace pompeii
 		//--------------------------------------------------
 		//    Loop
 		//--------------------------------------------------
-		void Update();
 		void Render();
+
+
+		//--------------------------------------------------
+		//    Accessors
+		//--------------------------------------------------
+		Context& GetContext();
+		void UpdateLights();
+		void UpdateTextures();
+		void UpdateEnvironmentMap() const;
 
 	private:
 		//--------------------------------------------------
@@ -83,8 +92,7 @@ namespace pompeii
 
 		// -- Other --
 		Window*				m_pWindow			{ };
-		Camera*				m_pCamera			{ };
-		Scene*				m_pScene			{ };
+		EnvironmentMap		m_EnvMap			{ };
 
 		// -- Frame Counter --
 		uint32_t			m_CurrentFrame		{ 0 };

@@ -5,9 +5,14 @@
 #include <vector>
 
 // -- Math Includes --
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_LEFT_HANDED
+#define GLM_FORCE_RADIANS
 #include "glm/glm.hpp"
+#include <glm/gtc/matrix_transform.hpp>
 
 // -- Pompeii Includes --
+#include "Component.h"
 #include "Image.h"
 
 // -- Forward Declarations --
@@ -36,7 +41,7 @@ namespace pompeii
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Light	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	class Light final
+	class Light final : public Component
 	{
 	public:
 		//--------------------------------------------------
@@ -46,14 +51,20 @@ namespace pompeii
 		{
 			Directional, Point
 		};
-		Light() = default;
-		Light(const glm::vec3& dirPos, const glm::vec3& col, float luxLumen, Type type);
-		void DestroyDepthMap(const Context& context);
+		Light(SceneObject& parent, const glm::vec3& dirPos, const glm::vec3& col, float luxLumen, Type type);
+		~Light() override;
 
 		Light(const Light& other) = delete;
-		Light(Light&& other) noexcept;
+		Light(Light&& other) noexcept = delete;
 		Light& operator=(const Light& other) = delete;
-		Light& operator=(Light&& other) noexcept;
+		Light& operator=(Light&& other) noexcept = delete;
+
+
+		//--------------------------------------------------
+		//    Loop
+		//--------------------------------------------------
+		void Start() override;
+		void OnImGuiRender() override;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
@@ -70,10 +81,12 @@ namespace pompeii
 
 		const Image& GetDepthMap() const;
 		void GenerateDepthMap(const Context& context, const Scene* pScene, uint32_t size = 2048);
+		void DestroyDepthMap(const Context& context);
+		void CalculateLightMatrices();
 
 	private:
 		// -- Helper --
-		void GenerateDepthMap(const Context& context, const Scene* pScene, Image& outImage, std::vector<ImageView>& outViews, uint32_t size);
+		void GenerateDepthMap(const Context& context, const Scene* pScene, Image& outImage, std::vector<ImageView>& outViews, uint32_t size) const;
 
 		// -- Data --
 		Type m_Type;

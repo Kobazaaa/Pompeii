@@ -64,21 +64,19 @@ set(SOURCES
 	"${SOURCE_DIR}/presentation/SwapChain.h"				"${SOURCE_DIR}/presentation/SwapChain.cpp"
 
 	# scene
+	"${SOURCE_DIR}/scene/EnvironmentMap.h"					"${SOURCE_DIR}/scene/EnvironmentMap.cpp"
+	"${SOURCE_DIR}/scene/Material.h"						"${SOURCE_DIR}/scene/Material.cpp"
+	"${SOURCE_DIR}/scene/Scene.h"							"${SOURCE_DIR}/scene/Scene.cpp"
 	 # scene/base
 	"${SOURCE_DIR}/scene/base/SceneManager.h"				"${SOURCE_DIR}/scene/base/SceneManager.cpp"
 	 # scene/components
+	"${SOURCE_DIR}/scene/components/Camera.h"				"${SOURCE_DIR}/scene/components/Camera.cpp"
 	"${SOURCE_DIR}/scene/components/Component.h"
-	 # scene/sceneelement
+	"${SOURCE_DIR}/scene/components/Light.h"				"${SOURCE_DIR}/scene/components/Light.cpp"
+	"${SOURCE_DIR}/scene/components/Model.h"				"${SOURCE_DIR}/scene/components/Model.cpp"
+	 # scene/sceneobject
 	"${SOURCE_DIR}/scene/sceneobject/SceneObject.h"			"${SOURCE_DIR}/scene/sceneobject/SceneObject.cpp"
 	"${SOURCE_DIR}/scene/sceneobject/Transform.h"			"${SOURCE_DIR}/scene/sceneobject/Transform.cpp"
-
-	"${SOURCE_DIR}/scene/Camera.h"							"${SOURCE_DIR}/scene/Camera.cpp"
-	"${SOURCE_DIR}/scene/EnvironmentMap.h"					"${SOURCE_DIR}/scene/EnvironmentMap.cpp"
-	"${SOURCE_DIR}/scene/Light.h"							"${SOURCE_DIR}/scene/Light.cpp"
-	"${SOURCE_DIR}/scene/Material.h"						"${SOURCE_DIR}/scene/Material.cpp"
-	"${SOURCE_DIR}/scene/Model.h"							"${SOURCE_DIR}/scene/Model.cpp"
-	"${SOURCE_DIR}/scene/Scene.h"							"${SOURCE_DIR}/scene/Scene.cpp"
-
 )
 
 # Create the executable

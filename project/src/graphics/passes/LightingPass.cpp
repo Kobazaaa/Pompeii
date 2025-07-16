@@ -1,6 +1,6 @@
 // -- Pompeii Includes --
 #include "LightingPass.h"
-
+#include "EnvironmentMap.h"
 #include "Camera.h"
 #include "Context.h"
 #include "Debugger.h"
@@ -191,8 +191,7 @@ void pompeii::LightingPass::Initialize(const Context& context, const LightingPas
 		m_SSBOLightDS = context.descriptorPool->AllocateSets(context, m_SSBOLightDSL, 1, "Light SSBO DS").front();
 		m_SSBOLightMatricesDS = context.descriptorPool->AllocateSets(context, m_SSBOLightMatricesDSL, 1, "Light Matrices SSBO DS").front();
 		m_vCameraMatricesDS = context.descriptorPool->AllocateSets(context, m_CameraMatricesDSL, createInfo.maxFramesInFlight, "Camera Matrices DS");
-		UpdateGBufferDescriptors(context, *createInfo.pGeometryPass, *createInfo.pDepthImages, createInfo.pScene->GetEnvironmentMap());
-		UpdateLightDescriptors(context, createInfo.pScene);
+		UpdateGBufferDescriptors(context, *createInfo.pGeometryPass, *createInfo.pDepthImages);
 
 		DescriptorSetWriter writer{};
 		for (uint32_t i{}; i < createInfo.maxFramesInFlight; ++i)
@@ -210,7 +209,7 @@ void pompeii::LightingPass::Destroy()
 	m_DeletionQueue.Flush();
 }
 
-void pompeii::LightingPass::UpdateGBufferDescriptors(const Context& context, const GeometryPass& pGeometryPass, const std::vector<Image>& depthImages, const EnvironmentMap& envMap) const
+void pompeii::LightingPass::UpdateGBufferDescriptors(const Context& context, const GeometryPass& pGeometryPass, const std::vector<Image>& depthImages) const
 {
 	DescriptorSetWriter writer{};
 	for (uint32_t i{}; i < pGeometryPass.GetGBuffers().size(); ++i)
@@ -246,7 +245,13 @@ void pompeii::LightingPass::UpdateGBufferDescriptors(const Context& context, con
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_GBufferSampler)
 			.WriteImages(m_vGBufferTexturesDS[i], 4)
 			.Execute(context);
-
+	}
+}
+void pompeii::LightingPass::UpdateEnvironmentMap(const Context& context, const EnvironmentMap& envMap) const
+{
+	DescriptorSetWriter writer{};
+	for (uint32_t i{}; i < m_vGBufferTexturesDS.size(); ++i)
+	{
 		writer
 			.AddImageInfo(envMap.GetSkybox().GetView(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, envMap.GetSampler())
@@ -272,6 +277,7 @@ void pompeii::LightingPass::UpdateGBufferDescriptors(const Context& context, con
 			.Execute(context);
 	}
 }
+
 void pompeii::LightingPass::UpdateLightDescriptors(const Context& context, Scene* pScene)
 {
 	uint32_t lightCount = pScene->GetLightsCount();
@@ -281,20 +287,20 @@ void pompeii::LightingPass::UpdateLightDescriptors(const Context& context, Scene
 	DescriptorSetWriter pointWriter{};
 	uint32_t dirCount = 0;
 	uint32_t pointCount = 0;
-	for (const Light& light : pScene->GetLights())
+	for (const Light* light : pScene->GetLights())
 	{
-		if (light.GetDepthMap().GetHandle() == VK_NULL_HANDLE)
+		if (light->GetDepthMap().GetHandle() == VK_NULL_HANDLE)
 			continue;
 
-		if (light.GetType() == Light::Type::Directional)
+		if (light->GetType() == Light::Type::Directional)
 		{
 			++dirCount;
-			directionalWriter.AddImageInfo(light.GetDepthMap().GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_ShadowSampler);
+			directionalWriter.AddImageInfo(light->GetDepthMap().GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_ShadowSampler);
 		}
 		else
 		{
 			++pointCount;
-			pointWriter.AddImageInfo(light.GetDepthMap().GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_ShadowSampler);
+			pointWriter.AddImageInfo(light->GetDepthMap().GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_ShadowSampler);
 		}
 	}
 
@@ -374,7 +380,7 @@ void pompeii::LightingPass::UpdateLightDescriptors(const Context& context, Scene
 		.Execute(context);
 }
 
-void pompeii::LightingPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, Scene*, Camera* pCamera) const
+void pompeii::LightingPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, Camera* pCamera) const
 {
 	// -- Update DS --
 	struct cam

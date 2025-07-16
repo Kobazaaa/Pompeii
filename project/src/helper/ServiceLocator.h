@@ -27,9 +27,12 @@ namespace pompeii
 		// -- SceneManager --
 		static SceneManager& GetSceneManager() { return *m_pSceneManagerService; }
 		static void RegisterSceneManager(std::unique_ptr<SceneManager>&& service) { m_pSceneManagerService = std::move(service); }
+		static void DeregisterSceneManager() { m_pSceneManagerService.release(); }
+
 		// -- Renderer --
 		static Renderer& GetRenderer() { return *m_pRendererService; }
 		static void RegisterRenderer(std::unique_ptr<Renderer>&& service) { m_pRendererService = std::move(service); }
+		static void DeregisterRenderer() { m_pRendererService.release(); }
 
 	private:
 		inline static std::unique_ptr<SceneManager> m_pSceneManagerService {};

@@ -34,7 +34,6 @@ namespace pompeii
 		uint32_t maxFramesInFlight{};
 		VkFormat format{};
 		GeometryPass* pGeometryPass;
-		Scene* pScene;
 		std::vector<Image>* pDepthImages;
 	};
 
@@ -56,9 +55,10 @@ namespace pompeii
 
 		void Initialize(const Context& context, const LightingPassCreateInfo& createInfo);
 		void Destroy();
-		void UpdateGBufferDescriptors(const Context& context, const GeometryPass& pGeometryPass, const std::vector<Image>& depthImages, const EnvironmentMap& envMap) const;
+		void UpdateGBufferDescriptors(const Context& context, const GeometryPass& pGeometryPass, const std::vector<Image>& depthImages) const;
+		void UpdateEnvironmentMap(const Context& context, const EnvironmentMap& envMap) const;
 		void UpdateLightDescriptors(const Context& context, Scene* pScene);
-		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, Scene* pScene, Camera* pCamera) const;
+		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, Camera* pCamera) const;
 
 	private:
 		// -- Pipeline --

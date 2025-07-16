@@ -22,7 +22,7 @@ pompeii::Scene::Scene(std::string sceneName)
 //--------------------------------------------------
 pompeii::SceneObject& pompeii::Scene::AddEmpty(const std::string& sceneName)
 {
-	m_vPendingObjects.emplace_back(std::make_unique<SceneObject>(sceneName));
+	m_vPendingObjects.emplace_back(std::make_unique<SceneObject>(*this, sceneName));
 	return *m_vPendingObjects.back();
 }
 
@@ -44,8 +44,8 @@ void pompeii::Scene::Update()
 			continue;
 		object->Update();
 	}
-	CleanupDeletedObjects();
 	AddPendingObjects();
+	CleanupDeletedObjects();
 }
 void pompeii::Scene::OnImGuiRender() const
 {
@@ -59,112 +59,57 @@ void pompeii::Scene::OnImGuiRender() const
 
 
 //--------------------------------------------------
-//    Helpers
+//    Registrators
 //--------------------------------------------------
-std::vector<pompeii::SceneObject*> pompeii::Scene::GetObjectsByName(const std::string& objectName) const
-{
-	//todo Preferably get rid of string comparisons
-	std::vector<SceneObject*> result{};
-	for (auto& object : m_vObjects)
-	{
-		if (object->name == objectName)
-			result.push_back(object.get());
-	}
-	for (auto& object : m_vPendingObjects)
-	{
-		if (object->name == objectName)
-			result.push_back(object.get());
-	}
-	return result;
-}
-
-void pompeii::Scene::CleanupDeletedObjects()
-{
-	std::erase_if(m_vObjects,
-		[](const std::unique_ptr<SceneObject>& object)
-		{
-			return object->IsFlaggedForDestruction();
-		});
-}
-void pompeii::Scene::AddPendingObjects()
-{
-	// separate for loops to ensure that all objects in m_vPendingObjects are in a valid state, since it's possible to query
-	// m_vPendingObjects in the start function of SceneObjects (e.g. asking for all SO with tag or name).
-	for (const auto& object : m_vPendingObjects)
-		object->Start();
-	for (auto& object : m_vPendingObjects)
-		m_vObjects.push_back(std::move(object));
-	m_vPendingObjects.clear();
-}
-
-
-//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//? ~~	  Base Scene	
-//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void pompeii::Scene::AllocateGPU(const Context& context, bool keepHostData)
-{
-	for (auto& model : m_vModels)
-		model.AllocateResources(context, keepHostData);
-
-	if (!m_EnvMapPath.empty())
-		m_EnvironmentMap
-			.CreateSampler(context)
-			.CreateSkyboxCube(context, m_EnvMapPath)
-			.CreateDiffIrradianceMap(context)
-			.CreateSpecIrradianceMap(context)
-			.CreateBRDFLut(context);
-	GenerateDepthMaps(context);
-}
-void pompeii::Scene::Destroy(const Context& context)
-{
-	for (auto& l : std::ranges::reverse_view(m_vLights))
-		l.DestroyDepthMap(context);
-	for (auto& model : std::ranges::reverse_view(m_vModels))
-		model.Destroy(context);
-	m_EnvironmentMap.Destroy(context);
-}
-
 // -- Model --
-const std::vector<pompeii::Model>& pompeii::Scene::GetModels() const
+void pompeii::Scene::RegisterModel(Model& model)
 {
-	return m_vModels;
+	if (std::ranges::find(m_vModelComponents, &model) != m_vModelComponents.end())
+		return;
+	m_vModelComponents.emplace_back(&model);
+	m_AABB.GrowToInclude(model.aabb);
 }
-pompeii::Model& pompeii::Scene::AddModel(const std::string& path)
+const std::vector<pompeii::Model*>& pompeii::Scene::GetModels() const
 {
-	m_vModels.emplace_back();
-	m_vModels.back().LoadModel(path);
-	m_AABB.GrowToInclude(m_vModels.back().aabb);
-	return m_vModels.back();
+	return m_vModelComponents;
 }
 uint32_t pompeii::Scene::GetImageCount() const
 {
-	return std::accumulate(m_vModels.begin(), m_vModels.end(), 0u, [](uint32_t res, const Model& m2)
+	return std::accumulate(m_vModelComponents.begin(), m_vModelComponents.end(), 0u, [](uint32_t res, const Model* m2)
 		{
-			return res + static_cast<uint32_t>(m2.images.size());
+			return res + static_cast<uint32_t>(m2->images.size());
 		});
 }
 
-// -- Light --
-std::vector<pompeii::Light>& pompeii::Scene::GetLights()		{ return m_vLights; }
-std::vector<pompeii::GPULight> pompeii::Scene::GetLightsGPU()
+// -- Lights --
+void pompeii::Scene::RegisterLight(Light& light)
+{
+	if (std::ranges::find(m_vLightComponents, &light) != m_vLightComponents.end())
+		return;
+	m_vLightComponents.emplace_back(&light);
+}
+std::vector<pompeii::Light*>& pompeii::Scene::GetLights()
+{
+	return m_vLightComponents;
+}
+std::vector<pompeii::GPULight> pompeii::Scene::GetLightsGPU() const
 {
 	std::vector<pompeii::GPULight> res{};
-	res.reserve(m_vLights.size());
+	res.reserve(m_vLightComponents.size());
 
 	uint32_t matrixIdx = 0;
 	uint32_t directionalCounter = 0;
 	uint32_t pointCounter = 0;
-	for (uint32_t i{}; i < m_vLights.size(); ++i)
+	for (auto& l : m_vLightComponents)
 	{
-		const auto& l = m_vLights[i];
 		GPULight gpuL{};
-		Light::Type type = l.GetType();
+		Light::Type type = l->GetType();
 
-		gpuL.dirPosType = { type == Light::Type::Point ? l.dirPos : normalize(l.dirPos), static_cast<int>(l.GetType())};
-		gpuL.intensity = l.luxLumen;
-		gpuL.color = l.color;
+		gpuL.dirPosType = { type == Light::Type::Point ? l->dirPos : normalize(l->dirPos), static_cast<int>(l->GetType()) };
+		gpuL.intensity = l->luxLumen;
+		gpuL.color = l->color;
 		gpuL.matrixIndex = 0xFFFFFFFF;
-		gpuL.depthIndex	 = 0xFFFFFFFF;
+		gpuL.depthIndex = 0xFFFFFFFF;
 
 		switch (type)
 		{
@@ -184,187 +129,65 @@ std::vector<pompeii::GPULight> pompeii::Scene::GetLightsGPU()
 	}
 	return res;
 }
-std::vector<glm::mat4> pompeii::Scene::GetLightMatrices()
+uint32_t pompeii::Scene::GetLightsCount() const
+{
+	return static_cast<uint32_t>(m_vLightComponents.size());
+}
+std::vector<glm::mat4> pompeii::Scene::GetLightMatrices() const
 {
 	std::vector<glm::mat4> res{};
-	for (auto& l : m_vLights)
+	for (auto& l : m_vLightComponents)
 	{
-		if (l.GetType() == Light::Type::Directional)
+		if (l->GetType() == Light::Type::Directional)
 		{
-			const auto& proj = l.projMatrix;
-			const auto& view = l.viewMatrices.front();
+			const auto& proj = l->projMatrix;
+			const auto& view = l->viewMatrices.front();
 			res.push_back(proj * view);
 		}
 	}
 	return res;
 }
-uint32_t pompeii::Scene::GetLightsCount() const { return static_cast<uint32_t>(m_vLights.size()); }
-pompeii::Light& pompeii::Scene::AddLight(Light&& light)
-{
-	m_vLights.push_back(std::move(light));
-	return m_vLights.back();
-}
-void pompeii::Scene::PopLight()
-{
-	if (m_vLights.empty())
-		return;
-	m_vLights.pop_back();
-}
 
-void pompeii::Scene::CalculateLightMatrices()
+//--------------------------------------------------
+//    Accessors
+//--------------------------------------------------
+std::vector<pompeii::SceneObject*> pompeii::Scene::GetObjectsByName(const std::string& objectName) const
 {
-	for (auto& light : m_vLights)
+	//todo Preferably get rid of string comparisons
+	std::vector<SceneObject*> result{};
+	for (auto& object : m_vObjects)
 	{
-		// -- Directional --
-		if (light.GetType() == Light::Type::Directional)
-		{
-			const glm::vec3 center = (m_AABB.min + m_AABB.max) * 0.5f;
-			const glm::vec3 lightDir = light.dirPos;
-			const std::vector<glm::vec3> corners = {
-				{m_AABB.min.x, m_AABB.min.y, m_AABB.min.z},
-				{m_AABB.max.x, m_AABB.min.y, m_AABB.min.z},
-				{m_AABB.min.x, m_AABB.max.y, m_AABB.min.z},
-				{m_AABB.max.x, m_AABB.max.y, m_AABB.min.z},
-				{m_AABB.min.x, m_AABB.min.y, m_AABB.max.z},
-				{m_AABB.max.x, m_AABB.min.y, m_AABB.max.z},
-				{m_AABB.min.x, m_AABB.max.y, m_AABB.max.z},
-				{m_AABB.max.x, m_AABB.max.y, m_AABB.max.z}
-			};
-
-			float minProj = FLT_MAX;
-			float maxProj = -FLT_MAX;
-			for (const auto& c : corners)
-			{
-				const float proj = glm::dot(c, lightDir);
-				minProj = std::min(minProj, proj);
-				maxProj = std::max(maxProj, proj);
-			}
-
-			const float dst = maxProj - glm::dot(center, lightDir);
-			const glm::vec3 lightPos = center - lightDir * dst;
-
-			const glm::vec3 up = glm::abs(glm::dot(lightDir, glm::vec3(0.f, 1.f, 0.f))) < (1.f - FLT_EPSILON)
-							   ? glm::vec3(0.f, 1.f, 0.f)
-							   : glm::vec3(0.f, 0.f, -1.f);
-			auto lookAt = glm::lookAtLH(lightPos, center, up);
-			light.viewMatrices.resize(1);
-			light.viewMatrices[0] = lookAt;
-
-			glm::vec3 minLightSpace(FLT_MAX);
-			glm::vec3 maxLightSpace(-FLT_MAX);
-			for (const auto& c : corners)
-			{
-				const glm::vec3 transformedCorner = glm::vec3(lookAt * glm::vec4(c, 1.f));
-				minLightSpace = glm::min(minLightSpace, transformedCorner);
-				maxLightSpace = glm::max(maxLightSpace, transformedCorner);
-			}
-
-			constexpr float nearZ = 0.f;
-			const float farZ = maxLightSpace.z - minLightSpace.z;
-			light.projMatrix = glm::orthoLH(minLightSpace.x, maxLightSpace.x, minLightSpace.y, maxLightSpace.y, nearZ, farZ);
-			light.projMatrix[1][1] *= -1.f;
-		}
-		// -- Point --
-		else
-		{
-			glm::vec3 eye = light.dirPos;
-			light.viewMatrices = {
-				glm::lookAt(eye, eye + glm::vec3(1.f,  0.f,  0.f), glm::vec3(0.f, -1.f,  0.f)), // +X
-				glm::lookAt(eye, eye + glm::vec3(-1.f,  0.f,  0.f), glm::vec3(0.f, -1.f,  0.f)), // -X
-				glm::lookAt(eye, eye + glm::vec3(0.f, -1.f,  0.f), glm::vec3(0.f,  0.f, -1.f)), // -Y
-				glm::lookAt(eye, eye + glm::vec3(0.f,  1.f,  0.f), glm::vec3(0.f,  0.f,  1.f)), // +Y
-				glm::lookAt(eye, eye + glm::vec3(0.f,  0.f,  1.f), glm::vec3(0.f, -1.f,  0.f)), // +Z
-				glm::lookAt(eye, eye + glm::vec3(0.f,  0.f, -1.f), glm::vec3(0.f, -1.f,  0.f)), // -Z
-			};
-			light.projMatrix = glm::perspective(glm::radians(90.f), 1.f, 0.1f, 100.f);
-		}
+		if (object->name == objectName)
+			result.push_back(object.get());
 	}
+	for (auto& object : m_vPendingObjects)
+	{
+		if (object->name == objectName)
+			result.push_back(object.get());
+	}
+	return result;
 }
-void pompeii::Scene::GenerateDepthMaps(const Context& context, uint32_t size)
+const pompeii::AABB& pompeii::Scene::GetAABB() const
 {
-	CalculateLightMatrices();
-	for (auto& l : m_vLights)
-		l.GenerateDepthMap(context, this, size);
-}
-
-// -- Environment Map --
-const pompeii::EnvironmentMap& pompeii::Scene::GetEnvironmentMap() const { return m_EnvironmentMap; }
-void pompeii::Scene::SetEnvironmentMap(const std::string& path) { m_EnvMapPath = path; }
-
-
-//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//? ~~	  Sponza Scene	
-//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void pompeii::SponzaScene::Initialize()
-{
-	AddModel("models/Sponza.gltf");
-	SetEnvironmentMap("textures/golden_gate_hills_4k.hdr");
-
-	AddLight(Light
-		{
-		/* direction */	{ 0.f, -1.f, 0.f },
-		/* color */		{ 1.f, 1.f, 1.f },
-		/* lux */		64'000.f, Light::Type::Directional
-		});
-	//AddLight(Light
-	//	{
-	//	/* direction */	{ -0.577f, -0.577f, -0.577f },
-	//	/* color */		{ 1.f, 0.f, 1.f },
-	//	/* lux */		100.f, Light::Type::Directional
-	//	});
-	AddLight(Light
-		{
-		/* position */	{ 3.f, 0.5f, 0.f },
-		/* color */		{ 0.f, 1.f, 0.f },
-		/* lumen */		1000.f, Light::Type::Point
-		});
-	AddLight(Light
-		{
-		/* position */	{ 7.f, 0.5f, 0.f },
-		/* color */		{ 1.f, 1.f, 0.f},
-		/* lumen */		1200.f, Light::Type::Point
-		});
+	return m_AABB;
 }
 
-
-//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//? ~~	  FlightHelmet Scene	
-//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void pompeii::FlightHelmetScene::Initialize()
+void pompeii::Scene::CleanupDeletedObjects()
 {
-	AddModel("models/FlightHelmet.gltf");
-
-	AddLight(Light
+	std::erase_if(m_vObjects,
+		[](const std::unique_ptr<SceneObject>& object)
 		{
-			/* direction */	{ 0.577f, -0.577f, 0.577f },
-			/* color */		{ 1.f, 1.f, 1.f },
-			/* lux */		1.f, Light::Type::Directional
+			return object->IsFlaggedForDestruction();
 		});
 }
-
-
-//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//? ~~	  Spheres Scene	
-//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void pompeii::SpheresScene::Initialize()
+void pompeii::Scene::AddPendingObjects()
 {
-	AddModel("models/MetalRoughSpheres.gltf");
-	SetEnvironmentMap("textures/circus_arena_4k.hdr");
-}
-
-//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//? ~~	  A Beautiful Game Scene	
-//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void pompeii::BeautifulGameScene::Initialize()
-{
-	AddModel("models/ABeautifulGame.gltf");
-	SetEnvironmentMap("textures/circus_arena_4k.hdr");
-
-	AddLight(Light
-		{
-			/* direction */	{ 0.577f, -0.577f, 0.577f },
-			/* color */		{ 1.f, 1.f, 1.f },
-			/* lux */		10.f, Light::Type::Directional
-		});
+	// separate for loops to ensure that all objects in m_vPendingObjects are in a valid state, since it's possible to query
+	// m_vPendingObjects in the start function of SceneObjects (e.g. asking for all SO with tag or name).
+	for (const auto& object : m_vPendingObjects)
+		object->Start();
+	for (auto& object : m_vPendingObjects)
+		m_vObjects.push_back(std::move(object));
+	m_vPendingObjects.clear();
 }
 

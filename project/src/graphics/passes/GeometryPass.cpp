@@ -1,11 +1,15 @@
 // -- Pompeii Includes --
 #include "GeometryPass.h"
+
+#include <iostream>
+
 #include "Camera.h"
 #include "Scene.h"
 #include "Shader.h"
 #include "Context.h"
 #include "Debugger.h"
 #include "DescriptorPool.h"
+#include "ServiceLocator.h"
 
 void pompeii::GeometryPass::Initialize(const Context& context, const GeometryPassCreateInfo& createInfo)
 {
@@ -33,7 +37,6 @@ void pompeii::GeometryPass::Initialize(const Context& context, const GeometryPas
 		// -- Texture Array Descriptor --
 		constexpr uint32_t textureCount = 256;
 		assert(textureCount <= context.physicalDevice.GetProperties().limits.maxDescriptorSetSampledImages && "GPU can't support this many sampled images!");
-		assert(textureCount >= createInfo.pScene->GetImageCount() && "Scene has more images than can be allocated!");
 		builder
 			.SetDebugName("Texture Array DS Layout")
 			.NewLayoutBinding()
@@ -152,9 +155,6 @@ void pompeii::GeometryPass::Initialize(const Context& context, const GeometryPas
 				.WriteBuffers(m_vUniformDS[i], 0)
 				.Execute(context);
 		}
-
-		// -- Write Textures --
-		UpdateTextureDescriptor(context, createInfo.pScene);
 	}
 }
 
@@ -186,9 +186,10 @@ void pompeii::GeometryPass::UpdateTextureDescriptor(const Context& context, cons
 		return;
 
 	DescriptorSetWriter writer{};
-	for (const Model& model : pScene->GetModels())
+	std::cout << "Scene has " << imageCount << " images, descriptor layout allows " << 256 << "\n";
+	for (const Model* model : pScene->GetModels())
 	{
-		for (const Image& image : model.images)
+		for (const Image& image : model->images)
 		{
 			writer.AddImageInfo(image.GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_TextureSampler);
 		}
@@ -196,7 +197,7 @@ void pompeii::GeometryPass::UpdateTextureDescriptor(const Context& context, cons
 	writer.WriteImages(m_TextureDS, 0, imageCount).Execute(context);
 	m_TextureCount = imageCount;
 }
-void pompeii::GeometryPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Image& depthImage, Scene* pScene, Camera* pCamera)
+void pompeii::GeometryPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, const Scene* pScene, Camera* pCamera)
 {
 	// Update VS UBO
 	UniformBufferVS ubo;
@@ -263,13 +264,13 @@ void pompeii::GeometryPass::Record(const Context& context, CommandBuffer& comman
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
 
 		// -- Draw Models --
-		for (const Model& model : pScene->GetModels())
+		for (const Model* model : pScene->GetModels())
 		{
 			// -- Bind Model Data --
-			model.Bind(commandBuffer);
+			model->Bind(commandBuffer);
 
 			// -- Draw Opaque --
-			for (const Mesh& mesh : model.opaqueMeshes)
+			for (const Mesh& mesh : model->opaqueMeshes)
 			{
 				// -- Bind Push Constants --
 				Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
@@ -298,7 +299,7 @@ void pompeii::GeometryPass::Record(const Context& context, CommandBuffer& comman
 			}
 
 			// -- Draw Transparent using Alpha Cut-Off --
-			for (const Mesh& mesh : model.transparentMeshes)
+			for (const Mesh& mesh : model->transparentMeshes)
 			{
 				// -- Bind Push Constants --
 				Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
@@ -339,6 +340,6 @@ void pompeii::GeometryPass::Record(const Context& context, CommandBuffer& comman
 //--------------------------------------------------
 const std::vector<pompeii::GBuffer>& pompeii::GeometryPass::GetGBuffers() const						{ return m_vGBuffers; }
 const pompeii::GBuffer& pompeii::GeometryPass::GetGBuffer(uint32_t index) const						{ return m_vGBuffers.at(index); }
-uint32_t pompeii::GeometryPass::GetBoundTextureCount() const									{ return m_TextureCount; }
+uint32_t pompeii::GeometryPass::GetBoundTextureCount() const										{ return m_TextureCount; }
 const pompeii::DescriptorSet& pompeii::GeometryPass::GetTexturesDescriptorSet() const				{ return m_TextureDS; }
 const pompeii::DescriptorSetLayout& pompeii::GeometryPass::GetTexturesDescriptorSetLayout() const	{ return m_TextureDSL; }

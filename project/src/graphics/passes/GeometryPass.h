@@ -29,7 +29,6 @@ namespace pompeii
 	struct GeometryPassCreateInfo
 	{
 		uint32_t maxFramesInFlight{};
-		Scene* pScene{};
 		VkExtent2D extent{};
 		VkFormat depthFormat{};
 	};
@@ -55,7 +54,7 @@ namespace pompeii
 		void Destroy();
 		void Resize(const Context& context, VkExtent2D extent);
 		void UpdateTextureDescriptor(const Context& context, const Scene* pScene);
-		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, Image& depthImage, Scene* pScene, Camera* pCamera);
+		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, const Scene* pScene, Camera* pCamera);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators

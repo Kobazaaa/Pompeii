@@ -23,6 +23,7 @@
 // -- Pompeii Includes --
 #include "Material.h"
 #include "Buffer.h"
+#include "Component.h"
 #include "Image.h"
 
 // -- Forward Declarations --
@@ -98,26 +99,32 @@ namespace pompeii
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Model	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	struct Model final
+	class Model final : public Component
 	{
+	public:
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit Model() = default;
-		~Model() = default;
+		explicit Model(SceneObject& sceneObj, const std::string& path);
+		~Model() override;
 		Model(const Model& other) = delete;
-		Model(Model&& other) noexcept;
+		Model(Model&& other) noexcept = delete;
 		Model& operator=(const Model& other) = delete;
-		Model& operator=(Model&& other) noexcept;
+		Model& operator=(Model&& other) noexcept = delete;
 
+		//--------------------------------------------------
+		//    Loop
+		//--------------------------------------------------
+		void Start() override;
+		void OnImGuiRender() override;
+
+		//--------------------------------------------------
+		//    Helpers
+		//--------------------------------------------------
+		void Bind(CommandBuffer& cmdBuffer) const;
 		void LoadModel(const std::string& path);
 		void AllocateResources(const Context& context, bool keepHostData = false);
 		void Destroy(const Context& context);
-
-		//--------------------------------------------------
-		//    Commands
-		//--------------------------------------------------
-		void Bind(CommandBuffer& cmdBuffer) const;
 
 		//--------------------------------------------------
 		//    Data
@@ -130,8 +137,8 @@ namespace pompeii
 		AABB aabb{};
 
 		// -- GPU --
-		Buffer vertexBuffer;
-		Buffer indexBuffer;
+		Buffer vertexBuffer{};
+		Buffer indexBuffer{};
 		std::vector<Image> images{};
 
 		// -- Meshes --
@@ -142,7 +149,7 @@ namespace pompeii
 		//--------------------------------------------------
 		//    Helpers
 		//--------------------------------------------------
-		void ProcessNode(const aiNode* pNode, const aiScene* pScene, glm::mat4 transform = glm::mat4(1.0f));
+		void ProcessNode(const aiNode* pNode, const aiScene* pScene, const glm::mat4& transform = glm::mat4(1.0f));
 		void ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, glm::mat4 transform);
 
 		static glm::mat4 ConvertAssimpMatrix(const aiMatrix4x4& mat);

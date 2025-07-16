@@ -8,18 +8,26 @@
 #include <vector>
 
 // -- Pompeii Includes --
-#include "Component.h"
 #include "Transform.h"
 
+// -- Forward Declarations --
 namespace pompeii
 {
+	class Scene;
+	class Component;
+}
+namespace pompeii
+{
+	// todo I have to do this to avoid a circular dependency, maybe fix this?
+	struct ComponentDeleter { void operator()(const Component* ptr) const; };
+
 	class SceneObject final
 	{
 	public:
 		//--------------------------------------------------
 		//    Constructors and Destructors
 		//--------------------------------------------------
-		explicit SceneObject(std::string name = "SceneObject");
+		explicit SceneObject(Scene& scene, std::string name = "SceneObject");
 		~SceneObject() = default;
 
 		SceneObject(const SceneObject& other) = delete;
@@ -72,7 +80,8 @@ namespace pompeii
 		//    Data
 		//--------------------------------------------------
 		std::string name{ "SceneObject" };
-		std::unique_ptr<Transform> transform{};
+		std::unique_ptr<Transform> transform = std::make_unique<Transform>(this);	
+		Scene& GetScene() const;
 
 		//--------------------------------------------------
 		//    Flags
@@ -87,6 +96,9 @@ namespace pompeii
 		// -- Component --
 		void CleanupDeletedComponents();
 		std::vector<std::unique_ptr<Component>> m_vComponents;
+
+		// -- Scene --
+		Scene* m_pScene{ nullptr };
 
 		// -- Flags --
 		bool m_IsActive{ true };

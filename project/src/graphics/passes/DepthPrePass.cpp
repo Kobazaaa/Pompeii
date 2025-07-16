@@ -177,13 +177,13 @@ void pompeii::DepthPrePass::Record(const Context& context, CommandBuffer& comman
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
 
 		// -- Draw Models --
-		for (const Model& model : pScene->GetModels())
+		for (const auto& model : pScene->GetModels())
 		{
 			// -- Bind Model Data --
-			model.Bind(commandBuffer);
+			model->Bind(commandBuffer);
 
 			// -- Draw Opaque --
-			for (const Mesh& mesh : model.opaqueMeshes)
+			for (const Mesh& mesh : model->opaqueMeshes)
 			{
 				// -- Bind Push Constants --
 				Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));

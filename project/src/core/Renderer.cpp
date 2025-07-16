@@ -12,30 +12,18 @@
 #include "Camera.h"
 #include "Window.h"
 #include "Scene.h"
+#include "ServiceLocator.h"
 
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pompeii::Renderer::Renderer(Camera* pCamera, Window* pWindow)
+pompeii::Renderer::Renderer(Window* pWindow)
 {
 	m_pWindow = pWindow;
-	m_pCamera = pCamera;
-	m_pScene = new SponzaScene();
-	m_Context.deletionQueue.Push([&] {delete m_pScene; });
-
 	InitializeVulkan();
 }
 pompeii::Renderer::~Renderer()
 {
-	// -- Dump VMA --
-	char* StatsString = nullptr;
-	vmaBuildStatsString(m_Context.allocator, &StatsString, true);
-	{
-		std::ofstream OutStats{ "VmaStats.json" };
-		OutStats << StatsString;
-	}
-	vmaFreeStatsString(m_Context.allocator, StatsString);
-
 	// -- Release Resources --
 	m_Context.device.WaitIdle();
 	m_Context.deletionQueue.Flush();
@@ -45,44 +33,6 @@ pompeii::Renderer::~Renderer()
 //--------------------------------------------------
 //    Loop
 //--------------------------------------------------
-void pompeii::Renderer::Update()
-{
-	static bool pressX = false;
-	if (!pressX && glfwGetKey(m_pWindow->GetHandle(), GLFW_KEY_X) == GLFW_PRESS)
-	{
-		pressX = true;
-		m_pScene->AddLight(Light
-			{
-				/* position */	{ 7.f, 0.5f, 0.f },
-				/* color */		{ 1.f, 1.f, 0.f},
-				/* lumen */		100.f, Light::Type::Point
-			});
-		m_Context.device.WaitIdle();
-		m_LightingPass.UpdateLightDescriptors(m_Context, m_pScene);
-	}
-	else if (glfwGetKey(m_pWindow->GetHandle(), GLFW_KEY_X) != GLFW_PRESS)
-		pressX = false;
-	static bool pressC = false;
-	if (!pressC && glfwGetKey(m_pWindow->GetHandle(), GLFW_KEY_C) == GLFW_PRESS)
-	{
-		pressC = true;
-		m_pScene->PopLight();
-		m_Context.device.WaitIdle();
-		m_LightingPass.UpdateLightDescriptors(m_Context, m_pScene);
-	}
-	else if (glfwGetKey(m_pWindow->GetHandle(), GLFW_KEY_C) != GLFW_PRESS)
-		pressC = false;
-
-	static bool pressM = false;
-	if (!pressM && glfwGetKey(m_pWindow->GetHandle(), GLFW_KEY_M) == GLFW_PRESS)
-	{
-		pressM = true;
-		auto& m = m_pScene->AddModel("models/FlightHelmet.gltf");
-		m.AllocateResources(m_Context, false);
-		m_Context.device.WaitIdle();
-		m_GeometryPass.UpdateTextureDescriptor(m_Context, m_pScene);
-	}
-}
 void pompeii::Renderer::Render()
 {
 	// -- Wait for the current frame to be done --
@@ -149,15 +99,33 @@ void pompeii::Renderer::Render()
 
 
 //--------------------------------------------------
+//    Accessors
+//--------------------------------------------------
+pompeii::Context& pompeii::Renderer::GetContext()
+{
+	return m_Context;
+}
+
+void pompeii::Renderer::UpdateLights()
+{
+	m_LightingPass.UpdateLightDescriptors(m_Context, &ServiceLocator::GetSceneManager().GetActiveScene());
+}
+void pompeii::Renderer::UpdateTextures()
+{
+	m_GeometryPass.UpdateTextureDescriptor(m_Context, &ServiceLocator::GetSceneManager().GetActiveScene());
+}
+void pompeii::Renderer::UpdateEnvironmentMap() const
+{
+	m_LightingPass.UpdateEnvironmentMap(m_Context, m_EnvMap);
+}
+
+
+//--------------------------------------------------
 //    Vulkan Specific
 //--------------------------------------------------
 void pompeii::Renderer::InitializeVulkan()
 {
-	// -- Start Loading Scene on CPU --
-	std::jthread sceneLoader{ &Scene::Initialize, m_pScene};
-
-
-	// -- Enable Debugger - Requirements - [Debug Mode]
+// -- Enable Debugger - Requirements - [Debug Mode]
 	{
 #if _DEBUG
 		Debugger::SetEnabled(true);
@@ -300,13 +268,6 @@ void pompeii::Renderer::InitializeVulkan()
 		m_Context.deletionQueue.Push([&] { m_Context.descriptorPool->Destroy(m_Context); delete m_Context.descriptorPool; m_Context.descriptorPool = nullptr; });
 	}
 
-	// -- Allocate Scene - Requirements - []
-	{
-		sceneLoader.join();
-		m_pScene->AllocateGPU(m_Context, false);
-		m_Context.deletionQueue.Push([&] { m_pScene->Destroy(m_Context); });
-	}
-
 	// -- Depth Resources --
 	{
 		CreateDepthResources(m_Context, m_SwapChain.GetExtent());
@@ -323,7 +284,6 @@ void pompeii::Renderer::InitializeVulkan()
 	{
 		GeometryPassCreateInfo createInfo{};
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
-		createInfo.pScene = m_pScene;
 		createInfo.extent = m_SwapChain.GetExtent();
 		createInfo.depthFormat = m_vDepthImages[0].GetFormat();
 
@@ -348,11 +308,20 @@ void pompeii::Renderer::InitializeVulkan()
 		createInfo.maxFramesInFlight = m_MaxFramesInFlight;
 		createInfo.pGeometryPass = &m_GeometryPass;
 		createInfo.format = m_vRenderTargets.front().GetFormat();
-		createInfo.pScene = m_pScene;
 		createInfo.pDepthImages = &m_vDepthImages;
 
 		m_LightingPass.Initialize(m_Context, createInfo);
 		m_Context.deletionQueue.Push([&] { m_LightingPass.Destroy(); });
+
+		//todo no
+		m_EnvMap
+			.CreateSampler(m_Context)
+			.CreateSkyboxCube(m_Context, "textures/golden_gate_hills_4k.hdr")
+			.CreateDiffIrradianceMap(m_Context)
+			.CreateSpecIrradianceMap(m_Context)
+			.CreateBRDFLut(m_Context);
+		m_LightingPass.UpdateEnvironmentMap(m_Context, m_EnvMap);
+		m_Context.deletionQueue.Push([&] { m_EnvMap.Destroy(m_Context); });
 	}
 
 	// -- Blit Pass --
@@ -416,11 +385,12 @@ void pompeii::Renderer::RecreateSwapChain()
 
 	// -- Resize Passes if needed --
 	m_GeometryPass.Resize(m_Context, m_SwapChain.GetExtent());
-	m_LightingPass.UpdateGBufferDescriptors(m_Context, m_GeometryPass, m_vDepthImages, m_pScene->GetEnvironmentMap());
+	m_LightingPass.UpdateGBufferDescriptors(m_Context, m_GeometryPass, m_vDepthImages);
 	m_BlitPass.UpdateDescriptors(m_Context, m_vRenderTargets);
 
 	// -- Update Camera Settings --
-	const CameraSettings& oldSettings = m_pCamera->GetSettings();
+	const auto& camera = ServiceLocator::GetSceneManager().GetActiveScene().pMainCamera;
+	const CameraSettings& oldSettings = camera->GetSettings();
 	const CameraSettings settings
 	{
 		.fov			= oldSettings.fov,
@@ -428,7 +398,7 @@ void pompeii::Renderer::RecreateSwapChain()
 		.nearPlane		= oldSettings.nearPlane,
 		.farPlane		= oldSettings.farPlane
 	};
-	m_pCamera->ChangeSettings(settings);
+	camera->ChangeSettings(settings);
 }
 
 void pompeii::Renderer::CreateDepthResources(const Context& context, VkExtent2D extent)
@@ -475,6 +445,8 @@ void pompeii::Renderer::CreateRenderTargetResources(const Context& context, VkEx
 
 void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex)
 {
+	const auto& scene = ServiceLocator::GetSceneManager().GetActiveScene();
+	const auto& camera = scene.pMainCamera;
 	Image& presentImage = m_SwapChain.GetImages()[imageIndex];
 	Image& renderImage = m_vRenderTargets[imageIndex];
 	Image& depthImage = m_vDepthImages[imageIndex];
@@ -491,7 +463,7 @@ void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32
 				0, 1, 0, 1);
 
 			// The Depth Pre-Pass renders the entire scene to the provided depth buffer.
-			m_DepthPrePass.Record(m_Context, commandBuffer, m_GeometryPass, imageIndex, depthImage, m_pScene, m_pCamera);
+			m_DepthPrePass.Record(m_Context, commandBuffer, m_GeometryPass, imageIndex, depthImage, &scene, camera);
 
 			// Transition the current Depth Image to be read from
 			depthImage.TransitionLayout(commandBuffer,
@@ -504,7 +476,7 @@ void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32
 		// -- Geometry Pass --
 		{
 			// The Geometry Pass renders the entire scene to a GBuffer.
-			m_GeometryPass.Record(m_Context, commandBuffer, imageIndex, depthImage, m_pScene, m_pCamera);
+			m_GeometryPass.Record(m_Context, commandBuffer, imageIndex, depthImage, &scene, camera);
 			// After it is done, the GBuffers are transitioned to a layout ready for being sampled from.
 		}
 
@@ -525,7 +497,7 @@ void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32
 				0, 1, 0, 1);
 
 			// The Lighting Pass calculates all the heavy lighting calculations using the data from the Geometry Pass
-			m_LightingPass.Record(m_Context, commandBuffer, imageIndex, renderImage, m_pScene, m_pCamera);
+			m_LightingPass.Record(m_Context, commandBuffer, imageIndex, renderImage, camera);
 
 			// Transition the current Render Image to be used in the compute shader
 			renderImage.TransitionLayout(commandBuffer,
@@ -553,7 +525,7 @@ void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32
 				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
 				0, 1, 0, 1);
 
-			m_BlitPass.RecordGraphic(m_Context, commandBuffer, imageIndex, presentImage, m_pCamera);
+			m_BlitPass.RecordGraphic(m_Context, commandBuffer, imageIndex, presentImage, camera);
 
 			// transition the image to be written to for UI
 			presentImage.InsertBarrier(commandBuffer,

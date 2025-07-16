@@ -3,13 +3,16 @@
 
 // -- Pompeii Includes --
 #include "SceneObject.h"
-#include "Renderer.h"
+#include "Component.h"
+
+void pompeii::ComponentDeleter::operator()(const Component* ptr) const { delete ptr; }
 
 //--------------------------------------------------
 //    Constructors and Destructors
 //--------------------------------------------------
-pompeii::SceneObject::SceneObject(std::string name)
+pompeii::SceneObject::SceneObject(Scene& scene, std::string name)
 	: name(std::move(name))
+	, m_pScene(&scene)
 {}
 
 //--------------------------------------------------
@@ -35,6 +38,14 @@ void pompeii::SceneObject::OnImGuiRender() const
 }
 
 //--------------------------------------------------
+//    Data
+//--------------------------------------------------
+pompeii::Scene& pompeii::SceneObject::GetScene() const
+{
+	return *m_pScene;
+}
+
+//--------------------------------------------------
 //    Flags
 //--------------------------------------------------
 bool pompeii::SceneObject::IsFlaggedForDestruction() const
@@ -45,7 +56,7 @@ void pompeii::SceneObject::Destroy()
 {
 	m_DeletionFlag = true;
 	for (const auto& child : transform->GetAllChildren())
-		child->GetOwner()->Destroy();
+		child->GetSceneObject()->Destroy();
 }
 
 bool pompeii::SceneObject::IsActive() const
@@ -56,7 +67,7 @@ void pompeii::SceneObject::SetActive(bool active)
 {
 	m_IsActive = active;
 	for (auto& child : transform->GetAllChildren())
-		child->GetOwner()->SetActive(active);
+		child->GetSceneObject()->SetActive(active);
 }
 
 

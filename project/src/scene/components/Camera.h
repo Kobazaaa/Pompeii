@@ -1,5 +1,5 @@
-#ifndef CAMERA_H
-#define CAMERA_H
+#ifndef CAMERA_COMPONENT_H
+#define CAMERA_COMPONENT_H
 
 // -- Defines --
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -8,8 +8,10 @@
 
 // -- Math Includes --
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <GLFW/glfw3.h>
+
+// -- Pompeii Includes --
+#include "Component.h"
 
 // -- Forward Declarations --
 namespace pompeii { class Window; }
@@ -36,26 +38,24 @@ namespace pompeii
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Camera	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	class Camera final
+	class Camera final : public Component
 	{
 	public:
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		Camera() = default;
-		explicit Camera(const CameraSettings& settings, const ExposureSettings& exposureSettings, const Window* pWindow);
+		explicit Camera(SceneObject& parent, const CameraSettings& settings, const ExposureSettings& exposureSettings, const Window* pWindow, bool mainCam = false);
 
 		//--------------------------------------------------
-		//    Update
+		//    Loop
 		//--------------------------------------------------
-		void Update();
+		void Start() override;
+		void Update() override;
+		void OnImGuiRender() override;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		// -- Data --
-		glm::vec3 GetPosition() const;
-
 		// -- Settings --
 		void ChangeSettings(const CameraSettings& settings);
 		const CameraSettings& GetSettings() const;
@@ -66,32 +66,19 @@ namespace pompeii
 		void SetSensitivity(float sensitivity);
 
 		// -- Matrices --
-		glm::mat4 GetViewMatrix();
+		glm::mat4 GetViewMatrix() const;
 		glm::mat4 GetProjectionMatrix();
 
 	private:
 		// -- Helpers --
-		void HandleMovement();
+		void HandleMovement() const;
 		void HandleAim();
 
-		void UpdateCameraVectors();
-
-		// -- Data --
-		glm::vec3 m_Position				{ 0.f, 0.f, 0.f };
-		glm::vec3 m_Forward					{ 0.f, 0.f, 1.f };
-		glm::vec3 m_Right					{ 1.f, 0.f, 1.f };
-		glm::vec3 m_Up						{ 0.f, 1.f, 0.f };
-
-		glm::mat4 m_ViewMatrix				{ };
 		glm::mat4 m_ProjectionMatrix		{ };
 
 		// -- Settings --
 		CameraSettings	 m_Settings			{ };
 		ExposureSettings m_ExposureSettings	{ };
-
-		float m_Pitch						{ };
-		float m_Yaw							{ };
-		float m_Roll						{ };
 
 		float m_Speed						{ 1.f };
 		float m_Sensitivity					{ 0.1f };
@@ -101,7 +88,6 @@ namespace pompeii
 		float m_LastY						{ 0.f };
 
 		// -- Dirty Flags
-		bool m_CameraDirty					{ true };
 		bool m_SettingsDirty				{ true };
 
 		// -- Window --
@@ -109,4 +95,4 @@ namespace pompeii
 	};
 }
 
-#endif // CAMERA_H
+#endif // CAMERA_COMPONENT_H

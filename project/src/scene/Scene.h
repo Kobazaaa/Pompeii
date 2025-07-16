@@ -11,7 +11,6 @@
 
 // -- Pom Includes --
 #include "SceneObject.h"
-#include "EnvironmentMap.h"
 #include "Light.h"
 #include "Model.h"
 #include "Camera.h"
@@ -21,14 +20,14 @@ namespace pompeii
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Base Scene	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	class Scene
+	class Scene final
 	{
 	public:
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		explicit Scene(std::string sceneName);
-		virtual ~Scene() = default; //todo remove virtual when class is made final
+		~Scene() = default;
 
 		Scene(const Scene& other) = delete;
 		Scene(Scene&& other) = delete;
@@ -52,6 +51,25 @@ namespace pompeii
 		//--------------------------------------------------
 		std::string name{ "EmptyScene" };
 		std::vector<SceneObject*> GetObjectsByName(const std::string& objectName) const;
+		const AABB& GetAABB() const;
+
+
+		//--------------------------------------------------
+		//    Registrators
+		//--------------------------------------------------
+		// -- Models --
+		void RegisterModel(Model& model);
+		const std::vector<Model*>& GetModels() const;
+		uint32_t GetImageCount() const;
+
+		// -- Lights --
+		void RegisterLight(Light& light);
+		std::vector<Light*>& GetLights();
+		std::vector<GPULight> GetLightsGPU() const;
+		uint32_t GetLightsCount() const;
+		std::vector<glm::mat4> GetLightMatrices() const;
+
+		Camera* pMainCamera = nullptr;
 
 	private:
 		void CleanupDeletedObjects();
@@ -60,122 +78,10 @@ namespace pompeii
 		std::vector<std::unique_ptr<SceneObject>> m_vObjects{};
 		std::vector<std::unique_ptr<SceneObject>> m_vPendingObjects{};
 
+		std::vector<Model*> m_vModelComponents{};
+		std::vector<Light*> m_vLightComponents{};
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	public:
-		//--------------------------------------------------
-		//    Constructor & Destructor
-		//--------------------------------------------------
-		explicit Scene() = default;
-
-		virtual void Initialize() {};
-		virtual void AllocateGPU(const Context& context, bool keepHostData = false);
-		virtual void Destroy(const Context& context);
-
-
-		//--------------------------------------------------
-		//    Helpers
-		//--------------------------------------------------
-		// -- Models --
-		const std::vector<Model>& GetModels() const;
-		Model& AddModel(const std::string& path);
-		uint32_t GetImageCount() const;
-
-		// -- Lights --
-		std::vector<Light>& GetLights();
-		std::vector<GPULight> GetLightsGPU();
-		std::vector<glm::mat4> GetLightMatrices();
-		uint32_t GetLightsCount() const;
-		Light& AddLight(Light&& light);
-		void PopLight();
-
-		void CalculateLightMatrices();
-		void GenerateDepthMaps(const Context& context, uint32_t size = 2048);
-
-		// -- Environment Map --
-		const EnvironmentMap& GetEnvironmentMap() const;
-	protected:
-		void SetEnvironmentMap(const std::string& path);
-
-	private:
-		std::vector<Model> m_vModels;
-		std::vector<Light> m_vLights;
 		AABB m_AABB;
-
-		std::string m_EnvMapPath{"textures/circus_arena_4k.hdr"};
-		EnvironmentMap m_EnvironmentMap;
-	};
-
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  Sponza Scene	
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	class SponzaScene final : public Scene
-	{
-	public:
-		explicit SponzaScene() = default;
-		void Initialize() override;
-	};
-
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  FlightHelmet Scene	
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	class FlightHelmetScene final : public Scene
-	{
-	public:
-		explicit FlightHelmetScene() = default;
-		void Initialize() override;
-	};
-
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  Spheres Scene	
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	class SpheresScene final : public Scene
-	{
-	public:
-		explicit SpheresScene() = default;
-		void Initialize() override;
-	};
-
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  A Beautiful Game Scene	
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	class BeautifulGameScene final : public Scene
-	{
-	public:
-		explicit BeautifulGameScene() = default;
-		void Initialize() override;
 	};
 }
-
 #endif // SCENE_H

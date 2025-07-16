@@ -4,6 +4,7 @@
 #include "Image.h"
 #include "Context.h"
 #include "Debugger.h"
+#include "ServiceLocator.h"
 
 // -- Standard Library --
 #include <stdexcept>
@@ -132,6 +133,11 @@ void pompeii::UIPass::ImGuiLogic()
 
 			ImGui::EndMenu();
 		}
+		if (ImGui::BeginMenu("DumpVMA"))
+		{
+			ImGuiFileDialog::Instance()->OpenDialog("DumpVMA", "Dump VMA", ".json");
+			ImGui::EndMenu();
+		}
 		ImGui::EndMainMenuBar();
 	}
 
@@ -156,12 +162,43 @@ void pompeii::UIPass::ImGuiLogic()
 		}
 		ImGuiFileDialog::Instance()->Close();
 	}
+	if (ImGuiFileDialog::Instance()->Display("DumpVMA", fileDialogFlags, fileDialogSize))
+	{
+		if (ImGuiFileDialog::Instance()->IsOk())
+		{
+			const std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
+			char* StatsString = nullptr;
+			vmaBuildStatsString(ServiceLocator::GetRenderer().GetContext().allocator, &StatsString, true);
+			{
+				std::ofstream OutStats{ path };
+				OutStats << StatsString;
+			}
+			vmaFreeStatsString(ServiceLocator::GetRenderer().GetContext().allocator, StatsString);
+		}
+		ImGuiFileDialog::Instance()->Close();
+	}
 
 	// -- Sidebar --
-
 	ImGui::SetNextWindowDockID(m_DockLeftID, ImGuiCond_Once);
-	ImGui::Begin("I should be docked left", nullptr, ImGuiWindowFlags_None);
-	ImGui::Text("I am docked left!");
+	ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_None);
+	{
+		ImGui::Text("Load Model");
+		if (ImGui::Button("Choose Model"))
+			ImGuiFileDialog::Instance()->OpenDialog("ChooseModel", "Choose a File", ".gltf");
+		if (ImGuiFileDialog::Instance()->Display("ChooseModel", fileDialogFlags, fileDialogSize))
+		{
+			if (ImGuiFileDialog::Instance()->IsOk())
+			{
+				const std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
+				auto& obj = ServiceLocator::GetSceneManager().GetActiveScene().AddEmpty();
+				obj.AddComponent<Model>(path);
+			}
+			ImGuiFileDialog::Instance()->Close();
+		}
+
+		ImGui::Text("Custom");
+		ServiceLocator::GetSceneManager().GetActiveScene().OnImGuiRender();
+	}
 	ImGui::End();
 }
 // ReSharper disable once CppMemberFunctionMayBeStatic

@@ -8,6 +8,9 @@
 
 // -- Pompeii Includes --
 #include "Camera.h"
+
+#include "Scene.h"
+#include "SceneObject.h"
 #include "Window.h"
 #include "Timer.h"
 
@@ -19,16 +22,23 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pompeii::Camera::Camera(const CameraSettings& settings, const ExposureSettings& exposureSettings, const Window* pWindow)
-	: m_Settings(settings)
+pompeii::Camera::Camera(SceneObject& parent, const CameraSettings& settings, const ExposureSettings& exposureSettings, const Window* pWindow, bool mainCam)
+	: Component(parent)
+	, m_Settings(settings)
 	, m_ExposureSettings(exposureSettings)
 	, m_pWindow(pWindow->GetHandle())
+{
+	if (mainCam)
+		GetSceneObject().GetScene().pMainCamera = this;
+}
+
+
+
+//--------------------------------------------------
+//    Loop
+//--------------------------------------------------
+void pompeii::Camera::Start()
 {}
-
-
-//--------------------------------------------------
-//    Update
-//--------------------------------------------------
 void pompeii::Camera::Update()
 {
 	if (!m_pWindow)
@@ -40,32 +50,26 @@ void pompeii::Camera::Update()
 	if (!io.WantCaptureKeyboard)
 		HandleMovement();
 }
+void pompeii::Camera::OnImGuiRender()
+{}
 
 
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-// -- Data --
-glm::vec3 pompeii::Camera::GetPosition()										const	{ return m_Position; }
-
 // -- Settings --
-void pompeii::Camera::ChangeSettings(const CameraSettings& settings)					{ m_Settings = settings; m_SettingsDirty = true; }
-const pompeii::CameraSettings& pompeii::Camera::GetSettings()						const	{ return m_Settings; }
-void pompeii::Camera::ChangeExposureSettings(const ExposureSettings& settings)			{ m_ExposureSettings = settings; }
-const pompeii::ExposureSettings& pompeii::Camera::GetExposureSettings()				const	{ return m_ExposureSettings; }
+void pompeii::Camera::ChangeSettings(const CameraSettings& settings) { m_Settings = settings; m_SettingsDirty = true; }
+const pompeii::CameraSettings& pompeii::Camera::GetSettings() const	{ return m_Settings; }
+void pompeii::Camera::ChangeExposureSettings(const ExposureSettings& settings) { m_ExposureSettings = settings; }
+const pompeii::ExposureSettings& pompeii::Camera::GetExposureSettings() const	{ return m_ExposureSettings; }
 
-void pompeii::Camera::SetSpeed(float speed)												{ m_Speed = speed; }
-void pompeii::Camera::SetSensitivity(float sensitivity)									{ m_Sensitivity = sensitivity; }
+void pompeii::Camera::SetSpeed(float speed) { m_Speed = speed; }
+void pompeii::Camera::SetSensitivity(float sensitivity) { m_Sensitivity = sensitivity; }
 
 // -- Matrices --
-glm::mat4 pompeii::Camera::GetViewMatrix()
+glm::mat4 pompeii::Camera::GetViewMatrix() const
 {
-	if (m_CameraDirty)
-	{
-		m_CameraDirty = false;
-		m_ViewMatrix = lookAtLH(m_Position, m_Position + m_Forward, glm::vec3(0.f, 1.f, 0.f));
-	}
-	return m_ViewMatrix;
+	return glm::inverse(GetTransform().GetMatrix());
 }
 glm::mat4 pompeii::Camera::GetProjectionMatrix()
 {
@@ -83,7 +87,7 @@ glm::mat4 pompeii::Camera::GetProjectionMatrix()
 //--------------------------------------------------
 //    Helpers
 //--------------------------------------------------
-void pompeii::Camera::HandleMovement()
+void pompeii::Camera::HandleMovement() const
 {
 	float speed = m_Speed * Timer::GetDeltaSeconds();
 	speed *= glfwGetKey(m_pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ? 4.f : 1.f;
@@ -91,37 +95,28 @@ void pompeii::Camera::HandleMovement()
 
 	if (glfwGetKey(m_pWindow, GLFW_KEY_W) == GLFW_PRESS)
 	{
-		m_CameraDirty = true;
-		m_Position += m_Forward * speed;
+		GetTransform().Translate(GetTransform().GetForward() * speed);
 	}
 	if (glfwGetKey(m_pWindow, GLFW_KEY_S) == GLFW_PRESS)
 	{
-		m_CameraDirty = true;
-		m_Position -= m_Forward * speed;
+		GetTransform().Translate(-GetTransform().GetForward() * speed);
 	}
 	if (glfwGetKey(m_pWindow, GLFW_KEY_A) == GLFW_PRESS)
 	{
-		m_CameraDirty = true;
-		m_Position -= m_Right * speed;
+		GetTransform().Translate(-GetTransform().GetRight() * speed);
 	}
 	if (glfwGetKey(m_pWindow, GLFW_KEY_D) == GLFW_PRESS)
 	{
-		m_CameraDirty = true;
-		m_Position += m_Right * speed;
+		GetTransform().Translate(GetTransform().GetRight() * speed);
 	}
 	if (glfwGetKey(m_pWindow, GLFW_KEY_E) == GLFW_PRESS)
 	{
-		m_CameraDirty = true;
-		m_Position.y += speed;
+		GetTransform().Translate(glm::vec3(0, 1, 0) * speed);
 	}
 	if (glfwGetKey(m_pWindow, GLFW_KEY_Q) == GLFW_PRESS)
 	{
-		m_CameraDirty = true;
-		m_Position.y -= speed;
+		GetTransform().Translate(glm::vec3(0, -1, 0) * speed);
 	}
-
-	if (m_CameraDirty)
-		UpdateCameraVectors();
 }
 void pompeii::Camera::HandleAim()
 {
@@ -141,37 +136,16 @@ void pompeii::Camera::HandleAim()
 			const float deltaX = static_cast<float>(x) - m_LastX;
 			const float deltaY = static_cast<float>(y) - m_LastY;
 
-			m_Pitch += deltaY * m_Sensitivity;
-			m_Yaw += deltaX * m_Sensitivity;
-			m_Pitch = std::clamp(m_Pitch, -89.f, 89.f);
+			glm::vec3 euler = GetTransform().GetEulerAngles();
+			float pitch = euler.x + deltaY * m_Sensitivity;
+			float yaw = euler.y + deltaX * m_Sensitivity;
+			pitch = std::clamp(pitch, -89.f, 89.f);
+			GetTransform().SetEulerAngles({ pitch, yaw, 0 });
 
-			m_CameraDirty = true;
 			m_LastX = static_cast<float>(x);
 			m_LastY = static_cast<float>(y);
 		}
 	}
 	else
 		m_IsDragging = false;
-
-	if (m_CameraDirty)
-		UpdateCameraVectors();
-}
-
-void pompeii::Camera::UpdateCameraVectors()
-{
-	if (!m_CameraDirty)
-		return;
-
-	glm::mat4 rotation = glm::mat4(1.0f);
-	rotation = rotate(rotation, glm::radians(m_Yaw), glm::vec3(0.0f, 1.0f, 0.0f));
-	rotation = rotate(rotation, glm::radians(m_Pitch), glm::vec3(1.0f, 0.0f, 0.0f));
-	rotation = rotate(rotation, glm::radians(m_Roll), glm::vec3(0.0f, 0.0f, 1.0f));
-	m_Forward = rotation * glm::vec4(0.f, 0.f, 1.f, 0.f);
-
-	GetViewMatrix();
-
-	glm::mat4 inverse = glm::inverse(m_ViewMatrix);
-	m_Right		= inverse[0];
-	m_Up		= inverse[1];
-	m_Forward	= inverse[2];
 }

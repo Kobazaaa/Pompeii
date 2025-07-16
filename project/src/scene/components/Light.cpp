@@ -1,8 +1,4 @@
-// -- Math Includes --
-#include <glm/gtc/matrix_transform.hpp>
-
 // -- Pompeii Includes --
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include "Light.h"
 #include "Model.h"
 #include "Context.h"
@@ -10,46 +6,40 @@
 #include "Pipeline.h"
 #include "Debugger.h"
 #include "Scene.h"
+#include "ServiceLocator.h"
 
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pompeii::Light::Light(const glm::vec3& dirPos, const glm::vec3& col, float luxLumen, Type type)
-	: dirPos(type == Type::Directional ? glm::normalize(dirPos) : dirPos)
+pompeii::Light::Light(SceneObject& parent, const glm::vec3& dirPos, const glm::vec3& col, float luxLumen, Type type)
+	: Component(parent)
+	, dirPos(type == Type::Directional ? glm::normalize(dirPos) : dirPos)
 	, color(col)
 	, luxLumen(luxLumen)
 	, m_Type(type)
-{ }
-void pompeii::Light::DestroyDepthMap(const Context& context)
 {
-	m_DepthMap.Destroy(context);
+	GetSceneObject().GetScene().RegisterLight(*this);
 }
 
-pompeii::Light::Light(Light&& other) noexcept
+pompeii::Light::~Light()
 {
-	m_Type = other.m_Type;
-	dirPos = std::move(other.dirPos);
-	color = std::move(other.color);
-	luxLumen = other.luxLumen;
-	viewMatrices = std::move(other.viewMatrices);
-	other.viewMatrices.clear();
-	projMatrix = std::move(other.projMatrix);
-	m_DepthMap = std::move(other.m_DepthMap);
+	DestroyDepthMap(ServiceLocator::GetRenderer().GetContext());
 }
-pompeii::Light& pompeii::Light::operator=(Light&& other) noexcept
+
+
+//--------------------------------------------------
+//    Loop
+//--------------------------------------------------
+void pompeii::Light::Start()
 {
-	if (this == &other)
-		return *this;
-	m_Type = other.m_Type;
-	dirPos = std::move(other.dirPos);
-	color = std::move(other.color);
-	luxLumen = other.luxLumen;
-	viewMatrices = std::move(other.viewMatrices);
-	other.viewMatrices.clear();
-	projMatrix = std::move(other.projMatrix);
-	m_DepthMap = std::move(other.m_DepthMap);
-	return *this;
+	CalculateLightMatrices();
+	GenerateDepthMap(ServiceLocator::GetRenderer().GetContext(), &GetSceneObject().GetScene());
+	ServiceLocator::GetRenderer().UpdateLights();
 }
+void pompeii::Light::OnImGuiRender()
+{
+}
+
 
 //--------------------------------------------------
 //    Accessors & Mutators
@@ -89,7 +79,83 @@ void pompeii::Light::GenerateDepthMap(const Context& context, const Scene* pScen
 	// -- Generate a view to all faces --
 	m_DepthMap.CreateView(context, VK_IMAGE_ASPECT_DEPTH_BIT, m_Type == Type::Point ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D, 0, m_DepthMap.GetMipLevels(), 0, m_DepthMap.GetLayerCount());
 }
-void pompeii::Light::GenerateDepthMap(const Context& context, const Scene* pScene, Image& outImage, std::vector<ImageView>& outViews, uint32_t size)
+void pompeii::Light::DestroyDepthMap(const Context& context)
+{
+	m_DepthMap.Destroy(context);
+}
+
+void pompeii::Light::CalculateLightMatrices()
+{
+	if (GetType() == Type::Directional)
+	{
+		auto [min, max] = GetSceneObject().GetScene().GetAABB();
+		const glm::vec3 center = (min + max) * 0.5f;
+		const glm::vec3 lightDir = dirPos;
+		const std::vector<glm::vec3> corners = {
+			{min.x, min.y, min.z},
+			{max.x, min.y, min.z},
+			{min.x, max.y, min.z},
+			{max.x, max.y, min.z},
+			{min.x, min.y, max.z},
+			{max.x, min.y, max.z},
+			{min.x, max.y, max.z},
+			{max.x, max.y, max.z}
+		};
+
+		float minProj = FLT_MAX;
+		float maxProj = -FLT_MAX;
+		for (const auto& c : corners)
+		{
+			const float proj = glm::dot(c, lightDir);
+			minProj = std::min(minProj, proj);
+			maxProj = std::max(maxProj, proj);
+		}
+
+		const float dst = maxProj - glm::dot(center, lightDir);
+		const glm::vec3 lightPos = center - lightDir * dst;
+
+		const glm::vec3 up = glm::abs(glm::dot(lightDir, glm::vec3(0.f, 1.f, 0.f))) < (1.f - FLT_EPSILON)
+			? glm::vec3(0.f, 1.f, 0.f)
+			: glm::vec3(0.f, 0.f, -1.f);
+		auto lookAt = glm::lookAtLH(lightPos, center, up);
+		viewMatrices.resize(1);
+		viewMatrices[0] = lookAt;
+
+		glm::vec3 minLightSpace(FLT_MAX);
+		glm::vec3 maxLightSpace(-FLT_MAX);
+		for (const auto& c : corners)
+		{
+			const glm::vec3 transformedCorner = glm::vec3(lookAt * glm::vec4(c, 1.f));
+			minLightSpace = glm::min(minLightSpace, transformedCorner);
+			maxLightSpace = glm::max(maxLightSpace, transformedCorner);
+		}
+
+		constexpr float nearZ = 0.f;
+		const float farZ = maxLightSpace.z - minLightSpace.z;
+		projMatrix = glm::orthoLH(minLightSpace.x, maxLightSpace.x, minLightSpace.y, maxLightSpace.y, nearZ, farZ);
+		projMatrix[1][1] *= -1.f;
+	}
+	// -- Point --
+	else
+	{
+		glm::vec3 eye = dirPos;
+		viewMatrices = {
+			glm::lookAt(eye, eye + glm::vec3(1.f,  0.f,  0.f), glm::vec3(0.f, -1.f,  0.f)), // +X
+			glm::lookAt(eye, eye + glm::vec3(-1.f,  0.f,  0.f), glm::vec3(0.f, -1.f,  0.f)), // -X
+			glm::lookAt(eye, eye + glm::vec3(0.f, -1.f,  0.f), glm::vec3(0.f,  0.f, -1.f)), // -Y
+			glm::lookAt(eye, eye + glm::vec3(0.f,  1.f,  0.f), glm::vec3(0.f,  0.f,  1.f)), // +Y
+			glm::lookAt(eye, eye + glm::vec3(0.f,  0.f,  1.f), glm::vec3(0.f, -1.f,  0.f)), // +Z
+			glm::lookAt(eye, eye + glm::vec3(0.f,  0.f, -1.f), glm::vec3(0.f, -1.f,  0.f)), // -Z
+		};
+		projMatrix = glm::perspective(glm::radians(90.f), 1.f, 0.1f, 100.f);
+	}
+}
+
+
+//--------------------------------------------------
+//    Helper
+//--------------------------------------------------
+void pompeii::Light::GenerateDepthMap(const Context& context, const Scene* pScene, Image& outImage, std::vector<ImageView>& outViews, uint32_t size) const
 {
 	// -- Push Constant Struct --
 	struct PC
@@ -197,13 +263,13 @@ void pompeii::Light::GenerateDepthMap(const Context& context, const Scene* pScen
 				vkCmdBindPipeline(vCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.GetHandle());
 
 				// -- Draw Models --
-				for (const Model& model : pScene->GetModels())
+				for (const Model* model : pScene->GetModels())
 				{
 					// -- Bind Model Data --
-					model.Bind(cmd);
+					model->Bind(cmd);
 
 					// -- Draw Opaque --
-					for (const Mesh& mesh : model.opaqueMeshes)
+					for (const Mesh& mesh : model->opaqueMeshes)
 					{
 						// -- Bind Push Constants --
 						PC pc
@@ -218,7 +284,7 @@ void pompeii::Light::GenerateDepthMap(const Context& context, const Scene* pScen
 					}
 
 					// -- Draw Transparent using Alpha Cut-Off --
-					for (const Mesh& mesh : model.transparentMeshes)
+					for (const Mesh& mesh : model->transparentMeshes)
 					{
 						// -- Bind Push Constants --
 						PC pc

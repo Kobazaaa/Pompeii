@@ -50,7 +50,6 @@ void pompeii::SceneManager::SetActiveScene(const std::string& name) { if (const 
 //--------------------------------------------------
 //    Loop
 //--------------------------------------------------
-//todo remove the if checks, since at the end this should never happen
-void pompeii::SceneManager::Start()				const { if(m_pActiveScene) m_pActiveScene->Start(); }
-void pompeii::SceneManager::Update()			const { if(m_pActiveScene) m_pActiveScene->Update(); }
-void pompeii::SceneManager::OnImGuiRender()		const { if(m_pActiveScene) m_pActiveScene->OnImGuiRender(); }
+void pompeii::SceneManager::Start()				const { m_pActiveScene->Start(); }
+void pompeii::SceneManager::Update()			const { m_pActiveScene->Update(); }
+void pompeii::SceneManager::OnImGuiRender()		const { m_pActiveScene->OnImGuiRender(); }

@@ -11,6 +11,7 @@
 #include "Context.h"
 #include "CommandBuffer.h"
 #include "Debugger.h"
+#include "ServiceLocator.h"
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -84,46 +85,48 @@ bool pompeii::Vertex::operator==(const Vertex& other) const
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pompeii::Model::Model(Model&& other) noexcept
+pompeii::Model::Model(SceneObject& sceneObj, const std::string& path)
+	: Component(sceneObj)
 {
-	vertices = std::move(other.vertices);
-	other.vertices.clear();
-	indices = std::move(other.indices);
-	other.indices.clear();
-	textures = std::move(other.textures);
-	other.textures.clear();
-	pathToIdx = std::move(other.pathToIdx);
-	other.pathToIdx.clear();
-	vertexBuffer = std::move(other.vertexBuffer);
-	indexBuffer = std::move(other.indexBuffer);
-	images = std::move(other.images);
-	other.images.clear();
-	opaqueMeshes = std::move(other.opaqueMeshes);
-	other.opaqueMeshes.clear();
-	transparentMeshes = std::move(other.transparentMeshes);
-	other.transparentMeshes.clear();
+	LoadModel(path);
+	GetSceneObject().GetScene().RegisterModel(*this);
 }
-pompeii::Model& pompeii::Model::operator=(Model&& other) noexcept
+pompeii::Model::~Model()
 {
-	if (this == &other)
-		return *this;
-	vertices = std::move(other.vertices);
-	other.vertices.clear();
-	indices = std::move(other.indices);
-	other.indices.clear();
-	textures = std::move(other.textures);
-	other.textures.clear();
-	pathToIdx = std::move(other.pathToIdx);
-	other.pathToIdx.clear();
-	vertexBuffer = std::move(other.vertexBuffer);
-	indexBuffer = std::move(other.indexBuffer);
-	images = std::move(other.images);
-	other.images.clear();
-	opaqueMeshes = std::move(other.opaqueMeshes);
-	other.opaqueMeshes.clear();
-	transparentMeshes = std::move(other.transparentMeshes);
-	other.transparentMeshes.clear();
-	return *this;
+	Destroy(ServiceLocator::GetRenderer().GetContext());
+}
+
+
+//--------------------------------------------------
+//    Loop
+//--------------------------------------------------
+void pompeii::Model::Start()
+{
+	const auto& ctx = ServiceLocator::GetRenderer().GetContext();
+	AllocateResources(ctx, true);
+	ServiceLocator::GetRenderer().UpdateTextures();
+}
+void pompeii::Model::OnImGuiRender()
+{
+}
+
+//--------------------------------------------------
+//    Helpers
+//--------------------------------------------------
+void pompeii::Model::Bind(CommandBuffer& cmdBuffer) const
+{
+	// -- Get Vulkan Command Buffer --
+	const VkCommandBuffer& vCmdBuffer = cmdBuffer.GetHandle();
+
+	// -- Bind Vertex Buffer --
+	VkBuffer vertexBuffers[] = { vertexBuffer.GetHandle() };
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(vCmdBuffer, 0, 1, vertexBuffers, offsets);
+	Debugger::InsertDebugLabel(cmdBuffer, "Bind Vertex Buffer", glm::vec4(0.6f, 1.f, 0.6f, 1.f));
+
+	// -- Bind Index Buffer --
+	vkCmdBindIndexBuffer(vCmdBuffer, indexBuffer.GetHandle(), 0, VK_INDEX_TYPE_UINT32);
+	Debugger::InsertDebugLabel(cmdBuffer, "Bind Index Buffer", glm::vec4(1.f, 0.4f, 1.f, 1.f));
 }
 
 void pompeii::Model::LoadModel(const std::string& path)
@@ -131,12 +134,12 @@ void pompeii::Model::LoadModel(const std::string& path)
 	Assimp::Importer importer;
 	const aiScene* pScene =
 		importer.ReadFile(path,
-		aiProcess_Triangulate |
-		aiProcess_OptimizeMeshes |
-		aiProcess_CalcTangentSpace |
-		aiProcess_ConvertToLeftHanded |
-		aiProcess_JoinIdenticalVertices |
-		aiProcess_SortByPType);
+			aiProcess_Triangulate |
+			aiProcess_OptimizeMeshes |
+			aiProcess_CalcTangentSpace |
+			aiProcess_ConvertToLeftHanded |
+			aiProcess_JoinIdenticalVertices |
+			aiProcess_SortByPType);
 
 	if (!pScene || pScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !pScene->mRootNode)
 	{
@@ -172,7 +175,7 @@ void pompeii::Model::AllocateResources(const Context& context, bool keepHostData
 void pompeii::Model::Destroy(const Context& context)
 {
 	// -- Flush --
-	for (Image& image : images) 
+	for (Image& image : images)
 		image.Destroy(context);
 	indexBuffer.Destroy(context);
 	vertexBuffer.Destroy(context);
@@ -182,30 +185,10 @@ void pompeii::Model::Destroy(const Context& context)
 		tex.FreePixels();
 }
 
-
-//--------------------------------------------------
-//    Commands
-//--------------------------------------------------
-void pompeii::Model::Bind(CommandBuffer& cmdBuffer) const
-{
-	// -- Get Vulkan Command Buffer --
-	const VkCommandBuffer& vCmdBuffer = cmdBuffer.GetHandle();
-
-	// -- Bind Vertex Buffer --
-	VkBuffer vertexBuffers[] = { vertexBuffer.GetHandle() };
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(vCmdBuffer, 0, 1, vertexBuffers, offsets);
-	Debugger::InsertDebugLabel(cmdBuffer, "Bind Vertex Buffer", glm::vec4(0.6f, 1.f, 0.6f, 1.f));
-
-	// -- Bind Index Buffer --
-	vkCmdBindIndexBuffer(vCmdBuffer, indexBuffer.GetHandle(), 0, VK_INDEX_TYPE_UINT32);
-	Debugger::InsertDebugLabel(cmdBuffer, "Bind Index Buffer", glm::vec4(1.f, 0.4f, 1.f, 1.f));
-}
-
 //--------------------------------------------------
 //    Helpers
 //--------------------------------------------------
-void pompeii::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene, glm::mat4 transform)
+void pompeii::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene, const glm::mat4& transform)
 {
 	auto nodeTransform = ConvertAssimpMatrix(pNode->mTransformation);
 	auto totalTransform = transform * nodeTransform;
