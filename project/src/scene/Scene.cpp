@@ -1,10 +1,6 @@
 // -- Pompeii Includes --
 #include "Scene.h"
 
-// -- Standard Library --
-#include <numeric>
-#include <ranges>
-
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Base Scene	
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -15,6 +15,8 @@
 #include "ConsoleTextSettings.h"
 #include "ServiceLocator.h"
 #include "Timer.h"
+#include "LightComponent.h"
+#include "ModelRenderer.h"
 
 // -- Using Pompeii namespace --
 using namespace pompeii;
@@ -29,6 +31,17 @@ static void CreateDefaultScene(Window* pWindow)
 	camera.AddComponent<Camera>(CameraSettings{ .fov = 45.f, .aspectRatio = pWindow->GetAspectRatio(), .nearPlane = 0.001f, .farPlane = 1000.f },
 		ExposureSettings{ .aperture = 16.f, .shutterSpeed = 1.f / 100.f, .iso = 100.f }, pWindow, true);
 
+	// model
+	auto& model = scene.AddEmpty("Model");
+	model.AddComponent<ModelRenderer>("models/Sponza.gltf");
+
+	// light
+	auto& light = scene.AddEmpty("Light");
+	light.AddComponent<LightComponent>(
+		/* direction */	glm::vec3{ 0.f, -1.f, 0.f },
+		/* color */		glm::vec3{ 0.f, 1.f, 0.f },
+		/* lux */			100'000.f, LightType::Directional
+	);
 }
 
 int main()
@@ -42,8 +55,7 @@ int main()
 		// -- Register Services --
 		ServiceLocator::Register(std::make_unique<SceneManager>());
 		ServiceLocator::Register(std::make_unique<RenderSystem>());
-		ServiceLocator::Register(std::make_unique<LightingSystem>());
-		ServiceLocator::Register(std::make_unique<Renderer>(pWindow));
+		ServiceLocator::Get<RenderSystem>().SetRenderer(std::make_unique<Renderer>(pWindow));
 
 
 		// -- Create Default Scene --
@@ -55,10 +67,6 @@ int main()
 		bool wasPressed = false;
 		bool isPressed = false;
 		float printTime = 1.f;
-
-		ServiceLocator::Get<Renderer>().UpdateEnvironmentMap();
-		ServiceLocator::Get<Renderer>().UpdateLights();
-		ServiceLocator::Get<Renderer>().UpdateTextures();
 
 		while (!glfwWindowShouldClose(pWindow->GetHandle()))
 		{
@@ -79,17 +87,16 @@ int main()
 
 			// --- Begin Frame Phase ---
 			ServiceLocator::Get<RenderSystem>().BeginFrame();
-			ServiceLocator::Get<LightingSystem>().BeginFrame();
 
 			// -- Update Phase --
 			ServiceLocator::Get<SceneManager>().Update();
+			ServiceLocator::Get<RenderSystem>().Update();
 
 			// -- Render Phase --
-			ServiceLocator::Get<Renderer>().Render();
+			ServiceLocator::Get<RenderSystem>().Render();
 
 			// -- End Frame Phase --
 			ServiceLocator::Get<RenderSystem>().EndFrame();
-			ServiceLocator::Get<LightingSystem>().EndFrame();
 
 
 
@@ -105,9 +112,8 @@ int main()
 		}
 
 		// -- Cleanup --
-		ServiceLocator::Get<Renderer>().GetContext().device.WaitIdle();
+		ServiceLocator::Get<RenderSystem>().GetRenderer()->GetContext().device.WaitIdle();
 		ServiceLocator::Deregister<SceneManager>();
-		ServiceLocator::Deregister<LightingSystem>();
 		ServiceLocator::Deregister<RenderSystem>();
 		ServiceLocator::Deregister<Renderer>();
 		delete pWindow;

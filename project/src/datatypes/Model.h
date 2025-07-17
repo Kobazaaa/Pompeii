@@ -25,8 +25,8 @@
 
 // -- Pompeii Includes --
 #include "Buffer.h"
-#include "Component.h"
 #include "Image.h"
+using ModelHandle = uint32_t;
 
 namespace pompeii
 {
@@ -71,43 +71,24 @@ namespace pompeii
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Model	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	struct Model
+	struct ModelCPU
 	{
 	public:
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit Model() = default;
-		virtual ~Model() = default;
-		Model(const Model& other) = delete;
-		Model(Model&& other) noexcept = delete;
-		Model& operator=(const Model& other) = delete;
-		Model& operator=(Model&& other) noexcept = delete;
-
-		//--------------------------------------------------
-		//    Helpers
-		//--------------------------------------------------
-		void Bind(CommandBuffer& cmdBuffer) const;
-		void LoadModel(const std::string& path);
-		void AllocateResources(const Context& context, bool keepHostData = false);
-		void Destroy(const Context& context);
+		explicit ModelCPU(const std::string& path);
+		virtual ~ModelCPU() = default;
 
 		//--------------------------------------------------
 		//    Data
 		//--------------------------------------------------
-		// -- CPU --
 		std::vector<Vertex> vertices{};
 		std::vector<uint32_t> indices{};
 		std::vector<Texture> textures{};
 		std::unordered_map<std::string, uint32_t> pathToIdx{};
 		AABB aabb{};
 
-		// -- GPU --
-		Buffer vertexBuffer{};
-		Buffer indexBuffer{};
-		std::vector<Image> images{};
-
-		// -- Meshes --
 		std::vector<Mesh> opaqueMeshes{};
 		std::vector<Mesh> transparentMeshes{};
 
@@ -119,12 +100,45 @@ namespace pompeii
 		void ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, glm::mat4 transform);
 
 		static glm::mat4 ConvertAssimpMatrix(const aiMatrix4x4& mat);
-
-		void CreateVertexBuffer(const Context& context);
-		void CreateIndexBuffer(const Context& context);
-		void CreateImages(const Context& context);
-
 		inline static uint32_t globalTextureCounter{ 0 };
+	};
+	struct ModelGPU
+	{
+	public:
+		//--------------------------------------------------
+		//    Constructor & Destructor
+		//--------------------------------------------------
+		explicit ModelGPU() = default;
+		virtual ~ModelGPU() = default;
+		ModelGPU(const ModelGPU& other) = delete;
+		ModelGPU(ModelGPU&& other) noexcept = delete;
+		ModelGPU& operator=(const ModelGPU& other) = delete;
+		ModelGPU& operator=(ModelGPU&& other) noexcept = delete;
+
+		//--------------------------------------------------
+		//    Helpers
+		//--------------------------------------------------
+		void Bind(CommandBuffer& cmdBuffer) const;
+		void AllocateResources(const Context& context, const ModelCPU& modelCPU);
+		void Destroy(const Context& context);
+
+		//--------------------------------------------------
+		//    Data
+		//--------------------------------------------------
+		Buffer vertexBuffer{};
+		Buffer indexBuffer{};
+		std::vector<Image> images{};
+
+		std::vector<Mesh> opaqueMeshes{};
+		std::vector<Mesh> transparentMeshes{};
+
+	private:
+		//--------------------------------------------------
+		//    Helpers
+		//--------------------------------------------------
+		void CreateVertexBuffer(const Context& context, const ModelCPU& modelCPU);
+		void CreateIndexBuffer(const Context& context, const ModelCPU& modelCPU);
+		void CreateImages(const Context& context, const ModelCPU& modelCPU);
 	};
 }
 

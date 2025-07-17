@@ -6,26 +6,28 @@
 
 // -- Standard Library --
 #include <vector>
+#include <memory>
 
 // -- Pompeii Includes --
-#include "BlitPass.h"
 #include "Context.h"
-#include "DepthPrePass.h"
-#include "EnvironmentMap.h"
 #include "SwapChain.h"
 #include "SyncManager.h"
-#include "UIPass.h"
+
+#include "DepthPrePass.h"
 #include "GeometryPass.h"
 #include "LightingPass.h"
+#include "BlitPass.h"
+#include "UIPass.h"
+
+#include "EnvironmentMap.h"
+#include "Light.h"
+#include "Model.h"
 
 // -- Forward Declarations --
 namespace pompeii
 {
+	struct GPULight;
 	class Window;
-	class Camera;
-	class ModelRenderer;
-	struct Model;
-	struct Material;
 }
 
 namespace pompeii
@@ -50,7 +52,14 @@ namespace pompeii
 		//    Loop
 		//--------------------------------------------------
 		void Render();
+		void ClearRenderInstances();
+		void AddRenderInstance(ModelHandle handle, const glm::mat4& transform);
 
+		ModelHandle CreateModel(const ModelCPU& modelCPU);
+		void DestroyModel(ModelHandle handle);
+
+		LightHandle CreateLight(const LightCPU& lightData);
+		void DestroyLight(LightHandle handle);
 
 		//--------------------------------------------------
 		//    Accessors
@@ -68,6 +77,9 @@ namespace pompeii
 
 		// -- Vulkan Context --
 		Context						m_Context				{ };
+		std::unordered_map<ModelHandle, std::unique_ptr<ModelGPU>> m_vModelRegistry;
+		std::unordered_map<LightHandle, std::unique_ptr<LightGPU>> m_vLightRegistry;
+		std::vector<RenderInstance> m_vRenderInstances;
 
 		// -- SwapChain --
 		SwapChain					m_SwapChain				{ };

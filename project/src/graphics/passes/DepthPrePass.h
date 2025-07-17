@@ -18,6 +18,8 @@ namespace pompeii
 	class Scene;
 	class Camera;
 	class CommandBuffer;
+	struct RenderDrawContext;
+	struct RenderInstance;
 }
 
 namespace pompeii
@@ -51,7 +53,8 @@ namespace pompeii
 
 		void Initialize(const Context& context, const DepthPrePassCreateInfo& createInfo);
 		void Destroy();
-		void Record(const Context& context, CommandBuffer& commandBuffer, const GeometryPass& gPass, uint32_t imageIndex, const Image& depthImage, Camera* pCamera) const;
+		void UpdateCamera(const Context& context, uint32_t imageIndex, Camera* pCamera) const;
+		void Record(CommandBuffer& commandBuffer, const GeometryPass& gPass, uint32_t imageIndex, const Image& depthImage, const RenderDrawContext& renderContext) const;
 
 		//--------------------------------------------------
 		//    Shader Infos

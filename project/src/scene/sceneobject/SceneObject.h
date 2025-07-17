@@ -8,19 +8,16 @@
 #include <vector>
 
 // -- Pompeii Includes --
+#include "Component.h"
 #include "Transform.h"
 
 // -- Forward Declarations --
 namespace pompeii
 {
 	class Scene;
-	class Component;
 }
 namespace pompeii
 {
-	// todo I have to do this to avoid a circular dependency, maybe fix this?
-	struct ComponentDeleter { void operator()(const Component* ptr) const; };
-
 	class SceneObject final
 	{
 	public:

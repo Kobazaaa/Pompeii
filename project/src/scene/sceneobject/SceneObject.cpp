@@ -3,9 +3,6 @@
 
 // -- Pompeii Includes --
 #include "SceneObject.h"
-#include "Component.h"
-
-void pompeii::ComponentDeleter::operator()(const Component* ptr) const { delete ptr; }
 
 //--------------------------------------------------
 //    Constructors and Destructors

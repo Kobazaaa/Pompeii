@@ -173,7 +173,8 @@ pompeii::BufferAllocator& pompeii::BufferAllocator::HostAccess(bool access)
 
 	return *this;
 }
-pompeii::BufferAllocator& pompeii::BufferAllocator::AddInitialData(void* data, VkDeviceSize dstOffset, uint32_t size)
+
+pompeii::BufferAllocator& pompeii::BufferAllocator::AddInitialData(const void* data, VkDeviceSize dstOffset, uint32_t size)
 {
 	m_UseInitialData = true;
 	m_vInitialData.emplace_back(data, size, dstOffset);

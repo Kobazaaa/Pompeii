@@ -31,8 +31,10 @@ set(SOURCES
 	"${SOURCE_DIR}/core/Window.h"							"${SOURCE_DIR}/core/Window.cpp"
 
 	# datatypes
+	"${SOURCE_DIR}/datatypes/Light.h"						"${SOURCE_DIR}/datatypes/Light.cpp"
 	"${SOURCE_DIR}/datatypes/Material.h"					"${SOURCE_DIR}/datatypes/Material.cpp"
 	"${SOURCE_DIR}/datatypes/Model.h"						"${SOURCE_DIR}/datatypes/Model.cpp"
+	"${SOURCE_DIR}/datatypes/RenderInstance.h"
 	"${SOURCE_DIR}/datatypes/Shapes.h"						"${SOURCE_DIR}/datatypes/Shapes.cpp"
 
 	# graphics
@@ -75,8 +77,8 @@ set(SOURCES
 	"${SOURCE_DIR}/scene/base/SceneManager.h"				"${SOURCE_DIR}/scene/base/SceneManager.cpp"
 	 # scene/components
 	"${SOURCE_DIR}/scene/components/Camera.h"				"${SOURCE_DIR}/scene/components/Camera.cpp"
-	"${SOURCE_DIR}/scene/components/Component.h"
-	"${SOURCE_DIR}/scene/components/Light.h"				"${SOURCE_DIR}/scene/components/Light.cpp"
+	"${SOURCE_DIR}/scene/components/Component.h"			"${SOURCE_DIR}/scene/components/Component.cpp"
+	"${SOURCE_DIR}/scene/components/LightComponent.h"		"${SOURCE_DIR}/scene/components/LightComponent.cpp"
 	"${SOURCE_DIR}/scene/components/ModelRenderer.h"		"${SOURCE_DIR}/scene/components/ModelRenderer.cpp"
 	 # scene/sceneobject
 	"${SOURCE_DIR}/scene/sceneobject/SceneObject.h"			"${SOURCE_DIR}/scene/sceneobject/SceneObject.cpp"
@@ -84,7 +86,6 @@ set(SOURCES
 
 	# systems
 	"${SOURCE_DIR}/systems/ISystem.h"
-	"${SOURCE_DIR}/systems/LightingSystem.h"				"${SOURCE_DIR}/systems/LightingSystem.cpp"
 	"${SOURCE_DIR}/systems/RenderSystem.h"					"${SOURCE_DIR}/systems/RenderSystem.cpp"
 )
 

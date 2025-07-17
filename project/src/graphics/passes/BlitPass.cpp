@@ -1,12 +1,12 @@
 // -- Pompeii Includes --
 #include "BlitPass.h"
+#include "Buffer.h"
 #include "Camera.h"
 #include "Context.h"
 #include "Debugger.h"
 #include "DescriptorPool.h"
 #include "GeometryPass.h"
 #include "Shader.h"
-#include "Scene.h"
 #include "Timer.h"
 
 void pompeii::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo& createInfo)

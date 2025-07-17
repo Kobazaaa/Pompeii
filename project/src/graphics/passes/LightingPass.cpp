@@ -7,8 +7,6 @@
 #include "GBuffer.h"
 #include "GeometryPass.h"
 #include "Shader.h"
-#include "Scene.h"
-#include "ServiceLocator.h"
 
 void pompeii::LightingPass::Initialize(const Context& context, const LightingPassCreateInfo& createInfo)
 {
@@ -279,29 +277,29 @@ void pompeii::LightingPass::UpdateEnvironmentMap(const Context& context, const E
 	}
 }
 
-void pompeii::LightingPass::UpdateLightDescriptors(const Context& context)
+void pompeii::LightingPass::UpdateLightDescriptors(const Context& context, const std::vector<LightGPU*>& data)
 {
-	uint32_t lightCount = ServiceLocator::Get<LightingSystem>().GetLightsCount();
+	uint32_t lightCount = static_cast<uint32_t>(data.size());
 
 	// -- Prepare and Count Light Depth Maps --
 	DescriptorSetWriter directionalWriter{};
 	DescriptorSetWriter pointWriter{};
 	uint32_t dirCount = 0;
 	uint32_t pointCount = 0;
-	for (const Light* light : ServiceLocator::Get<LightingSystem>().GetLights())
+	for (LightGPU* light : data)
 	{
-		if (light->GetDepthMap().GetHandle() == VK_NULL_HANDLE)
+		if (light->shadowMap.GetHandle() == VK_NULL_HANDLE)
 			continue;
 
-		if (light->GetType() == Light::Type::Directional)
+		if (light->type == LightType::Directional)
 		{
 			++dirCount;
-			directionalWriter.AddImageInfo(light->GetDepthMap().GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_ShadowSampler);
+			directionalWriter.AddImageInfo(light->shadowMap.GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_ShadowSampler);
 		}
 		else
 		{
 			++pointCount;
-			pointWriter.AddImageInfo(light->GetDepthMap().GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_ShadowSampler);
+			pointWriter.AddImageInfo(light->shadowMap.GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_ShadowSampler);
 		}
 	}
 
@@ -330,10 +328,16 @@ void pompeii::LightingPass::UpdateLightDescriptors(const Context& context)
 	if (pointCount > 0)
 		pointWriter.WriteImages(m_UBOPointLightMapDS, 0, pointCount).Execute(context);
 
+	// -- Extract GPU Light Data --
+	std::vector<LightGPUData> res{};
+	res.reserve(data.size());
+	for (auto& l : data)
+		res.push_back(l->data);
+
 	// -- Calculate buffer sizes --
-	const VkDeviceSize totalLightSize = /*uint + 3padding*/4 * sizeof(uint32_t) + sizeof(GPULight) * lightCount;
+	const VkDeviceSize totalLightSize = /*uint + 3padding*/4 * sizeof(uint32_t) + sizeof(LightGPUData) * lightCount;
 	const VkDeviceSize totalMatricesSize = /*uint + 3padding*/4 * sizeof(uint32_t) + sizeof(glm::mat4) * dirCount;
-	if (m_SSBOLights.Size() < totalLightSize)
+	if (m_SSBOLights.Size() < totalLightSize || m_SSBOLightsMatrices.Size() < totalMatricesSize)
 	{
 		// -- Destroy previous buffers --
 		m_SSBOLights.Destroy(context);
@@ -346,7 +350,7 @@ void pompeii::LightingPass::UpdateLightDescriptors(const Context& context)
 			.SetUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
 			.SetSize(static_cast<uint32_t>(totalLightSize))
 			.AddInitialData(&lightCount, 0, sizeof(uint32_t))
-			.AddInitialData(ServiceLocator::Get<LightingSystem>().GetLightsGPU().data(), 4 * sizeof(uint32_t), sizeof(GPULight) * lightCount)
+			.AddInitialData(res.data(), 4 * sizeof(uint32_t), sizeof(LightGPUData) * lightCount)
 			.Allocate(context, m_SSBOLights);
 
 		// -- Allocate Light Matrices Buffer --
@@ -356,7 +360,7 @@ void pompeii::LightingPass::UpdateLightDescriptors(const Context& context)
 			.SetUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
 			.SetSize(static_cast<uint32_t>(totalMatricesSize))
 			.AddInitialData(&dirCount, 0, sizeof(uint32_t))
-			.AddInitialData(ServiceLocator::Get<LightingSystem>().GetLightMatrices().data(), 4 * sizeof(uint32_t), sizeof(glm::mat4) * dirCount)
+			.AddInitialData(res.data(), 4 * sizeof(uint32_t), sizeof(glm::mat4) * dirCount)
 			.Allocate(context, m_SSBOLightsMatrices);
 
 		static uint32_t prevIdx = 0xFFFFFFFF;

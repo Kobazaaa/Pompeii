@@ -6,8 +6,8 @@
 #include "Context.h"
 #include "Camera.h"
 #include "GeometryPass.h"
-#include "Scene.h"
-#include "ServiceLocator.h"
+#include "Model.h"
+#include "RenderInstance.h"
 
 void pompeii::DepthPrePass::Initialize(const Context& context, const DepthPrePassCreateInfo& createInfo)
 {
@@ -119,14 +119,15 @@ void pompeii::DepthPrePass::Destroy()
 	m_DeletionQueue.Flush();
 }
 
-void pompeii::DepthPrePass::Record(const Context& context, CommandBuffer& commandBuffer, const GeometryPass& gPass, uint32_t imageIndex, const Image& depthImage, Camera* pCamera) const
+void pompeii::DepthPrePass::UpdateCamera(const Context& context, uint32_t imageIndex, Camera* pCamera) const
 {
-	// -- Update Vertex UBO --
 	UniformBufferVS ubo;
 	ubo.view = pCamera->GetViewMatrix();
 	ubo.proj = pCamera->GetProjectionMatrix();
 	vmaCopyMemoryToAllocation(context.allocator, &ubo, m_vUniformBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(ubo));
-
+}
+void pompeii::DepthPrePass::Record(CommandBuffer& commandBuffer, const GeometryPass& gPass, uint32_t imageIndex, const Image& depthImage, const RenderDrawContext& renderContext) const
+{
 	// -- Set Up Attachments --
 	VkRenderingAttachmentInfo depthAttachment{};
 	depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -178,19 +179,21 @@ void pompeii::DepthPrePass::Record(const Context& context, CommandBuffer& comman
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
 
 		// -- Draw Models --
-		for (const auto& model : ServiceLocator::Get<RenderSystem>().GetVisibleModels())
+		for (const RenderInstance& instance : renderContext.instances)
 		{
+			const ModelGPU& model = renderContext.resolveModel(instance.handle);
+
 			// -- Bind Model Data --
-			model->GetModel()->Bind(commandBuffer);
+			model.Bind(commandBuffer);
 
 			// -- Draw Opaque --
-			for (const Mesh& mesh : model->GetModel()->opaqueMeshes)
+			for (const Mesh& mesh : model.opaqueMeshes)
 			{
 				// -- Bind Push Constants --
 				Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
 				PCModelDataVS pcvs
 				{
-					.model = mesh.matrix
+					.model = instance.transform * mesh.matrix
 				};
 				vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
 					sizeof(PCModelDataVS), &pcvs);

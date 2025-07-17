@@ -8,9 +8,7 @@
 
 // -- Pompeii Includes --
 #include "SceneManager.h"
-#include "Renderer.h"
 #include "RenderSystem.h"
-#include "LightingSystem.h"
 
 namespace pompeii
 {

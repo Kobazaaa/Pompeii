@@ -1,18 +1,17 @@
 // -- Standard Library --
 #include <stdexcept>
 #include <array>
-#include <thread>
-#include <fstream>
+#include <ranges>
 
 // -- Pompeii Includes --
 #include "Renderer.h"
 #include "Debugger.h"
 #include "CommandBuffer.h"
 #include "Timer.h"
-#include "Camera.h"
 #include "Window.h"
-#include "Scene.h"
 #include "ServiceLocator.h"
+#include "Camera.h"
+#include "RenderInstance.h"
 
 //--------------------------------------------------
 //    Constructor & Destructor
@@ -26,6 +25,9 @@ pompeii::Renderer::~Renderer()
 {
 	// -- Release Resources --
 	m_Context.device.WaitIdle();
+	for (auto& model : m_vModelRegistry | std::views::values)
+		model->Destroy(m_Context);
+	m_vModelRegistry.clear();
 	m_Context.deletionQueue.Flush();
 }
 
@@ -97,6 +99,46 @@ void pompeii::Renderer::Render()
 	m_CurrentFrame = (m_CurrentFrame + 1) % m_MaxFramesInFlight;
 }
 
+void pompeii::Renderer::ClearRenderInstances()
+{
+	m_vRenderInstances.clear();
+}
+void pompeii::Renderer::AddRenderInstance(ModelHandle handle, const glm::mat4& transform)
+{
+	m_vRenderInstances.emplace_back(RenderInstance{handle, transform});
+}
+ModelHandle pompeii::Renderer::CreateModel(const ModelCPU& modelCPU)
+{
+	auto model = std::make_unique<ModelGPU>();
+	model->AllocateResources(m_Context, modelCPU);
+	static uint32_t nextIdx = 0;
+	ModelHandle handle{ nextIdx++ };
+	m_vModelRegistry[handle] = std::move(model);
+
+	return handle;
+}
+void pompeii::Renderer::DestroyModel(ModelHandle handle)
+{
+	m_vModelRegistry[handle]->Destroy(m_Context);
+	m_vModelRegistry.erase(handle);
+}
+
+LightHandle pompeii::Renderer::CreateLight(const LightCPU& lightData)
+{
+	auto light = std::make_unique<LightGPU>();
+
+	light->type = lightData.type;
+	light->GenerateDepthMap(m_Context, 2048);
+	static uint32_t nextIdx = 0;
+	LightHandle handle{ nextIdx++ };
+	m_vLightRegistry[handle] = std::move(light);
+	return handle;
+}
+void pompeii::Renderer::DestroyLight(LightHandle handle)
+{
+	m_vLightRegistry[handle]->DestroyDepthMap(m_Context);
+	m_vLightRegistry.erase(handle);
+}
 
 //--------------------------------------------------
 //    Accessors
@@ -108,11 +150,18 @@ pompeii::Context& pompeii::Renderer::GetContext()
 
 void pompeii::Renderer::UpdateLights()
 {
-	m_LightingPass.UpdateLightDescriptors(m_Context);
+	std::vector<LightGPU*> result{};
+	for (const auto& light : m_vLightRegistry | std::views::values)
+		result.push_back(light.get());
+	m_LightingPass.UpdateLightDescriptors(m_Context, result);
 }
 void pompeii::Renderer::UpdateTextures()
 {
-	m_GeometryPass.UpdateTextureDescriptor(m_Context);
+	std::vector<Image*> result{};
+	for (const auto& model : m_vModelRegistry | std::views::values)
+		for (auto& i : model->images)
+			result.push_back(&i);
+	m_GeometryPass.UpdateTextureDescriptor(m_Context, result);
 }
 void pompeii::Renderer::UpdateEnvironmentMap() const
 {
@@ -445,6 +494,13 @@ void pompeii::Renderer::CreateRenderTargetResources(const Context& context, VkEx
 
 void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex)
 {
+	RenderDrawContext renderContext
+	{
+	.instances = m_vRenderInstances,
+	.resolveModel = [this](ModelHandle handle) -> const ModelGPU& {
+		return *m_vModelRegistry.at(handle);
+	}
+	};
 	const auto& camera = ServiceLocator::Get<RenderSystem>().GetMainCamera();
 	Image& presentImage = m_SwapChain.GetImages()[imageIndex];
 	Image& renderImage = m_vRenderTargets[imageIndex];
@@ -462,7 +518,8 @@ void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32
 				0, 1, 0, 1);
 
 			// The Depth Pre-Pass renders the entire scene to the provided depth buffer.
-			m_DepthPrePass.Record(m_Context, commandBuffer, m_GeometryPass, imageIndex, depthImage, camera);
+			m_DepthPrePass.UpdateCamera(m_Context, imageIndex, camera);
+			m_DepthPrePass.Record(commandBuffer, m_GeometryPass, imageIndex, depthImage, renderContext);
 
 			// Transition the current Depth Image to be read from
 			depthImage.TransitionLayout(commandBuffer,
@@ -475,7 +532,8 @@ void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32
 		// -- Geometry Pass --
 		{
 			// The Geometry Pass renders the entire scene to a GBuffer.
-			m_GeometryPass.Record(m_Context, commandBuffer, imageIndex, depthImage, camera);
+			m_GeometryPass.UpdateCamera(m_Context, imageIndex, camera);
+			m_GeometryPass.Record(commandBuffer, imageIndex, depthImage, renderContext);
 			// After it is done, the GBuffers are transitioned to a layout ready for being sampled from.
 		}
 

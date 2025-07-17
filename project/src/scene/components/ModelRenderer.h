@@ -44,10 +44,12 @@ namespace pompeii
 		//--------------------------------------------------
 		//    Accessors
 		//--------------------------------------------------
-		Model* GetModel() const;
+		ModelHandle GetModelHandle() const;
 
 	private:
-		std::unique_ptr<Model> m_pModel{ std::make_unique<Model>() };
+		ModelHandle m_ModelHandle;
+
+		friend class RenderSystem;
 	};
 }
 

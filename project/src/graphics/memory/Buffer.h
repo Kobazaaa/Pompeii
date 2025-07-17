@@ -75,7 +75,7 @@ namespace pompeii
 		BufferAllocator& SetMemUsage(VmaMemoryUsage usage);
 		BufferAllocator& SetSharingMode(VkSharingMode sharingMode);
 		BufferAllocator& HostAccess(bool access);
-		BufferAllocator& AddInitialData(void* data, VkDeviceSize dstOffset, uint32_t size);
+		BufferAllocator& AddInitialData(const void* data, VkDeviceSize dstOffset, uint32_t size);
 
 		void Allocate(const Context& context, Buffer& buffer) const;
 
@@ -83,7 +83,7 @@ namespace pompeii
 		bool m_UseInitialData;
 		struct InitData
 		{
-			void* pData;
+			const void* pData;
 			uint32_t initDataSize;
 			VkDeviceSize dstOffset;
 		};

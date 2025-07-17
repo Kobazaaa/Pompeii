@@ -1,12 +1,11 @@
 // -- Pompeii Includes --
 #include "GeometryPass.h"
-#include "Camera.h"
-#include "Scene.h"
 #include "Shader.h"
 #include "Context.h"
 #include "Debugger.h"
+#include "Camera.h"
 #include "DescriptorPool.h"
-#include "ServiceLocator.h"
+#include "RenderInstance.h"
 
 void pompeii::GeometryPass::Initialize(const Context& context, const GeometryPassCreateInfo& createInfo)
 {
@@ -165,12 +164,13 @@ void pompeii::GeometryPass::Resize(const Context& context, VkExtent2D extent)
 	for (GBuffer& gBuffer : m_vGBuffers)
 		gBuffer.Resize(context, extent);
 }
-void pompeii::GeometryPass::UpdateTextureDescriptor(const Context& context)
+void pompeii::GeometryPass::UpdateTextureDescriptor(const Context& context, const std::vector<Image*>& vTextures)
 {
 	if (m_TextureDS.GetHandle())
 		vkFreeDescriptorSets(context.device.GetHandle(), context.descriptorPool->GetHandle(), 1, &m_TextureDS.GetHandle());
 
-	const uint32_t variableCount = ServiceLocator::Get<RenderSystem>().GetTextureCount();
+	auto imageCount = static_cast<uint32_t>(vTextures.size());
+	const uint32_t variableCount = imageCount;
 	VkDescriptorSetVariableDescriptorCountAllocateInfo variableCountInfo{};
 	variableCountInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
 	variableCountInfo.descriptorSetCount = 1;
@@ -178,29 +178,25 @@ void pompeii::GeometryPass::UpdateTextureDescriptor(const Context& context)
 	m_TextureDS = context.descriptorPool->AllocateSets(context, m_TextureDSL, 1, "Texture Array DS", &variableCountInfo).front();
 
 	// -- Write Textures --
-	auto imageCount = ServiceLocator::Get<RenderSystem>().GetTextureCount();
 	if (imageCount <= 0)
 		return;
 
 	DescriptorSetWriter writer{};
-	for (const ModelRenderer* model : ServiceLocator::Get<RenderSystem>().GetVisibleModels())
-	{
-		for (const Image& image : model->GetModel()->images)
-		{
-			writer.AddImageInfo(image.GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_TextureSampler);
-		}
-	}
+	for (const Image* image : vTextures)
+		writer.AddImageInfo(image->GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_TextureSampler);
 	writer.WriteImages(m_TextureDS, 0, imageCount).Execute(context);
 	m_TextureCount = imageCount;
 }
-void pompeii::GeometryPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, Camera* pCamera)
+
+void pompeii::GeometryPass::UpdateCamera(const Context& context, uint32_t imageIndex, Camera* pCamera) const
 {
-	// Update VS UBO
 	UniformBufferVS ubo;
 	ubo.view = pCamera->GetViewMatrix();
 	ubo.proj = pCamera->GetProjectionMatrix();
 	vmaCopyMemoryToAllocation(context.allocator, &ubo, m_vUniformBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(ubo));
-
+}
+void pompeii::GeometryPass::Record(CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, const RenderDrawContext& renderContext)
+{
 	// Transition GBuffer Images
 	m_vGBuffers[imageIndex].TransitionBufferWriting(commandBuffer);
 
@@ -260,19 +256,21 @@ void pompeii::GeometryPass::Record(const Context& context, CommandBuffer& comman
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
 
 		// -- Draw Models --
-		for (const ModelRenderer* model : ServiceLocator::Get<RenderSystem>().GetVisibleModels())
+		for (const RenderInstance& instance : renderContext.instances)
 		{
+			const ModelGPU& model = renderContext.resolveModel(instance.handle);
+
 			// -- Bind Model Data --
-			model->GetModel()->Bind(commandBuffer);
+			model.Bind(commandBuffer);
 
 			// -- Draw Opaque --
-			for (const Mesh& mesh : model->GetModel()->opaqueMeshes)
+			for (const Mesh& mesh : model.opaqueMeshes)
 			{
 				// -- Bind Push Constants --
 				Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
 				PCModelDataVS pcvs
 				{
-					.model = mesh.matrix
+					.model = instance.transform * mesh.matrix
 				};
 				vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
 					sizeof(PCModelDataVS), &pcvs);
@@ -295,13 +293,13 @@ void pompeii::GeometryPass::Record(const Context& context, CommandBuffer& comman
 			}
 
 			// -- Draw Transparent using Alpha Cut-Off --
-			for (const Mesh& mesh : model->GetModel()->transparentMeshes)
+			for (const Mesh& mesh : model.transparentMeshes)
 			{
 				// -- Bind Push Constants --
 				Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
 				PCModelDataVS pcvs
 				{
-					.model = mesh.matrix
+					.model = instance.transform * mesh.matrix
 				};
 				vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
 					sizeof(PCModelDataVS), &pcvs);

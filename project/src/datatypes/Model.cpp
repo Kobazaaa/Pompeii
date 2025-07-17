@@ -68,29 +68,9 @@ bool pompeii::Vertex::operator==(const Vertex& other) const
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//? ~~	  Model	
+//? ~~	  Model CPU
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-//--------------------------------------------------
-//    Helpers
-//--------------------------------------------------
-void pompeii::Model::Bind(CommandBuffer& cmdBuffer) const
-{
-	// -- Get Vulkan Command Buffer --
-	const VkCommandBuffer& vCmdBuffer = cmdBuffer.GetHandle();
-
-	// -- Bind Vertex Buffer --
-	VkBuffer vertexBuffers[] = { vertexBuffer.GetHandle() };
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(vCmdBuffer, 0, 1, vertexBuffers, offsets);
-	Debugger::InsertDebugLabel(cmdBuffer, "Bind Vertex Buffer", glm::vec4(0.6f, 1.f, 0.6f, 1.f));
-
-	// -- Bind Index Buffer --
-	vkCmdBindIndexBuffer(vCmdBuffer, indexBuffer.GetHandle(), 0, VK_INDEX_TYPE_UINT32);
-	Debugger::InsertDebugLabel(cmdBuffer, "Bind Index Buffer", glm::vec4(1.f, 0.4f, 1.f, 1.f));
-}
-
-void pompeii::Model::LoadModel(const std::string& path)
+pompeii::ModelCPU::ModelCPU(const std::string& path)
 {
 	Assimp::Importer importer;
 	const aiScene* pScene =
@@ -110,46 +90,11 @@ void pompeii::Model::LoadModel(const std::string& path)
 
 	ProcessNode(pScene->mRootNode, pScene);
 }
-void pompeii::Model::AllocateResources(const Context& context, bool keepHostData)
-{
-	// -- Create Buffers --
-	CreateVertexBuffer(context);
-	CreateIndexBuffer(context);
-
-	// -- Build Image --
-	CreateImages(context);
-
-	// -- Destroy Host Data --
-	if (!keepHostData)
-	{
-		// - Free Textures --
-		for (Texture& tex : textures)
-			tex.FreePixels();
-
-		// -- Clear Vectors --
-		textures.clear();
-		indices.clear();
-		vertices.clear();
-		pathToIdx.clear();
-	}
-}
-void pompeii::Model::Destroy(const Context& context)
-{
-	// -- Flush --
-	for (Image& image : images)
-		image.Destroy(context);
-	indexBuffer.Destroy(context);
-	vertexBuffer.Destroy(context);
-
-	// -- Free Textures --
-	for (Texture& tex : textures)
-		tex.FreePixels();
-}
 
 //--------------------------------------------------
 //    Helpers
 //--------------------------------------------------
-void pompeii::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene, const glm::mat4& transform)
+void pompeii::ModelCPU::ProcessNode(const aiNode* pNode, const aiScene* pScene, const glm::mat4& transform)
 {
 	auto nodeTransform = ConvertAssimpMatrix(pNode->mTransformation);
 	auto totalTransform = transform * nodeTransform;
@@ -163,7 +108,7 @@ void pompeii::Model::ProcessNode(const aiNode* pNode, const aiScene* pScene, con
 	for (uint32_t cIdx{}; cIdx < pNode->mNumChildren; ++cIdx)
 		ProcessNode(pNode->mChildren[cIdx], pScene, totalTransform);
 }
-void pompeii::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, glm::mat4 transform)
+void pompeii::ModelCPU::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, glm::mat4 transform)
 {
 	opaqueMeshes.emplace_back();
 	opaqueMeshes.back().name = pMesh->mName.C_Str();
@@ -266,7 +211,7 @@ void pompeii::Model::ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, glm
 	}
 }
 
-glm::mat4 pompeii::Model::ConvertAssimpMatrix(const aiMatrix4x4& mat)
+glm::mat4 pompeii::ModelCPU::ConvertAssimpMatrix(const aiMatrix4x4& mat)
 {
 	return glm::mat4(
 		mat.a1, mat.b1, mat.c1, mat.d1,
@@ -276,33 +221,82 @@ glm::mat4 pompeii::Model::ConvertAssimpMatrix(const aiMatrix4x4& mat)
 	);
 }
 
-void pompeii::Model::CreateVertexBuffer(const Context& context)
+
+
+
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  Model GPU
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void pompeii::ModelGPU::Bind(CommandBuffer& cmdBuffer) const
+{
+	// -- Get Vulkan Command Buffer --
+	const VkCommandBuffer& vCmdBuffer = cmdBuffer.GetHandle();
+
+	// -- Bind Vertex Buffer --
+	VkBuffer vertexBuffers[] = { vertexBuffer.GetHandle() };
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(vCmdBuffer, 0, 1, vertexBuffers, offsets);
+	Debugger::InsertDebugLabel(cmdBuffer, "Bind Vertex Buffer", glm::vec4(0.6f, 1.f, 0.6f, 1.f));
+
+	// -- Bind Index Buffer --
+	vkCmdBindIndexBuffer(vCmdBuffer, indexBuffer.GetHandle(), 0, VK_INDEX_TYPE_UINT32);
+	Debugger::InsertDebugLabel(cmdBuffer, "Bind Index Buffer", glm::vec4(1.f, 0.4f, 1.f, 1.f));
+}
+
+void pompeii::ModelGPU::AllocateResources(const Context& context, const ModelCPU& modelCPU)
+{
+	// -- Create Buffers --
+	CreateVertexBuffer(context, modelCPU);
+	CreateIndexBuffer(context, modelCPU);
+
+	// -- Build Image --
+	CreateImages(context, modelCPU);
+
+	// -- Meshes --
+	opaqueMeshes = modelCPU.opaqueMeshes;
+	transparentMeshes = modelCPU.transparentMeshes;
+}
+
+void pompeii::ModelGPU::Destroy(const Context& context)
+{
+	// -- Flush --
+	for (Image& image : images)
+		image.Destroy(context);
+	indexBuffer.Destroy(context);
+	vertexBuffer.Destroy(context);
+}
+
+
+//--------------------------------------------------
+//    Helpers
+//--------------------------------------------------
+void pompeii::ModelGPU::CreateVertexBuffer(const Context& context, const ModelCPU& modelCPU)
 {
 	BufferAllocator alloc{};
-	const uint32_t bufferSize = static_cast<uint32_t>(vertices.size()) * sizeof(Vertex);
+	const uint32_t bufferSize = static_cast<uint32_t>(modelCPU.vertices.size()) * sizeof(Vertex);
 	alloc
 		.SetDebugName("Vertex Buffer")
 		.SetSize(bufferSize)
 		.SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
 		.HostAccess(false)
-		.AddInitialData(vertices.data(), 0, bufferSize)
+		.AddInitialData(modelCPU.vertices.data(), 0, bufferSize)
 		.Allocate(context, vertexBuffer);
 }
-void pompeii::Model::CreateIndexBuffer(const Context& context)
+void pompeii::ModelGPU::CreateIndexBuffer(const Context& context, const ModelCPU& modelCPU)
 {
 	BufferAllocator alloc{};
-	const uint32_t bufferSize = static_cast<uint32_t>(indices.size()) * sizeof(uint32_t);
+	const uint32_t bufferSize = static_cast<uint32_t>(modelCPU.indices.size()) * sizeof(uint32_t);
 	alloc
 		.SetDebugName("Index Buffer")
 		.SetSize(bufferSize)
 		.SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
 		.HostAccess(false)
-		.AddInitialData(indices.data(), 0, bufferSize)
+		.AddInitialData(modelCPU.indices.data(), 0, bufferSize)
 		.Allocate(context, indexBuffer);
 }
-void pompeii::Model::CreateImages(const Context& context)
+void pompeii::ModelGPU::CreateImages(const Context& context, const ModelCPU& modelCPU)
 {
-	for (Texture& tex : textures)
+	for (const Texture& tex : modelCPU.textures)
 	{
 		images.emplace_back();
 

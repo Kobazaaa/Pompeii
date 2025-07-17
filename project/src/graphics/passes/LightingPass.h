@@ -8,10 +8,7 @@
 #include "Sampler.h"
 #include "DescriptorSet.h"
 #include "Buffer.h"
-
-// -- Math Includes --
-#include "glm/vec3.hpp"
-#include "glm/vec4.hpp"
+#include "Light.h"
 
 // -- Forward Declarations --
 namespace pompeii
@@ -57,7 +54,7 @@ namespace pompeii
 		void Destroy();
 		void UpdateGBufferDescriptors(const Context& context, const GeometryPass& pGeometryPass, const std::vector<Image>& depthImages) const;
 		void UpdateEnvironmentMap(const Context& context, const EnvironmentMap& envMap) const;
-		void UpdateLightDescriptors(const Context& context);
+		void UpdateLightDescriptors(const Context& context, const std::vector<LightGPU*>& data);
 		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, Camera* pCamera) const;
 
 	private:

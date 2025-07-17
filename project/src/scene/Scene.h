@@ -11,8 +11,7 @@
 
 // -- Pom Includes --
 #include "SceneObject.h"
-#include "Light.h"
-#include "ModelRenderer.h"
+#include "Shapes.h"
 
 namespace pompeii
 {

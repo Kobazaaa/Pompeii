@@ -19,6 +19,8 @@ namespace pompeii
 	class Scene;
 	class Camera;
 	class CommandBuffer;
+	struct RenderDrawContext;
+	struct RenderInstance;
 }
 
 namespace pompeii
@@ -53,8 +55,9 @@ namespace pompeii
 		void Initialize(const Context& context, const GeometryPassCreateInfo& createInfo);
 		void Destroy();
 		void Resize(const Context& context, VkExtent2D extent);
-		void UpdateTextureDescriptor(const Context& context);
-		void Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, Camera* pCamera);
+		void UpdateTextureDescriptor(const Context& context, const std::vector<Image*>& vTextures);
+		void UpdateCamera(const Context& context, uint32_t imageIndex, Camera* pCamera) const;
+		void Record(CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, const RenderDrawContext& renderContext);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators

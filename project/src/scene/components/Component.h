@@ -2,8 +2,13 @@
 #define COMPONENT_H
 
 // -- Pompeii Includes --
-#include "SceneObject.h"
+#include "Transform.h"
 
+// -- Forward Declarations --
+namespace pompeii
+{
+	class SceneObject;
+}
 namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -15,7 +20,7 @@ namespace pompeii
 		//--------------------------------------------------
 		//    Constructor and Destructor
 		//--------------------------------------------------
-		explicit Component(SceneObject& sceneObj) : m_pSceneObj{ &sceneObj } {}
+		explicit Component(SceneObject& sceneObj);
 		virtual ~Component() = default;
 		Component(const Component& other) = delete;
 		Component(Component&& other) = delete;
@@ -33,10 +38,10 @@ namespace pompeii
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		void Destroy()											{ m_DeletionFlag = true; }
-		[[nodiscard]] bool IsFlaggedForDestruction()	const	{ return m_DeletionFlag; }
-		[[nodiscard]] SceneObject& GetSceneObject()		const	{ return *m_pSceneObj; }
-		[[nodiscard]] Transform& GetTransform()			const	{ return *m_pSceneObj->transform; }
+		void Destroy();
+		[[nodiscard]] bool IsFlaggedForDestruction()	const;
+		[[nodiscard]] SceneObject& GetSceneObject()		const;
+		[[nodiscard]] Transform& GetTransform()			const;
 		bool isActive = true;
 
 	private:

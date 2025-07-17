@@ -5,6 +5,8 @@
 #include "Context.h"
 #include "Debugger.h"
 #include "ServiceLocator.h"
+#include "LightComponent.h"
+#include "ModelRenderer.h"
 
 // -- Standard Library --
 #include <stdexcept>
@@ -109,7 +111,7 @@ void pompeii::UIPass::Record(CommandBuffer& commandBuffer, const Image& renderIm
 //    Helpers
 //--------------------------------------------------
 // ReSharper disable once CppMemberFunctionMayBeStatic
-void pompeii::UIPass::BeginImGuiFrame()
+void pompeii::UIPass::BeginImGuiFrame() const
 {
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -168,12 +170,12 @@ void pompeii::UIPass::ImGuiLogic() const
 		{
 			const std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
 			char* StatsString = nullptr;
-			vmaBuildStatsString(ServiceLocator::Get<Renderer>().GetContext().allocator, &StatsString, true);
+			vmaBuildStatsString(ServiceLocator::Get<RenderSystem>().GetRenderer()->GetContext().allocator, &StatsString, true);
 			{
 				std::ofstream OutStats{ path };
 				OutStats << StatsString;
 			}
-			vmaFreeStatsString(ServiceLocator::Get<Renderer>().GetContext().allocator, StatsString);
+			vmaFreeStatsString(ServiceLocator::Get<RenderSystem>().GetRenderer()->GetContext().allocator, StatsString);
 		}
 		ImGuiFileDialog::Instance()->Close();
 	}
@@ -194,6 +196,16 @@ void pompeii::UIPass::ImGuiLogic() const
 				obj.AddComponent<ModelRenderer>(path);
 			}
 			ImGuiFileDialog::Instance()->Close();
+		}
+		ImGui::Text("Add Light");
+		if (ImGui::Button("Add Light"))
+		{
+			auto& obj = ServiceLocator::Get<SceneManager>().GetActiveScene().AddEmpty();
+			obj.AddComponent<LightComponent>(
+				/* direction */	glm::vec3{ 0.f, -1.f, 0.f },
+				/* color */		glm::vec3{ 0.f, 1.f, 0.f },
+				/* lux */			100'000.f, LightType::Directional
+			);
 		}
 
 		ImGui::Text("Custom");

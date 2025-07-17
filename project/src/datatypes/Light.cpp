@@ -1,95 +1,20 @@
 // -- Pompeii Includes --
 #include "Light.h"
-#include "ModelRenderer.h"
+#include "CommandBuffer.h"
 #include "Context.h"
-#include "Shader.h"
-#include "Pipeline.h"
 #include "Debugger.h"
-#include "Scene.h"
-#include "ServiceLocator.h"
+#include "Model.h"
+#include "Pipeline.h"
+#include "Shader.h"
 
-//--------------------------------------------------
-//    Constructor & Destructor
-//--------------------------------------------------
-pompeii::Light::Light(SceneObject& parent, const glm::vec3& dirPos, const glm::vec3& col, float luxLumen, Type type)
-	: Component(parent)
-	, dirPos(type == Type::Directional ? glm::normalize(dirPos) : dirPos)
-	, color(col)
-	, luxLumen(luxLumen)
-	, m_Type(type)
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  Light CPU
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void pompeii::LightCPU::CalculateLightMatrices(const AABB& aabb)
 {
-	ServiceLocator::Get<LightingSystem>().RegisterLight(*this);
-	CalculateLightMatrices();
-}
-
-pompeii::Light::~Light()
-{
-	DestroyDepthMap(ServiceLocator::Get<Renderer>().GetContext());
-	ServiceLocator::Get<LightingSystem>().UnregisterLight(*this);
-}
-
-
-//--------------------------------------------------
-//    Loop
-//--------------------------------------------------
-void pompeii::Light::Start()
-{
-	GenerateDepthMap(ServiceLocator::Get<Renderer>().GetContext());
-	ServiceLocator::Get<Renderer>().UpdateLights();
-}
-void pompeii::Light::OnImGuiRender()
-{
-}
-
-
-//--------------------------------------------------
-//    Accessors & Mutators
-//--------------------------------------------------
-pompeii::Light::Type pompeii::Light::GetType()		const { return m_Type; }
-const pompeii::Image& pompeii::Light::GetDepthMap()	const { return m_DepthMap; }
-
-void pompeii::Light::GenerateDepthMap(const Context& context, uint32_t size)
-{
-	if (m_DepthMap.GetHandle() != VK_NULL_HANDLE)
-		m_DepthMap.Destroy(context);
-
-	// -- Build Depth Map Image on GPU --
-	ImageBuilder builder{};
-	builder
-		.SetDebugName("Light Depth Map")
-		.SetWidth(size)
-		.SetHeight(size)
-		.SetFormat(VK_FORMAT_D32_SFLOAT)
-		.SetTiling(VK_IMAGE_TILING_OPTIMAL)
-		.SetUsageFlags(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
-		.SetCreateFlags(m_Type == Type::Point ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0)
-		.SetArrayLayers(m_Type == Type::Point ? 6 : 1)
-		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-		.Build(context, m_DepthMap);
-
-	// -- Generate the 6 views to each face --
-	std::vector<ImageView> faces{};
-	faces.resize(m_Type == Type::Point ? 6 : 1);
-	for (uint32_t i{}; i < faces.size(); ++i)
-		faces[i] = m_DepthMap.CreateView(context, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, i, 1);
-
-	// -- Render To CubeMap --
-	GenerateDepthMap(context, m_DepthMap, faces, size);
-	m_DepthMap.DestroyAllViews(context);
-
-	// -- Generate a view to all faces --
-	m_DepthMap.CreateView(context, VK_IMAGE_ASPECT_DEPTH_BIT, m_Type == Type::Point ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D, 0, m_DepthMap.GetMipLevels(), 0, m_DepthMap.GetLayerCount());
-}
-void pompeii::Light::DestroyDepthMap(const Context& context)
-{
-	m_DepthMap.Destroy(context);
-}
-
-void pompeii::Light::CalculateLightMatrices()
-{
-	if (GetType() == Type::Directional)
+	if (type == LightType::Directional)
 	{
-		auto [min, max] = GetSceneObject().GetScene().GetAABB();
+		auto [min, max] = aabb;
 		const glm::vec3 center = (min + max) * 0.5f;
 		const glm::vec3 lightDir = dirPos;
 		const std::vector<glm::vec3> corners = {
@@ -153,10 +78,48 @@ void pompeii::Light::CalculateLightMatrices()
 }
 
 
-//--------------------------------------------------
-//    Helper
-//--------------------------------------------------
-void pompeii::Light::GenerateDepthMap(const Context& context, Image& outImage, std::vector<ImageView>& outViews, uint32_t size) const
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  Light GPU
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void pompeii::LightGPU::GenerateDepthMap(const Context& context, uint32_t size)
+{
+	if (shadowMap.GetHandle() != VK_NULL_HANDLE)
+		shadowMap.Destroy(context);
+
+	// -- Build Depth Map Image on GPU --
+	ImageBuilder builder{};
+	builder
+		.SetDebugName("Light Depth Map")
+		.SetWidth(size)
+		.SetHeight(size)
+		.SetFormat(VK_FORMAT_D32_SFLOAT)
+		.SetTiling(VK_IMAGE_TILING_OPTIMAL)
+		.SetUsageFlags(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+		.SetCreateFlags(type == LightType::Point ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0)
+		.SetArrayLayers(type == LightType::Point ? 6 : 1)
+		.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		.Build(context, shadowMap);
+
+	// -- Generate the 6 views to each face --
+	std::vector<ImageView> faces{};
+	faces.resize(type == LightType::Point ? 6 : 1);
+	for (uint32_t i{}; i < faces.size(); ++i)
+		faces[i] = shadowMap.CreateView(context, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, i, 1);
+
+	// -- Render To CubeMap --
+	GenerateDepthMap(context, shadowMap, faces, size);
+	shadowMap.DestroyAllViews(context);
+
+	// -- Generate a view to all faces --
+	shadowMap.CreateView(context, VK_IMAGE_ASPECT_DEPTH_BIT, type == LightType::Point ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D, 0, shadowMap.GetMipLevels(), 0, shadowMap.GetLayerCount());
+}
+
+void pompeii::LightGPU::DestroyDepthMap(const Context& context)
+{
+	shadowMap.Destroy(context);
+}
+
+void pompeii::LightGPU::GenerateDepthMap(const Context& context, Image& outImage, std::vector<ImageView>& outViews,	uint32_t size) const
 {
 	// -- Push Constant Struct --
 	struct PC
@@ -264,41 +227,42 @@ void pompeii::Light::GenerateDepthMap(const Context& context, Image& outImage, s
 				vkCmdBindPipeline(vCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.GetHandle());
 
 				// -- Draw Models --
-				for (const ModelRenderer* model : ServiceLocator::Get<RenderSystem>().GetVisibleModels())
-				{
-					// -- Bind Model Data --
-					model->GetModel()->Bind(cmd);
+				//for (const ModelRenderer* model : ServiceLocator::Get<RenderSystem>().GetAllModels())
+				//{
+				//	model;
+					//// -- Bind Model Data --
+					//model->GetModel()->Bind(cmd);
 
-					// -- Draw Opaque --
-					for (const Mesh& mesh : model->GetModel()->opaqueMeshes)
-					{
-						// -- Bind Push Constants --
-						PC pc
-						{
-							.projview = projMatrix * viewMatrices[layerIdx],
-							.model = mesh.matrix
-						};
-						vkCmdPushConstants(vCmd, pipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PC), &pc);
+					//// -- Draw Opaque --
+					//for (const Mesh& mesh : model->GetModel()->opaqueMeshes)
+					//{
+					//	// -- Bind Push Constants --
+					//	PC pc
+					//	{
+					//		.projview = projMatrix * viewMatrices[layerIdx],
+					//		.model = mesh.matrix
+					//	};
+					//	vkCmdPushConstants(vCmd, pipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PC), &pc);
 
-						// -- Drawing Time! --
-						vkCmdDrawIndexed(vCmd, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
-					}
+					//	// -- Drawing Time! --
+					//	vkCmdDrawIndexed(vCmd, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
+					//}
 
-					// -- Draw Transparent using Alpha Cut-Off --
-					for (const Mesh& mesh : model->GetModel()->transparentMeshes)
-					{
-						// -- Bind Push Constants --
-						PC pc
-						{
-							.projview = projMatrix * viewMatrices[layerIdx],
-							.model = mesh.matrix
-						};
-						vkCmdPushConstants(vCmd, pipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PC), &pc);
+					//// -- Draw Transparent using Alpha Cut-Off --
+					//for (const Mesh& mesh : model->GetModel()->transparentMeshes)
+					//{
+					//	// -- Bind Push Constants --
+					//	PC pc
+					//	{
+					//		.projview = projMatrix * viewMatrices[layerIdx],
+					//		.model = mesh.matrix
+					//	};
+					//	vkCmdPushConstants(vCmd, pipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PC), &pc);
 
-						// -- Drawing Time! --
-						vkCmdDrawIndexed(vCmd, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
-					}
-				}
+					//	// -- Drawing Time! --
+					//	vkCmdDrawIndexed(vCmd, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
+					//}
+				//}
 			}
 			vkCmdEndRendering(vCmd);
 		}
