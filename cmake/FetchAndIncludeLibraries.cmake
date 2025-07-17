@@ -58,7 +58,7 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
     GIT_PROGRESS TRUE
 )
-# Fetch ImGui FilePicker
+# Fetch ImGui FileDialog
 FetchContent_Declare(
     igfd
     GIT_REPOSITORY https://github.com/aiekick/ImGuiFileDialog.git

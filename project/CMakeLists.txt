@@ -1,92 +1,101 @@
 #--------------------------------------------------
 #    SET VARIABLES
 #--------------------------------------------------
-set(SOURCE_DIR	"${CMAKE_SOURCE_DIR}/project/src")
-set(TEXTURE_DIR "${CMAKE_SOURCE_DIR}/project/textures")
-set(MODEL_DIR	"${CMAKE_SOURCE_DIR}/project/models")
-set(SHADER_DIR	"${CMAKE_SOURCE_DIR}/project/shaders")
-
-
+set(SOURCE_DIR			"${CMAKE_SOURCE_DIR}/project/src")
+set(ENGINE_SOURCE_DIR	"${CMAKE_SOURCE_DIR}/project/src/ENGINE")
+set(RENDERER_SOURCE_DIR	"${CMAKE_SOURCE_DIR}/project/src/RENDERER")
+set(SHADER_DIR			"${CMAKE_SOURCE_DIR}/project/shaders")
 
 #--------------------------------------------------
 #    CREATE EXECUTABLE
 #--------------------------------------------------
 # Source files
 set(SOURCES
+	############
+	#  SHARED  #
+	############
 	# main
 	"${SOURCE_DIR}/main.cpp"
 
+	############
+	# RENDERER #
+	############
 	# commands
-	"${SOURCE_DIR}/commands/CommandBuffer.h"				"${SOURCE_DIR}/commands/CommandBuffer.cpp"
-	"${SOURCE_DIR}/commands/CommandPool.h"					"${SOURCE_DIR}/commands/CommandPool.cpp"
+	"${RENDERER_SOURCE_DIR}/commands/CommandBuffer.h"				"${RENDERER_SOURCE_DIR}/commands/CommandBuffer.cpp"
+	"${RENDERER_SOURCE_DIR}/commands/CommandPool.h"					"${RENDERER_SOURCE_DIR}/commands/CommandPool.cpp"
 
 	# context
-	"${SOURCE_DIR}/context/Context.h"
-	"${SOURCE_DIR}/context/Instance.h"						"${SOURCE_DIR}/context/Instance.cpp"
-	"${SOURCE_DIR}/context/Device.h"						"${SOURCE_DIR}/context/Device.cpp"
-	"${SOURCE_DIR}/context/PhysicalDevice.h"				"${SOURCE_DIR}/context/PhysicalDevice.cpp"
+	"${RENDERER_SOURCE_DIR}/context/Context.h"
+	"${RENDERER_SOURCE_DIR}/context/Instance.h"						"${RENDERER_SOURCE_DIR}/context/Instance.cpp"
+	"${RENDERER_SOURCE_DIR}/context/Device.h"						"${RENDERER_SOURCE_DIR}/context/Device.cpp"
+	"${RENDERER_SOURCE_DIR}/context/PhysicalDevice.h"				"${RENDERER_SOURCE_DIR}/context/PhysicalDevice.cpp"
 
 	# core
-	"${SOURCE_DIR}/core/Renderer.h"							"${SOURCE_DIR}/core/Renderer.cpp"
-	"${SOURCE_DIR}/core/Window.h"							"${SOURCE_DIR}/core/Window.cpp"
+	"${RENDERER_SOURCE_DIR}/core/Renderer.h"						"${RENDERER_SOURCE_DIR}/core/Renderer.cpp"
+	"${RENDERER_SOURCE_DIR}/core/Window.h"							"${RENDERER_SOURCE_DIR}/core/Window.cpp"
 
 	# datatypes
-	"${SOURCE_DIR}/datatypes/Light.h"						"${SOURCE_DIR}/datatypes/Light.cpp"
-	"${SOURCE_DIR}/datatypes/Material.h"					"${SOURCE_DIR}/datatypes/Material.cpp"
-	"${SOURCE_DIR}/datatypes/Model.h"						"${SOURCE_DIR}/datatypes/Model.cpp"
-	"${SOURCE_DIR}/datatypes/RenderInstance.h"
-	"${SOURCE_DIR}/datatypes/Shapes.h"						"${SOURCE_DIR}/datatypes/Shapes.cpp"
+	"${RENDERER_SOURCE_DIR}/datatypes/EnvironmentMap.h"				"${RENDERER_SOURCE_DIR}/datatypes/EnvironmentMap.cpp"
+	"${RENDERER_SOURCE_DIR}/datatypes/Light.h"						"${RENDERER_SOURCE_DIR}/datatypes/Light.cpp"
+	"${RENDERER_SOURCE_DIR}/datatypes/Material.h"					"${RENDERER_SOURCE_DIR}/datatypes/Material.cpp"
+	"${RENDERER_SOURCE_DIR}/datatypes/Model.h"						"${RENDERER_SOURCE_DIR}/datatypes/Model.cpp"
+	"${RENDERER_SOURCE_DIR}/datatypes/RenderInstance.h"
+	"${RENDERER_SOURCE_DIR}/datatypes/Shapes.h"						"${RENDERER_SOURCE_DIR}/datatypes/Shapes.cpp"
 
 	# graphics
 	 # graphics/memory
-	"${SOURCE_DIR}/graphics/memory/Buffer.h"				"${SOURCE_DIR}/graphics/memory/Buffer.cpp"
-	"${SOURCE_DIR}/graphics/memory/GBuffer.h"				"${SOURCE_DIR}/graphics/memory/GBuffer.cpp"
-	"${SOURCE_DIR}/graphics/memory/Image.h"					"${SOURCE_DIR}/graphics/memory/Image.cpp"
-	"${SOURCE_DIR}/graphics/memory/Sampler.h"				"${SOURCE_DIR}/graphics/memory/Sampler.cpp"
-	"${SOURCE_DIR}/graphics/memory/SyncManager.h"			"${SOURCE_DIR}/graphics/memory/SyncManager.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/memory/Buffer.h"				"${RENDERER_SOURCE_DIR}/graphics/memory/Buffer.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/memory/GBuffer.h"				"${RENDERER_SOURCE_DIR}/graphics/memory/GBuffer.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/memory/Image.h"				"${RENDERER_SOURCE_DIR}/graphics/memory/Image.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/memory/Sampler.h"				"${RENDERER_SOURCE_DIR}/graphics/memory/Sampler.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/memory/SyncManager.h"			"${RENDERER_SOURCE_DIR}/graphics/memory/SyncManager.cpp"
 	 # graphics/passes
-	"${SOURCE_DIR}/graphics/passes/BlitPass.h"				"${SOURCE_DIR}/graphics/passes/BlitPass.cpp"
-	"${SOURCE_DIR}/graphics/passes/DepthPrePass.h"			"${SOURCE_DIR}/graphics/passes/DepthPrePass.cpp"
-	"${SOURCE_DIR}/graphics/passes/ForwardPass.h"			"${SOURCE_DIR}/graphics/passes/ForwardPass.cpp"
-	"${SOURCE_DIR}/graphics/passes/GeometryPass.h"			"${SOURCE_DIR}/graphics/passes/GeometryPass.cpp"
-	"${SOURCE_DIR}/graphics/passes/LightingPass.h"			"${SOURCE_DIR}/graphics/passes/LightingPass.cpp"
-	"${SOURCE_DIR}/graphics/passes/ShadowPass.h"			"${SOURCE_DIR}/graphics/passes/ShadowPass.cpp"
-	"${SOURCE_DIR}/graphics/passes/UIPass.h"				"${SOURCE_DIR}/graphics/passes/UIPass.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/passes/BlitPass.h"				"${RENDERER_SOURCE_DIR}/graphics/passes/BlitPass.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/passes/DepthPrePass.h"			"${RENDERER_SOURCE_DIR}/graphics/passes/DepthPrePass.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/passes/ForwardPass.h"			"${RENDERER_SOURCE_DIR}/graphics/passes/ForwardPass.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/passes/GeometryPass.h"			"${RENDERER_SOURCE_DIR}/graphics/passes/GeometryPass.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/passes/LightingPass.h"			"${RENDERER_SOURCE_DIR}/graphics/passes/LightingPass.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/passes/ShadowPass.h"			"${RENDERER_SOURCE_DIR}/graphics/passes/ShadowPass.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/passes/UIPass.h"				"${RENDERER_SOURCE_DIR}/graphics/passes/UIPass.cpp"
 	 # graphics/pipeline
-	"${SOURCE_DIR}/graphics/pipeline/DescriptorPool.h"		"${SOURCE_DIR}/graphics/pipeline/DescriptorPool.cpp"
-	"${SOURCE_DIR}/graphics/pipeline/DescriptorSet.h"		"${SOURCE_DIR}/graphics/pipeline/DescriptorSet.cpp"
-	"${SOURCE_DIR}/graphics/pipeline/FrameBuffer.h"			"${SOURCE_DIR}/graphics/pipeline/FrameBuffer.cpp"
-	"${SOURCE_DIR}/graphics/pipeline/Pipeline.h"			"${SOURCE_DIR}/graphics/pipeline/Pipeline.cpp"
-	"${SOURCE_DIR}/graphics/pipeline/RenderPass.h"			"${SOURCE_DIR}/graphics/pipeline/RenderPass.cpp"
-	"${SOURCE_DIR}/graphics/pipeline/Shader.h"				"${SOURCE_DIR}/graphics/pipeline/Shader.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/pipeline/DescriptorPool.h"		"${RENDERER_SOURCE_DIR}/graphics/pipeline/DescriptorPool.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/pipeline/DescriptorSet.h"		"${RENDERER_SOURCE_DIR}/graphics/pipeline/DescriptorSet.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/pipeline/FrameBuffer.h"		"${RENDERER_SOURCE_DIR}/graphics/pipeline/FrameBuffer.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/pipeline/Pipeline.h"			"${RENDERER_SOURCE_DIR}/graphics/pipeline/Pipeline.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/pipeline/RenderPass.h"			"${RENDERER_SOURCE_DIR}/graphics/pipeline/RenderPass.cpp"
+	"${RENDERER_SOURCE_DIR}/graphics/pipeline/Shader.h"				"${RENDERER_SOURCE_DIR}/graphics/pipeline/Shader.cpp"
 
 	# helper
-	"${SOURCE_DIR}/helper/ConsoleTextSettings.h"
-	"${SOURCE_DIR}/helper/Debugger.h"						"${SOURCE_DIR}/helper/Debugger.cpp"
-	"${SOURCE_DIR}/helper/DeletionQueue.h"					"${SOURCE_DIR}/helper/DeletionQueue.cpp"
-	"${SOURCE_DIR}/helper/ServiceLocator.h"
-	"${SOURCE_DIR}/helper/Timer.h"							"${SOURCE_DIR}/helper/Timer.cpp"
+	"${RENDERER_SOURCE_DIR}/helper/Debugger.h"						"${RENDERER_SOURCE_DIR}/helper/Debugger.cpp"
 
 	# presentation
-	"${SOURCE_DIR}/presentation/SwapChain.h"				"${SOURCE_DIR}/presentation/SwapChain.cpp"
+	"${RENDERER_SOURCE_DIR}/presentation/SwapChain.h"				"${RENDERER_SOURCE_DIR}/presentation/SwapChain.cpp"
+
+	############
+	#  ENGINE  #
+	############
+	# helper
+	"${ENGINE_SOURCE_DIR}/helper/ConsoleTextSettings.h"
+	"${ENGINE_SOURCE_DIR}/helper/DeletionQueue.h"					"${ENGINE_SOURCE_DIR}/helper/DeletionQueue.cpp"
+	"${ENGINE_SOURCE_DIR}/helper/ServiceLocator.h"
+	"${ENGINE_SOURCE_DIR}/helper/Timer.h"							"${ENGINE_SOURCE_DIR}/helper/Timer.cpp"
 
 	# scene
-	"${SOURCE_DIR}/scene/EnvironmentMap.h"					"${SOURCE_DIR}/scene/EnvironmentMap.cpp"
-	"${SOURCE_DIR}/scene/Scene.h"							"${SOURCE_DIR}/scene/Scene.cpp"
+	"${ENGINE_SOURCE_DIR}/scene/Scene.h"							"${ENGINE_SOURCE_DIR}/scene/Scene.cpp"
 	 # scene/base
-	"${SOURCE_DIR}/scene/base/SceneManager.h"				"${SOURCE_DIR}/scene/base/SceneManager.cpp"
+	"${ENGINE_SOURCE_DIR}/scene/base/SceneManager.h"				"${ENGINE_SOURCE_DIR}/scene/base/SceneManager.cpp"
 	 # scene/components
-	"${SOURCE_DIR}/scene/components/Camera.h"				"${SOURCE_DIR}/scene/components/Camera.cpp"
-	"${SOURCE_DIR}/scene/components/Component.h"			"${SOURCE_DIR}/scene/components/Component.cpp"
-	"${SOURCE_DIR}/scene/components/LightComponent.h"		"${SOURCE_DIR}/scene/components/LightComponent.cpp"
-	"${SOURCE_DIR}/scene/components/ModelRenderer.h"		"${SOURCE_DIR}/scene/components/ModelRenderer.cpp"
+	"${ENGINE_SOURCE_DIR}/scene/components/Camera.h"				"${ENGINE_SOURCE_DIR}/scene/components/Camera.cpp"
+	"${ENGINE_SOURCE_DIR}/scene/components/Component.h"				"${ENGINE_SOURCE_DIR}/scene/components/Component.cpp"
+	"${ENGINE_SOURCE_DIR}/scene/components/LightComponent.h"		"${ENGINE_SOURCE_DIR}/scene/components/LightComponent.cpp"
+	"${ENGINE_SOURCE_DIR}/scene/components/ModelRenderer.h"			"${ENGINE_SOURCE_DIR}/scene/components/ModelRenderer.cpp"
 	 # scene/sceneobject
-	"${SOURCE_DIR}/scene/sceneobject/SceneObject.h"			"${SOURCE_DIR}/scene/sceneobject/SceneObject.cpp"
-	"${SOURCE_DIR}/scene/sceneobject/Transform.h"			"${SOURCE_DIR}/scene/sceneobject/Transform.cpp"
+	"${ENGINE_SOURCE_DIR}/scene/sceneobject/SceneObject.h"			"${ENGINE_SOURCE_DIR}/scene/sceneobject/SceneObject.cpp"
+	"${ENGINE_SOURCE_DIR}/scene/sceneobject/Transform.h"			"${ENGINE_SOURCE_DIR}/scene/sceneobject/Transform.cpp"
 
 	# systems
-	"${SOURCE_DIR}/systems/ISystem.h"
-	"${SOURCE_DIR}/systems/RenderSystem.h"					"${SOURCE_DIR}/systems/RenderSystem.cpp"
+	"${ENGINE_SOURCE_DIR}/systems/ISystem.h"
+	"${ENGINE_SOURCE_DIR}/systems/RenderSystem.h"					"${ENGINE_SOURCE_DIR}/systems/RenderSystem.cpp"
 )
 
 # Create the executable
@@ -95,21 +104,26 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 # Set include directories
 target_include_directories(${PROJECT_NAME} PRIVATE
 	"${SOURCE_DIR}"
-	"${SOURCE_DIR}/commands"
-	"${SOURCE_DIR}/context"
-	"${SOURCE_DIR}/core"
-	"${SOURCE_DIR}/datatypes"
-	"${SOURCE_DIR}/graphics"
-	"${SOURCE_DIR}/graphics/memory"
-	"${SOURCE_DIR}/graphics/passes"
-	"${SOURCE_DIR}/graphics/pipeline"
-	"${SOURCE_DIR}/helper"
-	"${SOURCE_DIR}/presentation"
-	"${SOURCE_DIR}/scene"
-	"${SOURCE_DIR}/scene/base"
-	"${SOURCE_DIR}/scene/components"
-	"${SOURCE_DIR}/scene/sceneobject"
-	"${SOURCE_DIR}/systems"
+
+	"${RENDERER_SOURCE_DIR}"
+	"${RENDERER_SOURCE_DIR}/commands"
+	"${RENDERER_SOURCE_DIR}/context"
+	"${RENDERER_SOURCE_DIR}/core"
+	"${RENDERER_SOURCE_DIR}/datatypes"
+	"${RENDERER_SOURCE_DIR}/graphics"
+	"${RENDERER_SOURCE_DIR}/graphics/memory"
+	"${RENDERER_SOURCE_DIR}/graphics/passes"
+	"${RENDERER_SOURCE_DIR}/graphics/pipeline"
+	"${RENDERER_SOURCE_DIR}/helper"
+	"${RENDERER_SOURCE_DIR}/presentation"
+
+	"${ENGINE_SOURCE_DIR}"
+	"${ENGINE_SOURCE_DIR}/helper"
+	"${ENGINE_SOURCE_DIR}/scene"
+	"${ENGINE_SOURCE_DIR}/scene/base"
+	"${ENGINE_SOURCE_DIR}/scene/components"
+	"${ENGINE_SOURCE_DIR}/scene/sceneobject"
+	"${ENGINE_SOURCE_DIR}/systems"
 )
 
 # Max Warning Level & Warnings as Errors
