@@ -4,6 +4,7 @@
 set(SOURCE_DIR			"${CMAKE_SOURCE_DIR}/project/src")
 set(ENGINE_SOURCE_DIR	"${CMAKE_SOURCE_DIR}/project/src/ENGINE")
 set(RENDERER_SOURCE_DIR	"${CMAKE_SOURCE_DIR}/project/src/RENDERER")
+set(EDITOR_SOURCE_DIR	"${CMAKE_SOURCE_DIR}/project/src/EDITOR")
 set(SHADER_DIR			"${CMAKE_SOURCE_DIR}/project/shaders")
 
 #--------------------------------------------------
@@ -96,6 +97,12 @@ set(SOURCES
 	# systems
 	"${ENGINE_SOURCE_DIR}/systems/ISystem.h"
 	"${ENGINE_SOURCE_DIR}/systems/RenderSystem.h"					"${ENGINE_SOURCE_DIR}/systems/RenderSystem.cpp"
+
+	############
+	#  EDITOR  #
+	############
+	"${EDITOR_SOURCE_DIR}/Editor.h"									"${EDITOR_SOURCE_DIR}/Editor.cpp"
+	"${EDITOR_SOURCE_DIR}/EditorUI.h"								"${EDITOR_SOURCE_DIR}/EditorUI.cpp"
 )
 
 # Create the executable
@@ -124,6 +131,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"${ENGINE_SOURCE_DIR}/scene/components"
 	"${ENGINE_SOURCE_DIR}/scene/sceneobject"
 	"${ENGINE_SOURCE_DIR}/systems"
+
+	"${EDITOR_SOURCE_DIR}"
 )
 
 # Max Warning Level & Warnings as Errors

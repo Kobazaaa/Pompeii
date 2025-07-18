@@ -4,12 +4,10 @@
 
 // -- Keyboard --
 #include "GLFW/glfw3.h"
-#include "imgui.h"
 
 // -- Pompeii Includes --
 #include "Camera.h"
 #include "ServiceLocator.h"
-#include "Scene.h"
 #include "SceneObject.h"
 #include "Window.h"
 #include "Timer.h"
@@ -23,7 +21,7 @@
 //    Constructor & Destructor
 //--------------------------------------------------
 pompeii::Camera::Camera(SceneObject& parent, const CameraSettings& settings, const ExposureSettings& exposureSettings, const Window* pWindow, bool mainCam)
-	: Component(parent)
+	: Component(parent, "Camera")
 	, m_Settings(settings)
 	, m_ExposureSettings(exposureSettings)
 	, m_pWindow(pWindow->GetHandle())
@@ -50,7 +48,7 @@ void pompeii::Camera::Update()
 	if (!io.WantCaptureKeyboard)
 		HandleMovement();
 }
-void pompeii::Camera::OnImGuiRender()
+void pompeii::Camera::OnInspectorDraw()
 {}
 
 

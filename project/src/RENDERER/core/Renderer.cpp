@@ -121,6 +121,7 @@ void pompeii::Renderer::DestroyModel(ModelHandle handle)
 {
 	m_vModelRegistry[handle]->Destroy(m_Context);
 	m_vModelRegistry.erase(handle);
+	UpdateTextures();
 }
 
 LightHandle pompeii::Renderer::CreateLight(const LightCPU& lightData)
@@ -128,6 +129,13 @@ LightHandle pompeii::Renderer::CreateLight(const LightCPU& lightData)
 	auto light = std::make_unique<LightGPU>();
 
 	light->type = lightData.type;
+	light->viewMatrices = lightData.viewMatrices;
+	light->projMatrix = lightData.projMatrix;
+	light->data.color = lightData.color;
+	light->data.intensity = lightData.luxLumen;
+	light->data.dirPosType = { lightData.dirPos, static_cast<int>(lightData.type)};
+	light->data.depthIndex = static_cast<uint32_t>(m_vLightRegistry.size());
+	light->data.matrixIndex = static_cast<uint32_t>(m_vLightRegistry.size());
 	light->GenerateDepthMap(m_Context, 2048);
 	static uint32_t nextIdx = 0;
 	LightHandle handle{ nextIdx++ };
@@ -138,6 +146,12 @@ void pompeii::Renderer::DestroyLight(LightHandle handle)
 {
 	m_vLightRegistry[handle]->DestroyDepthMap(m_Context);
 	m_vLightRegistry.erase(handle);
+	UpdateLights();
+}
+
+void pompeii::Renderer::InsertUI(const std::function<void()>& func)
+{
+	m_UIPass.InsertUI(func);
 }
 
 //--------------------------------------------------
@@ -153,6 +167,7 @@ void pompeii::Renderer::UpdateLights()
 	std::vector<LightGPU*> result{};
 	for (const auto& light : m_vLightRegistry | std::views::values)
 		result.push_back(light.get());
+	m_Context.device.WaitIdle();
 	m_LightingPass.UpdateLightDescriptors(m_Context, result);
 }
 void pompeii::Renderer::UpdateTextures()
@@ -161,10 +176,12 @@ void pompeii::Renderer::UpdateTextures()
 	for (const auto& model : m_vModelRegistry | std::views::values)
 		for (auto& i : model->images)
 			result.push_back(&i);
+	m_Context.device.WaitIdle();
 	m_GeometryPass.UpdateTextureDescriptor(m_Context, result);
 }
 void pompeii::Renderer::UpdateEnvironmentMap() const
 {
+	m_Context.device.WaitIdle();
 	m_LightingPass.UpdateEnvironmentMap(m_Context, m_EnvMap);
 }
 

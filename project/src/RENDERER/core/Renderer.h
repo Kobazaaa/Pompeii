@@ -61,6 +61,8 @@ namespace pompeii
 		LightHandle CreateLight(const LightCPU& lightData);
 		void DestroyLight(LightHandle handle);
 
+		void InsertUI(const std::function<void()>& func);
+
 		//--------------------------------------------------
 		//    Accessors
 		//--------------------------------------------------
@@ -76,7 +78,7 @@ namespace pompeii
 		void InitializeVulkan();
 
 		// -- Vulkan Context --
-		Context						m_Context				{ };
+		Context m_Context				{ };
 		std::unordered_map<ModelHandle, std::unique_ptr<ModelGPU>> m_vModelRegistry;
 		std::unordered_map<LightHandle, std::unique_ptr<LightGPU>> m_vLightRegistry;
 		std::vector<RenderInstance> m_vRenderInstances;

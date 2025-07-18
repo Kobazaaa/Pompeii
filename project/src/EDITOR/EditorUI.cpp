@@ -1,0 +1,197 @@
+// -- Pompeii Includes --
+#include "EditorUI.h"
+#include "ServiceLocator.h"
+#include "ModelRenderer.h"
+#include "LightComponent.h"
+
+// -- ImGui --
+#include "ImGuiFileDialog.h"
+
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  Interface	
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void pompeii::IEditorUI::HandleFileDialog(const std::string& key, const std::function<void(const std::string&)>& func)
+{
+    constexpr ImGuiWindowFlags fileDialogFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking;
+    constexpr ImVec2 fileDialogSize = ImVec2(800, 500);
+    if (ImGuiFileDialog::Instance()->Display(key, fileDialogFlags, fileDialogSize))
+    {
+        if (ImGuiFileDialog::Instance()->IsOk())
+        {
+            const std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
+            func(path);
+        }
+        ImGuiFileDialog::Instance()->Close();
+    }
+}
+
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  Scene Hierarchy	
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void pompeii::SceneHierarchy::Draw(ImGuiID dockID)
+{
+    ImGui::SetNextWindowDockID(dockID, ImGuiCond_Once);
+    ImGui::Begin("Scene Hierarchy", nullptr, ImGuiWindowFlags_None);
+
+    m_Index = 0;
+    for (SceneObject* obj : ServiceLocator::Get<SceneManager>().GetActiveScene().GetAllObjects())
+        if (!obj->transform->GetParent())
+            DrawSceneObjectNode(obj);
+
+    ImGui::End();
+}
+pompeii::SceneObject* pompeii::SceneHierarchy::GetSelectedObject() const
+{
+	return m_pSelectedObject;
+}
+
+void pompeii::SceneHierarchy::DrawSceneObjectNode(SceneObject* sceneObj)
+{
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen |
+							   ImGuiTreeNodeFlags_OpenOnArrow |
+							   ImGuiTreeNodeFlags_FramePadding |
+							   ImGuiTreeNodeFlags_SpanAvailWidth;
+    if (sceneObj->transform->GetAllChildren().empty())
+        flags |= ImGuiTreeNodeFlags_Leaf;
+
+    ImGui::PushID(m_Index);
+    const bool nodeOpen = ImGui::TreeNodeEx(sceneObj->name.c_str(), flags, "%s", sceneObj->name.c_str());
+    ImGui::PopID();
+    ++m_Index;
+
+    if (ImGui::IsItemClicked())
+        m_pSelectedObject = sceneObj;
+
+    // Right-click context menu
+    if (ImGui::BeginPopupContextItem())
+    {
+        if (ImGui::MenuItem("Delete"))
+        {
+            sceneObj->Destroy();
+        }
+        ImGui::EndPopup();
+    }
+
+    // Drag source
+    if (ImGui::BeginDragDropSource())
+    {
+        const SceneObject* payload = sceneObj;
+        ImGui::SetDragDropPayload("SceneHierarchy", payload, sizeof(*payload));
+        ImGui::Text("%s", sceneObj->name.c_str());
+        ImGui::EndDragDropSource();
+    }
+
+    // Drop target
+    if (ImGui::BeginDragDropTarget())
+    {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SceneHierarchy"))
+        {
+            if (payload->DataSize == sizeof(SceneObject))
+            {
+                const SceneObject* dropped = reinterpret_cast<const SceneObject*>(payload->Data);
+                if (dropped && dropped != sceneObj)
+                    dropped->transform->SetParent(sceneObj->transform.get(), true);
+            }
+        }
+        ImGui::EndDragDropTarget();
+    }
+
+    if (nodeOpen)
+    {
+        for (const Transform* child : sceneObj->transform->GetAllChildren())
+            DrawSceneObjectNode(child->GetSceneObject());
+        ImGui::TreePop();
+    }
+}
+
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  Menu Bar	
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void pompeii::MenuBar::Draw(ImGuiID)
+{
+    if (ImGui::BeginMainMenuBar())
+    {
+        // -- Config --
+        if (ImGui::BeginMenu("Config"))
+        {
+            if (ImGui::MenuItem("Save Layout As..."))
+                ImGuiFileDialog::Instance()->OpenDialog("SaveLayout", "Save Layout", ".ini");
+            if (ImGui::MenuItem("Load Layout..."))
+                ImGuiFileDialog::Instance()->OpenDialog("LoadLayout", "Load Layout", ".ini");
+
+            ImGui::EndMenu();
+        }
+
+        // -- Dump VMA --
+        if (ImGui::BeginMenu("DumpVMA"))
+        {
+            ImGuiFileDialog::Instance()->OpenDialog("DumpVMA", "Dump VMA", ".json");
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+
+    HandleFileDialog("SaveLayout",  [](const std::string& path) { ImGui::SaveIniSettingsToDisk(path.c_str()); });
+    HandleFileDialog("LoadLayout",  [](const std::string& path) { ImGui::LoadIniSettingsFromDisk(path.c_str()); });
+    HandleFileDialog("DumpVMA",     [](const std::string& path)
+        { 
+	        char* StatsString = nullptr;
+	        vmaBuildStatsString(ServiceLocator::Get<RenderSystem>().GetRenderer()->GetContext().allocator, &StatsString, true);
+	        {
+	            std::ofstream OutStats{ path };
+	            OutStats << StatsString;
+	        }
+	        vmaFreeStatsString(ServiceLocator::Get<RenderSystem>().GetRenderer()->GetContext().allocator, StatsString);
+        });
+}
+
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  Utilities	
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void pompeii::Utilities::Draw(ImGuiID dockID)
+{
+    ImGui::SetNextWindowDockID(dockID, ImGuiCond_Once);
+    ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_None);
+    {
+        ImGui::Text("Load Model");
+        if (ImGui::Button("Choose Model"))
+            ImGuiFileDialog::Instance()->OpenDialog("ChooseModel", "Choose a File", ".gltf");
+        HandleFileDialog("ChooseModel", [](const std::string& path)
+        {
+            auto& obj = ServiceLocator::Get<SceneManager>().GetActiveScene().AddEmpty();
+            obj.AddComponent<ModelRenderer>(path);
+        });
+
+        ImGui::Separator();
+
+        ImGui::Text("Add Light");
+        if (ImGui::Button("Add Light"))
+        {
+            auto& obj = ServiceLocator::Get<SceneManager>().GetActiveScene().AddEmpty();
+            obj.AddComponent<LightComponent>(
+                /* direction */	glm::vec3{ 0.f, -1.f, 0.f },
+                /* color */		glm::vec3{ 0.f, 1.f, 0.f },
+                /* lux */			100'000.f, LightType::Directional
+            );
+        }
+    }
+    ImGui::End();
+}
+
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//? ~~	  Inspector	
+//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void pompeii::Inspector::Draw(SceneObject* pSelectedObject, ImGuiID dockID)
+{
+    m_pSelectedObject = pSelectedObject;
+    if (m_pSelectedObject)
+        Draw(dockID);
+}
+void pompeii::Inspector::Draw(ImGuiID dockID)
+{
+    if (!m_pSelectedObject) return;
+    ImGui::SetNextWindowDockID(dockID, ImGuiCond_Once);
+    ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_None);
+    m_pSelectedObject->OnInspectorDraw();
+	ImGui::End();
+}

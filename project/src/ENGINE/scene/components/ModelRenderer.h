@@ -39,7 +39,7 @@ namespace pompeii
 		//    Loop
 		//--------------------------------------------------
 		void Start() override;
-		void OnImGuiRender() override;
+		void OnInspectorDraw() override;
 
 		//--------------------------------------------------
 		//    Accessors

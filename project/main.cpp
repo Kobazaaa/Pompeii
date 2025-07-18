@@ -55,13 +55,13 @@ int main()
 
 		// -- Register Services --
 		ServiceLocator::Register(std::make_unique<SceneManager>());
-		ServiceLocator::Register(std::make_unique<RenderSystem>());
 		ServiceLocator::Register(std::make_unique<Editor>());
+		ServiceLocator::Register(std::make_unique<RenderSystem>());
 		ServiceLocator::Get<RenderSystem>().SetRenderer(std::make_unique<Renderer>(pWindow));
 		ServiceLocator::Get<RenderSystem>().GetRenderer()->InsertUI([]
-		{
-			ServiceLocator::Get<Editor>().Draw();
-		});
+			{
+				ServiceLocator::Get<Editor>().Draw();
+			});
 
 
 		// -- Create Default Scene --

@@ -8,7 +8,6 @@ pompeii::Transform::Transform(SceneObject* pOwner)
 	: m_pSceneObject{ pOwner }
 {}
 
-
 //--------------------------------------------------
 //    Parent-Child
 //--------------------------------------------------

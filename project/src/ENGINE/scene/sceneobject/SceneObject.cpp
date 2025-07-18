@@ -4,6 +4,10 @@
 // -- Pompeii Includes --
 #include "SceneObject.h"
 
+// -- ImGui --
+#include "imgui.h"
+#include "misc/cpp/imgui_stdlib.h"
+
 //--------------------------------------------------
 //    Constructors and Destructors
 //--------------------------------------------------
@@ -27,11 +31,52 @@ void pompeii::SceneObject::Update() const
 		if (component->isActive)
 			component->Update();
 }
-void pompeii::SceneObject::OnImGuiRender() const
+void pompeii::SceneObject::OnInspectorDraw()
 {
+	// -- Info --
+	ImGui::Text("Name:");
+	ImGui::SameLine();
+	ImGui::InputText("##Name", &name);
+	ImGui::SameLine();
+	if (ImGui::Checkbox("##Active", &m_IsActive))
+		SetActive(m_IsActive);
+	ImGui::Separator();
+
+	// -- Transform --
+	if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		glm::vec3 pos = transform->GetPosition();
+		glm::vec3 rot = transform->GetEulerAngles();
+		glm::vec3 scale = transform->GetScale();
+		bool changed = false;
+
+		ImGui::Text("Position"); ImGui::SameLine();
+		changed |= ImGui::DragFloat3("##Position", &pos.x, 0.01f);
+
+		ImGui::Text("Rotation"); ImGui::SameLine();
+		changed |= ImGui::DragFloat3("##Rotation", &rot.x, 0.01f);
+
+		ImGui::Text("Scale"); ImGui::SameLine();
+		changed |= ImGui::DragFloat3("##Scale", &scale.x, 0.01f);
+
+		if (changed)
+		{
+			transform->SetPosition(pos);
+			transform->SetEulerAngles(rot);
+			transform->SetScale(scale);
+		}
+
+		ImGui::Separator();
+	}
+
+	// -- Other Components --
 	for (const auto& component : m_vComponents)
-		if (component->isActive)
-			component->OnImGuiRender();
+	{
+		if (!component) continue;
+		if (ImGui::CollapsingHeader(component->name.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+			component->OnInspectorDraw();
+		ImGui::Separator();
+	}
 }
 
 //--------------------------------------------------

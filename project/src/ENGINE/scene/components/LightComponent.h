@@ -41,7 +41,7 @@ namespace pompeii
 		//    Loop
 		//--------------------------------------------------
 		void Start() override;
-		void OnImGuiRender() override;
+		void OnInspectorDraw() override;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
@@ -51,7 +51,6 @@ namespace pompeii
 
 	private:
 		LightHandle m_LightHandle{};
-		LightType m_Type;
 		friend class RenderSystem;
 	};
 }

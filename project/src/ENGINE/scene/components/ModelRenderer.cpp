@@ -11,7 +11,7 @@
 //    Constructor & Destructor
 //--------------------------------------------------
 pompeii::ModelRenderer::ModelRenderer(SceneObject& sceneObj, const std::string& path)
-	: Component(sceneObj)
+	: Component(sceneObj, "ModelRenderer")
 {
 	ServiceLocator::Get<RenderSystem>().RegisterModel(*this, path);
 }
@@ -27,7 +27,7 @@ pompeii::ModelRenderer::~ModelRenderer()
 void pompeii::ModelRenderer::Start()
 {
 }
-void pompeii::ModelRenderer::OnImGuiRender()
+void pompeii::ModelRenderer::OnInspectorDraw()
 {
 }
 

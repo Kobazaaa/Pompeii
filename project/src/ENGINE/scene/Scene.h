@@ -42,7 +42,6 @@ namespace pompeii
 		//--------------------------------------------------
 		void Start() const;
 		void Update();
-		void OnImGuiRender() const;
 
 		//--------------------------------------------------
 		//    Accessors

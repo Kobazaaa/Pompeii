@@ -74,8 +74,6 @@ namespace pompeii
 		void RotateLocal(const glm::vec3& rotation);
 		void ScaleLocal(const glm::vec3& scale);
 
-
-
 	private:
 		// -- Parent-Child --
 		void AddChild(Transform* child);

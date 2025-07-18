@@ -52,4 +52,3 @@ void pompeii::SceneManager::SetActiveScene(const std::string& name) { if (const 
 //--------------------------------------------------
 void pompeii::SceneManager::Start()				const { m_pActiveScene->Start(); }
 void pompeii::SceneManager::Update()			const { m_pActiveScene->Update(); }
-void pompeii::SceneManager::OnImGuiRender()		const { m_pActiveScene->OnImGuiRender(); }

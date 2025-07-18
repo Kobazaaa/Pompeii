@@ -38,7 +38,7 @@ namespace pompeii
 		//--------------------------------------------------
 		void Start() const;
 		void Update() const;
-		void OnImGuiRender() const;
+		void OnInspectorDraw();
 
 		//--------------------------------------------------
 		//    Components

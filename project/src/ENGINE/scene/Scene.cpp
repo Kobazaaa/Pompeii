@@ -43,15 +43,6 @@ void pompeii::Scene::Update()
 	AddPendingObjects();
 	CleanupDeletedObjects();
 }
-void pompeii::Scene::OnImGuiRender() const
-{
-	for (const auto& object : m_vObjects)
-	{
-		if (!object->IsActive())
-			continue;
-		object->OnImGuiRender();
-	}
-}
 
 //--------------------------------------------------
 //    Accessors

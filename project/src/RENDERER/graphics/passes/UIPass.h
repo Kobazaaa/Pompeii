@@ -48,6 +48,7 @@ namespace pompeii
 		void Initialize(const Context& context, const UIPassCreateInfo& createInfo);
 		void Destroy();
 		void Record(CommandBuffer& commandBuffer, const Image& renderImage);
+		void InsertUI(const std::function<void()>& func);
 
 	private:
 		// -- Helpers --
@@ -55,22 +56,14 @@ namespace pompeii
 		void ImGuiLogic() const;
 		void EndImGuiFrame(CommandBuffer& commandBuffer, const Image& renderImage);
 
-		void SetupDockSpace() const;
 		void SetupImGuiStyle();
-
-		// -- Data --
-		mutable bool m_IsDockSpaceBuilt{ false };
-		mutable ImGuiID m_DockCentralID = 0;
-		mutable ImGuiID m_DockLeftID = 0;
-		mutable ImGuiID m_DockRightID = 0;
-		mutable ImGuiID m_DockTopID = 0;
-		mutable ImGuiID m_DockBottomID = 0;
 
 		// -- Pools --
 		DescriptorPool m_DescriptorPool{};
 
-		// -- DQ --
+		// -- Extra --
 		DeletionQueue m_DeletionQueue{ };
+		std::vector<std::function<void()>> m_vUICalls{};
 	};
 }
 #endif // UI_PASS_H

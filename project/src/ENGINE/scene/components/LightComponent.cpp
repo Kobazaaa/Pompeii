@@ -13,9 +13,12 @@ pompeii::LightComponent::LightComponent(SceneObject& parent, const glm::vec3& di
 			.luxLumen = luxLumen,
 			.type = type,
 		})
-{}
+{
+	if (type == LightType::Point)
+		GetTransform().SetPosition(dirPos);
+}
 pompeii::LightComponent::LightComponent(SceneObject& parent, LightCPU data)
-	: Component(parent)
+	: Component(parent, "LightComponent")
 	, lightData(std::move(data))
 {
 	lightData.CalculateLightMatrices(GetSceneObject().GetScene().GetAABB());
@@ -34,8 +37,18 @@ void pompeii::LightComponent::Start()
 {
 	ServiceLocator::Get<RenderSystem>().GetRenderer()->UpdateLights();
 }
-void pompeii::LightComponent::OnImGuiRender()
+void pompeii::LightComponent::OnInspectorDraw()
 {
+	ImGui::Text("Type"); ImGui::SameLine();
+	if (ImGui::Combo("##Type", reinterpret_cast<int*>(&lightData.type), "Directional\0Point"))
+	{
+		lightData.CalculateLightMatrices(GetSceneObject().GetScene().GetAABB());
+	}
+
+	ImGui::Text("Intensity"); ImGui::SameLine();
+	ImGui::InputFloat("##Intensity", &lightData.luxLumen);
+	ImGui::Text("Color"); ImGui::SameLine();
+	ImGui::ColorEdit3("##Color", &lightData.color.r);
 }
 
 

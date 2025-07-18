@@ -34,7 +34,6 @@ namespace pompeii
 		//--------------------------------------------------
 		void Start() const;
 		void Update() const;
-		void OnImGuiRender() const;
 
 	private:
 		std::vector<std::unique_ptr<Scene>> m_vScenes;

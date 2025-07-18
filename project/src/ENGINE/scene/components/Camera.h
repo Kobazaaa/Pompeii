@@ -51,7 +51,7 @@ namespace pompeii
 		//--------------------------------------------------
 		void Start() override;
 		void Update() override;
-		void OnImGuiRender() override;
+		void OnInspectorDraw() override;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators

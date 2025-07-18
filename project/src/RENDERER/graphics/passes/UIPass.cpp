@@ -107,6 +107,11 @@ void pompeii::UIPass::Record(CommandBuffer& commandBuffer, const Image& renderIm
 	EndImGuiFrame(commandBuffer, renderImage);
 }
 
+void pompeii::UIPass::InsertUI(const std::function<void()>& func)
+{
+	m_vUICalls.push_back(func);
+}
+
 //--------------------------------------------------
 //    Helpers
 //--------------------------------------------------
@@ -116,123 +121,12 @@ void pompeii::UIPass::BeginImGuiFrame() const
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
-
-	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_DockingEnable)
-		SetupDockSpace();
 }
 // ReSharper disable once CppMemberFunctionMayBeStatic
 void pompeii::UIPass::ImGuiLogic() const
 {
-	// -- Menu --
-	if (ImGui::BeginMainMenuBar())
-	{
-		if (ImGui::BeginMenu("Config"))
-		{
-			if (ImGui::MenuItem("Save Layout As..."))
-				ImGuiFileDialog::Instance()->OpenDialog("SaveLayout", "Save Layout", ".ini");
-			if (ImGui::MenuItem("Load Layout..."))
-				ImGuiFileDialog::Instance()->OpenDialog("LoadLayout", "Load Layout", ".ini");
-
-			ImGui::EndMenu();
-		}
-		if (ImGui::BeginMenu("DumpVMA"))
-		{
-			ImGuiFileDialog::Instance()->OpenDialog("DumpVMA", "Dump VMA", ".json");
-			ImGui::EndMenu();
-		}
-		ImGui::EndMainMenuBar();
-	}
-
-	// -- FileDialog --
-	constexpr ImGuiWindowFlags fileDialogFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking;
-	constexpr ImVec2 fileDialogSize = ImVec2(800, 500);
-	if (ImGuiFileDialog::Instance()->Display("SaveLayout", fileDialogFlags, fileDialogSize))
-	{
-		if (ImGuiFileDialog::Instance()->IsOk())
-		{
-			const std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
-			ImGui::SaveIniSettingsToDisk(path.c_str());
-		}
-		ImGuiFileDialog::Instance()->Close();
-	}
-	if (ImGuiFileDialog::Instance()->Display("LoadLayout", fileDialogFlags, fileDialogSize))
-	{
-		if (ImGuiFileDialog::Instance()->IsOk())
-		{
-			const std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
-			ImGui::LoadIniSettingsFromDisk(path.c_str());
-		}
-		ImGuiFileDialog::Instance()->Close();
-	}
-	if (ImGuiFileDialog::Instance()->Display("DumpVMA", fileDialogFlags, fileDialogSize))
-	{
-		if (ImGuiFileDialog::Instance()->IsOk())
-		{
-			const std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
-			char* StatsString = nullptr;
-			vmaBuildStatsString(ServiceLocator::Get<RenderSystem>().GetRenderer()->GetContext().allocator, &StatsString, true);
-			{
-				std::ofstream OutStats{ path };
-				OutStats << StatsString;
-			}
-			vmaFreeStatsString(ServiceLocator::Get<RenderSystem>().GetRenderer()->GetContext().allocator, StatsString);
-		}
-		ImGuiFileDialog::Instance()->Close();
-	}
-
-	// -- Sidebar --
-	ImGui::SetNextWindowDockID(m_DockLeftID, ImGuiCond_Once);
-	ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_None);
-	{
-		ImGui::Text("Load Model");
-		if (ImGui::Button("Choose Model"))
-			ImGuiFileDialog::Instance()->OpenDialog("ChooseModel", "Choose a File", ".gltf");
-		if (ImGuiFileDialog::Instance()->Display("ChooseModel", fileDialogFlags, fileDialogSize))
-		{
-			if (ImGuiFileDialog::Instance()->IsOk())
-			{
-				const std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
-				auto& obj = ServiceLocator::Get<SceneManager>().GetActiveScene().AddEmpty();
-				obj.AddComponent<ModelRenderer>(path);
-			}
-			ImGuiFileDialog::Instance()->Close();
-		}
-		ImGui::Text("Add Light");
-		if (ImGui::Button("Add Light"))
-		{
-			auto& obj = ServiceLocator::Get<SceneManager>().GetActiveScene().AddEmpty();
-			obj.AddComponent<LightComponent>(
-				/* direction */	glm::vec3{ 0.f, -1.f, 0.f },
-				/* color */		glm::vec3{ 0.f, 1.f, 0.f },
-				/* lux */			100'000.f, LightType::Directional
-			);
-		}
-
-		ImGui::Text("Custom");
-		ServiceLocator::Get<SceneManager>().GetActiveScene().OnImGuiRender();
-	}
-	ImGui::End();
-
-	// -- Scene Hierarchy --
-	ImGui::SetNextWindowDockID(m_DockLeftID, ImGuiCond_Once);
-	ImGui::Begin("Scene Hierarchy", nullptr, ImGuiWindowFlags_None);
-	{
-		auto sceneObjects = ServiceLocator::Get<SceneManager>().GetActiveScene().GetAllObjects();
-		int index = 0;
-		for (SceneObject* obj : sceneObjects)
-		{
-			ImGui::PushID(index);
-			bool treeNodeOpen = ImGui::TreeNodeEx(obj->name.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_FramePadding |
-				ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth, obj->name.c_str());
-			ImGui::PopID();
-
-			if (treeNodeOpen)
-				ImGui::TreePop();
-			++index;
-		}
-	}
-	ImGui::End();
-
+	for (const auto& func : m_vUICalls)
+		func();
 }
 // ReSharper disable once CppMemberFunctionMayBeStatic
 void pompeii::UIPass::EndImGuiFrame(CommandBuffer& commandBuffer, const Image& renderImage)
@@ -274,28 +168,6 @@ void pompeii::UIPass::EndImGuiFrame(CommandBuffer& commandBuffer, const Image& r
 	Debugger::EndDebugLabel(commandBuffer);
 }
 
-void pompeii::UIPass::SetupDockSpace() const
-{
-	const ImGuiViewport* viewport = ImGui::GetMainViewport();
-	const auto dockSpaceID = ImGui::DockSpaceOverViewport(viewport->ID, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
-
-	if (m_IsDockSpaceBuilt)
-		return;
-
-	ImGui::DockBuilderRemoveNode(dockSpaceID);
-	ImGui::DockBuilderAddNode(dockSpaceID, ImGuiDockNodeFlags_DockSpace);
-	ImGui::DockBuilderSetNodeSize(dockSpaceID, viewport->Size);
-
-	m_DockCentralID = dockSpaceID;
-	constexpr float ratio = 0.35f;
-	m_DockLeftID	= ImGui::DockBuilderSplitNode(m_DockCentralID, ImGuiDir_Left,  ratio, nullptr, &m_DockCentralID);
-	m_DockRightID	= ImGui::DockBuilderSplitNode(m_DockCentralID, ImGuiDir_Right, ratio, nullptr, &m_DockCentralID);
-	m_DockTopID		= ImGui::DockBuilderSplitNode(m_DockCentralID, ImGuiDir_Up,	   ratio, nullptr, &m_DockCentralID);
-	m_DockBottomID	= ImGui::DockBuilderSplitNode(m_DockCentralID, ImGuiDir_Down,  ratio, nullptr, &m_DockCentralID);
-
-	ImGui::DockBuilderFinish(dockSpaceID);
-	m_IsDockSpaceBuilt = true;
-}
 // ReSharper disable once CppMemberFunctionMayBeStatic
 void pompeii::UIPass::SetupImGuiStyle()
 {

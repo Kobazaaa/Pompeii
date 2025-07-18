@@ -1,6 +1,9 @@
 #ifndef COMPONENT_H
 #define COMPONENT_H
 
+// -- Standard Library --
+#include <string>
+
 // -- Pompeii Includes --
 #include "Transform.h"
 
@@ -20,7 +23,7 @@ namespace pompeii
 		//--------------------------------------------------
 		//    Constructor and Destructor
 		//--------------------------------------------------
-		explicit Component(SceneObject& sceneObj);
+		explicit Component(SceneObject& sceneObj, const std::string& name);
 		virtual ~Component() = default;
 		Component(const Component& other) = delete;
 		Component(Component&& other) = delete;
@@ -33,7 +36,7 @@ namespace pompeii
 		//--------------------------------------------------
 		virtual void Start() {}
 		virtual void Update() {}
-		virtual void OnImGuiRender() {}
+		virtual void OnInspectorDraw() {}
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
@@ -43,6 +46,7 @@ namespace pompeii
 		[[nodiscard]] SceneObject& GetSceneObject()		const;
 		[[nodiscard]] Transform& GetTransform()			const;
 		bool isActive = true;
+		std::string name { "Unknown" };
 
 	private:
 		SceneObject* m_pSceneObj	{ nullptr };
