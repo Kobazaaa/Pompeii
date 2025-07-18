@@ -54,14 +54,19 @@ int main()
 		Window* pWindow = new Window("V - Pompeii", false, 800, 600);
 
 		// -- Register Services --
-		ServiceLocator::Register(std::make_unique<SceneManager>());
-		ServiceLocator::Register(std::make_unique<RenderSystem>());
-		ServiceLocator::Register(std::make_unique<Editor>());
-		ServiceLocator::Get<RenderSystem>().SetRenderer(std::make_unique<Renderer>(pWindow));
-		ServiceLocator::Get<RenderSystem>().GetRenderer()->InsertUI([]
 		{
-			ServiceLocator::Get<Editor>().Draw();
-		});
+			auto renderer = std::make_shared<Renderer>(pWindow);
+			ServiceLocator::Register(std::make_unique<SceneManager>());
+			ServiceLocator::Register(std::make_unique<RenderSystem>());
+			ServiceLocator::Register(std::make_unique<LightingSystem>());
+			ServiceLocator::Register(std::make_unique<Editor>());
+			ServiceLocator::Get<LightingSystem>().SetRenderer(renderer);
+			ServiceLocator::Get<RenderSystem>().SetRenderer(renderer);
+			ServiceLocator::Get<RenderSystem>().GetRenderer()->InsertUI([]
+				{
+					ServiceLocator::Get<Editor>().Draw();
+				});
+		}
 
 
 		// -- Create Default Scene --
@@ -92,16 +97,19 @@ int main()
 
 
 			// --- Begin Frame Phase ---
+			ServiceLocator::Get<LightingSystem>().BeginFrame();
 			ServiceLocator::Get<RenderSystem>().BeginFrame();
 
 			// -- Update Phase --
 			ServiceLocator::Get<SceneManager>().Update();
+			ServiceLocator::Get<LightingSystem>().Update();
 			ServiceLocator::Get<RenderSystem>().Update();
 
 			// -- Render Phase --
 			ServiceLocator::Get<RenderSystem>().Render();
 
 			// -- End Frame Phase --
+			ServiceLocator::Get<LightingSystem>().EndFrame();
 			ServiceLocator::Get<RenderSystem>().EndFrame();
 
 
@@ -120,6 +128,7 @@ int main()
 		// -- Cleanup --
 		ServiceLocator::Get<RenderSystem>().GetRenderer()->GetContext().device.WaitIdle();
 		ServiceLocator::Deregister<SceneManager>();
+		ServiceLocator::Deregister<LightingSystem>();
 		ServiceLocator::Deregister<RenderSystem>();
 		ServiceLocator::Deregister<Renderer>();
 		delete pWindow;

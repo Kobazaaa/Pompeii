@@ -22,11 +22,11 @@ pompeii::LightComponent::LightComponent(SceneObject& parent, LightCPU data)
 	, lightData(std::move(data))
 {
 	lightData.CalculateLightMatrices(GetSceneObject().GetScene().GetAABB());
-	ServiceLocator::Get<RenderSystem>().RegisterLight(*this);
+	ServiceLocator::Get<LightingSystem>().RegisterLight(*this);
 }
 pompeii::LightComponent::~LightComponent()
 {
-	ServiceLocator::Get<RenderSystem>().UnregisterLight(*this);
+	ServiceLocator::Get<LightingSystem>().UnregisterLight(*this);
 }
 
 

@@ -1,5 +1,5 @@
-#ifndef RENDER_SYSTEM_H
-#define RENDER_SYSTEM_H
+#ifndef LIGHTING_SYSTEM_H
+#define LIGHTING_SYSTEM_H
 
 // -- Standard Library --
 #include <vector>
@@ -21,22 +21,16 @@ namespace pompeii
 namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  Render System	
+	//? ~~	  Lighting System	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	class RenderSystem final : public ISystem
+	class LightingSystem final : public ISystem
 	{
 	public:
 		//--------------------------------------------------
-		//    Models
+		//    Lights
 		//--------------------------------------------------
-		void RegisterModel(ModelRenderer& model, const std::string& path);
-		void UnregisterModel(const ModelRenderer& model);
-
-		//--------------------------------------------------
-		//    Camera
-		//--------------------------------------------------
-		Camera* GetMainCamera() const;
-		void SetMainCamera(Camera& camera);
+		void RegisterLight(LightComponent& light);
+		void UnregisterLight(const LightComponent& light);
 
 		//--------------------------------------------------
 		//    Interface
@@ -45,19 +39,11 @@ namespace pompeii
 		Renderer* GetRenderer() const;
 		void BeginFrame() override;
 		void Update() override;
-		void Render();
 		void EndFrame() override;
 
 	private:
-		std::vector<ModelRenderer*> m_vRegisteredModels{};
-		std::vector<ModelRenderer*> m_vVisibleModels{};
-		Camera* m_pMainCamera{};
+		std::vector<LightComponent*> m_vRegisteredLights{};
 		std::shared_ptr<Renderer> m_pRenderer{};
-
-		//--------------------------------------------------
-		//    Helpers
-		//--------------------------------------------------
-		void FrustumCull();
 	};
 }
 

@@ -51,7 +51,7 @@ namespace pompeii
 
 	private:
 		LightHandle m_LightHandle{};
-		friend class RenderSystem;
+		friend class LightingSystem;
 	};
 }
 

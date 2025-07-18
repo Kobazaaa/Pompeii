@@ -96,6 +96,7 @@ set(SOURCES
 
 	# systems
 	"${ENGINE_SOURCE_DIR}/systems/ISystem.h"
+	"${ENGINE_SOURCE_DIR}/systems/LightingSystem.h"					"${ENGINE_SOURCE_DIR}/systems/LightingSystem.cpp"
 	"${ENGINE_SOURCE_DIR}/systems/RenderSystem.h"					"${ENGINE_SOURCE_DIR}/systems/RenderSystem.cpp"
 
 	############
