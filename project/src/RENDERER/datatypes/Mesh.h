@@ -1,5 +1,5 @@
-#ifndef MODEL_DATA_TYPE_H
-#define MODEL_DATA_TYPE_H
+#ifndef MESH_ASSET_H
+#define MESH_ASSET_H
 
 // -- Standard Library --
 #include <vector>
@@ -8,6 +8,8 @@
 // -- Pompeii Includes --
 #include "Material.h"
 #include "Shapes.h"
+#include "Buffer.h"
+#include "Image.h"
 
 // -- Vulkan Includes
 #include <vulkan/vulkan.h>
@@ -22,11 +24,6 @@
 // -- Model Loading --
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
-
-// -- Pompeii Includes --
-#include "Buffer.h"
-#include "Image.h"
-using ModelHandle = uint32_t;
 
 namespace pompeii
 {
@@ -53,7 +50,7 @@ namespace pompeii
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Mesh	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	struct Mesh
+	struct SubMesh
 	{
 		std::uint32_t vertexOffset;
 		uint32_t indexOffset;
@@ -67,30 +64,45 @@ namespace pompeii
 		std::string name;
 	};
 
-
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  Model	
+	//? ~~	  Mesh	
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	struct ModelCPU
+	struct Mesh
 	{
 	public:
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit ModelCPU(const std::string& path);
-		virtual ~ModelCPU() = default;
+		explicit Mesh(const std::string& path);
+		virtual ~Mesh() = default;
+		Mesh(const Mesh& other) = delete;
+		Mesh(Mesh&& other) noexcept = delete;
+		Mesh& operator=(const Mesh& other) = delete;
+		Mesh& operator=(Mesh&& other) noexcept = delete;
 
 		//--------------------------------------------------
-		//    Data
+		//    Helpers
+		//--------------------------------------------------
+		void Bind(CommandBuffer& cmdBuffer) const;
+		void AllocateResources(const Context& context);
+		void Destroy(const Context& context);
+
+		//--------------------------------------------------
+		//    CPU Data
 		//--------------------------------------------------
 		std::vector<Vertex> vertices{};
 		std::vector<uint32_t> indices{};
 		std::vector<Texture> textures{};
 		std::unordered_map<std::string, uint32_t> pathToIdx{};
+		std::vector<SubMesh> vSubMeshes{};
 		AABB aabb{};
 
-		std::vector<Mesh> opaqueMeshes{};
-		std::vector<Mesh> transparentMeshes{};
+		//--------------------------------------------------
+		//    GPU Data
+		//--------------------------------------------------
+		Buffer vertexBuffer{};
+		Buffer indexBuffer{};
+		std::vector<Image> images{};
 
 	private:
 		//--------------------------------------------------
@@ -99,47 +111,12 @@ namespace pompeii
 		void ProcessNode(const aiNode* pNode, const aiScene* pScene, const glm::mat4& transform = glm::mat4(1.0f));
 		void ProcessMesh(const aiMesh* pMesh, const aiScene* pScene, glm::mat4 transform);
 
+		void CreateVertexBuffer(const Context& context);
+		void CreateIndexBuffer(const Context& context);
+		void CreateImages(const Context& context);
+
 		static glm::mat4 ConvertAssimpMatrix(const aiMatrix4x4& mat);
-		inline static uint32_t globalTextureCounter{ 0 };
-	};
-	struct ModelGPU
-	{
-	public:
-		//--------------------------------------------------
-		//    Constructor & Destructor
-		//--------------------------------------------------
-		explicit ModelGPU() = default;
-		virtual ~ModelGPU() = default;
-		ModelGPU(const ModelGPU& other) = delete;
-		ModelGPU(ModelGPU&& other) noexcept = delete;
-		ModelGPU& operator=(const ModelGPU& other) = delete;
-		ModelGPU& operator=(ModelGPU&& other) noexcept = delete;
-
-		//--------------------------------------------------
-		//    Helpers
-		//--------------------------------------------------
-		void Bind(CommandBuffer& cmdBuffer) const;
-		void AllocateResources(const Context& context, const ModelCPU& modelCPU);
-		void Destroy(const Context& context);
-
-		//--------------------------------------------------
-		//    Data
-		//--------------------------------------------------
-		Buffer vertexBuffer{};
-		Buffer indexBuffer{};
-		std::vector<Image> images{};
-
-		std::vector<Mesh> opaqueMeshes{};
-		std::vector<Mesh> transparentMeshes{};
-
-	private:
-		//--------------------------------------------------
-		//    Helpers
-		//--------------------------------------------------
-		void CreateVertexBuffer(const Context& context, const ModelCPU& modelCPU);
-		void CreateIndexBuffer(const Context& context, const ModelCPU& modelCPU);
-		void CreateImages(const Context& context, const ModelCPU& modelCPU);
 	};
 }
 
-#endif // MODEL_DATA_TYPE_H
+#endif // MESH_ASSET_H

@@ -4,15 +4,11 @@
 #include "Image.h"
 #include "Context.h"
 #include "Debugger.h"
-#include "ServiceLocator.h"
-#include "LightComponent.h"
-#include "ModelRenderer.h"
 
 // -- Standard Library --
 #include <stdexcept>
 
 // -- ImGui --
-#include "imgui_internal.h"
 #include "backends/imgui_impl_vulkan.h"
 #include "backends/imgui_impl_glfw.h"
 #include "ImGuiFileDialog.h"
@@ -64,7 +60,7 @@ void pompeii::UIPass::Initialize(const Context& context, const UIPassCreateInfo&
 		imGuiVulkanInitInfo.Device = context.device.GetHandle();
 		imGuiVulkanInitInfo.Queue = context.device.GetGraphicQueue();
 		imGuiVulkanInitInfo.DescriptorPool = m_DescriptorPool.GetHandle();
-		imGuiVulkanInitInfo.MinImageCount = createInfo.maxFramesInFlight;
+		imGuiVulkanInitInfo.MinImageCount = context.maxFramesInFlight;
 		imGuiVulkanInitInfo.ImageCount = createInfo.swapchainImageCount;
 		imGuiVulkanInitInfo.UseDynamicRendering = true;
 		imGuiVulkanInitInfo.CheckVkResultFn = [](VkResult err)

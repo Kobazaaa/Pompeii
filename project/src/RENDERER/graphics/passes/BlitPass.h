@@ -10,7 +10,7 @@
 // -- Forward Declarations --
 namespace pompeii
 {
-	class Camera;
+	struct CameraData;
 	class DescriptorPool;
 	class CommandBuffer;
 	class Image;
@@ -23,7 +23,6 @@ namespace pompeii
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	struct BlitPassCreateInfo
 	{
-		uint32_t maxFramesInFlight{};
 		VkFormat format{};
 		std::vector<Image>* renderImages{};
 	};
@@ -47,7 +46,7 @@ namespace pompeii
 		void Initialize(const Context& context, const BlitPassCreateInfo& createInfo);
 		void Destroy();
 		void UpdateDescriptors(const Context& context, const std::vector<Image>& renderImages) const;
-		void RecordGraphic(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const Camera* pCamera);
+		void RecordGraphic(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const CameraData& camera);
 		void RecordCompute(CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage);
 
 	private:

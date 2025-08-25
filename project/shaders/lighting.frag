@@ -19,32 +19,28 @@ struct Light
     vec4 dirpostype;
     vec3 color;
     float luxLumen;
-	uint matrixIndex;
+	mat4 matrices[6];
 	uint depthIndex;
+	uint padding[3];
 };
 layout(std430, set = 1, binding = 0) readonly buffer LightBuffer
 {
 	uint lightCount;
     Light lights[];
 } lightBuffer;
-layout(std430, set = 2, binding = 0) readonly buffer LightMatrices
-{
-	uint matrixCount;
-    mat4 matrices[];
-} lightSpaceMatrices;
-layout(set = 3, binding = 0) uniform sampler2DShadow DirectionalShadowMaps[];
-layout(set = 4, binding = 0) uniform samplerCubeShadow PointShadowMaps[];
+layout(set = 2, binding = 0) uniform sampler2DShadow DirectionalShadowMaps[];
+layout(set = 3, binding = 0) uniform samplerCubeShadow PointShadowMaps[];
 
 // -- GBuffer & Surroundings --
-layout(set = 5, binding = 0) uniform sampler2D Albedo_Opacity;
-layout(set = 5, binding = 1) uniform sampler2D Normal;
-layout(set = 5, binding = 2) uniform sampler2D WorldPos;
-layout(set = 5, binding = 3) uniform sampler2D Roughness_Metallic;
-layout(set = 5, binding = 4) uniform sampler2D Depth;
-layout(set = 5, binding = 5) uniform samplerCube EnvironmentMap;
-layout(set = 5, binding = 6) uniform samplerCube DiffuseIrradiance;
-layout(set = 5, binding = 7) uniform samplerCube SpecularIrradiance;
-layout(set = 5, binding = 8) uniform sampler2D BrdfLut;
+layout(set = 4, binding = 0) uniform sampler2D Albedo_Opacity;
+layout(set = 4, binding = 1) uniform sampler2D Normal;
+layout(set = 4, binding = 2) uniform sampler2D WorldPos;
+layout(set = 4, binding = 3) uniform sampler2D Roughness_Metallic;
+layout(set = 4, binding = 4) uniform sampler2D Depth;
+layout(set = 4, binding = 5) uniform samplerCube EnvironmentMap;
+layout(set = 4, binding = 6) uniform samplerCube DiffuseIrradiance;
+layout(set = 4, binding = 7) uniform samplerCube SpecularIrradiance;
+layout(set = 4, binding = 8) uniform sampler2D BrdfLut;
 
 // -- Input --
 layout(location = 0) in vec2 fragTexCoord;
@@ -132,7 +128,7 @@ void main()
 		// -- Shadow --
 		float shadowTerm = 1.0;
 		if(type == 0) // 0 == Directional Light
-			shadowTerm = CalculateShadowTermDirectional(lightSpaceMatrices.matrices[light.matrixIndex], worldPos, DirectionalShadowMaps[light.depthIndex]);
+			shadowTerm = CalculateShadowTermDirectional(light.matrices[0], worldPos, DirectionalShadowMaps[light.depthIndex]);
 		else if(type == 1) // 1 == Point Light
 			shadowTerm = CalculateShadowTermPoint(light.dirpostype.xyz, worldPos, PointShadowMaps[light.depthIndex]);
 

@@ -50,6 +50,7 @@ namespace pompeii
 		std::vector<SceneObject*> GetObjectsByName(const std::string& objectName) const;
 		std::vector<SceneObject*> GetAllObjects() const;
 		const AABB& GetAABB() const;
+		void GrowAABB(const AABB& aabb);
 
 	private:
 		void CleanupDeletedObjects();

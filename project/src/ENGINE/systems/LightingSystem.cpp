@@ -1,102 +1,82 @@
 // -- Pompeii Includes --
-#include "Transform.h"
 #include "LightingSystem.h"
-#include "ModelRenderer.h"
 #include "LightComponent.h"
 
 // -- Standard Library --
-#include <numeric>
+#include <iterator>
+
+#include "Scene.h"
+#include "SceneObject.h"
 
 //--------------------------------------------------
 //    Lights
 //--------------------------------------------------
 void pompeii::LightingSystem::RegisterLight(LightComponent& light)
 {
-	if (std::ranges::find(m_vRegisteredLights, &light) != m_vRegisteredLights.end())
+	auto it = std::ranges::find(m_vRegisteredLights, &light);
+	if (it != m_vRegisteredLights.end())
 		return;
-	m_vRegisteredLights.emplace_back(&light);
-	auto handle = m_pRenderer->CreateLight(light.lightData);
-	light.m_LightHandle = handle;
-	m_pRenderer->UpdateLights();
+	it = std::ranges::find(m_vPendingLights, &light);
+	if (it != m_vPendingLights.end())
+		return;
+	m_UpdateLights = true;
 
+	light.lightData.CalculateLightMatrices(light.GetSceneObject().GetScene().GetAABB());
+	light.lightData.CreateDepthImage(m_pRenderer->GetContext(), 4096);
+
+	m_vPendingLights.emplace_back(&light);
 }
-void pompeii::LightingSystem::UnregisterLight(const LightComponent& light)
+void pompeii::LightingSystem::UnregisterLight(LightComponent& light)
 {
+	m_UpdateLights = true;
+
 	std::erase_if(m_vRegisteredLights, [&](const LightComponent* pLight)
 	{
 		if (pLight == &light)
 		{
-			m_pRenderer->DestroyLight(light.GetLightHandle());
-			return true;
+			m_pRenderer->GetContext().device.WaitIdle();
+			light.lightData.DestroyDepthMap(m_pRenderer->GetContext());
 		}
-		return false;
+		return pLight == &light;
+	});
+	std::erase_if(m_vPendingLights, [&](const LightComponent* pLight)
+	{
+		if (pLight == &light)
+		{
+			m_pRenderer->GetContext().device.WaitIdle();
+			light.lightData.DestroyDepthMap(m_pRenderer->GetContext());
+		}
+		return pLight == &light;
 	});
 }
 
-//std::vector<pompeii::GPULight> pompeii::RenderSystem::GetLightsGPU() const
-//{
-//	std::vector<pompeii::GPULight> res{};
-//	res.reserve(m_vRegisteredLights.size());
-//
-//	uint32_t matrixIdx = 0;
-//	uint32_t directionalCounter = 0;
-//	uint32_t pointCounter = 0;
-//	for (auto& l : m_vRegisteredLights)
-//	{
-//		GPULight gpuL{};
-//		LightComponent::Type type = l->GetType();
-//
-//		gpuL.dirPosType = { type == LightComponent::Type::Point ? l->dirPos : normalize(l->dirPos), static_cast<int>(l->GetType()) };
-//		gpuL.intensity = l->luxLumen;
-//		gpuL.color = l->color;
-//		gpuL.matrixIndex = 0xFFFFFFFF;
-//		gpuL.depthIndex = 0xFFFFFFFF;
-//
-//		switch (type)
-//		{
-//		case LightComponent::Type::Point:
-//			gpuL.depthIndex = pointCounter;
-//			++pointCounter;
-//			break;
-//		case LightComponent::Type::Directional:
-//			gpuL.matrixIndex = matrixIdx;
-//			gpuL.depthIndex = directionalCounter;
-//			++directionalCounter;
-//			++matrixIdx;
-//			break;
-//		}
-//
-//		res.push_back(std::move(gpuL));
-//	}
-//	return res;
-//}
-//std::vector<glm::mat4> pompeii::RenderSystem::GetLightMatrices() const
-//{
-//	std::vector<glm::mat4> res{};
-//	for (auto& l : m_vRegisteredLights)
-//	{
-//		if (l->GetType() == LightComponent::Type::Directional)
-//		{
-//			const auto& proj = l->projMatrix;
-//			const auto& view = l->viewMatrices.front();
-//			res.push_back(proj * view);
-//		}
-//	}
-//	return res;
-//}
+void pompeii::LightingSystem::UpdateLight(LightComponent&)
+{
+	m_UpdateLights = true;
+}
 
 //--------------------------------------------------
 //    Interface
 //--------------------------------------------------
 void pompeii::LightingSystem::Update()
 {
+	for (LightComponent* l : m_vRegisteredLights)
+	{
+		m_pRenderer->SubmitLightItem(LightItem
+			{
+				.light = &l->lightData
+			});
+	}
+	UpdateData();
 }
 void pompeii::LightingSystem::BeginFrame()
 {
+	AddPendingObjects();
 }
 void pompeii::LightingSystem::EndFrame()
 {
 }
+
 
 void pompeii::LightingSystem::SetRenderer(const std::shared_ptr<Renderer>& renderer)
 {
@@ -108,3 +88,28 @@ pompeii::Renderer* pompeii::LightingSystem::GetRenderer() const
 }
 
 
+//--------------------------------------------------
+//    Helpers
+//--------------------------------------------------
+void pompeii::LightingSystem::AddPendingObjects()
+{
+	if (!m_vPendingLights.empty())
+	{
+		for (auto& pendingLight : m_vPendingLights)
+			m_vRegisteredLights.emplace_back(pendingLight);
+		m_vPendingLights.clear();
+	}
+}
+void pompeii::LightingSystem::UpdateData()
+{
+	if (m_UpdateLights)
+	{
+		m_UpdateLights = false;
+
+		std::vector<Light*> newLights{};
+		newLights.reserve(m_vRegisteredLights.size());
+		for (auto& registeredLight : m_vRegisteredLights)
+			newLights.push_back(&registeredLight->lightData);
+		m_pRenderer->UpdateLights(newLights);
+	}
+}

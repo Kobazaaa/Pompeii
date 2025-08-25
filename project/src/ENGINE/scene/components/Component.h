@@ -7,6 +7,9 @@
 // -- Pompeii Includes --
 #include "Transform.h"
 
+// -- ImGui --
+#include "imgui.h"
+
 // -- Forward Declarations --
 namespace pompeii
 {

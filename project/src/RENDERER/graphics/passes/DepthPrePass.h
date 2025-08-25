@@ -13,10 +13,10 @@
 // -- Forward Declarations --
 namespace pompeii
 {
+	struct RenderItem;
+	struct CameraData;
 	class GeometryPass;
 	class DescriptorPool;
-	class Scene;
-	class Camera;
 	class CommandBuffer;
 	struct RenderDrawContext;
 	struct RenderInstance;
@@ -29,7 +29,6 @@ namespace pompeii
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	struct DepthPrePassCreateInfo
 	{
-		uint32_t maxFramesInFlight{};
 		VkFormat depthFormat{};
 		GeometryPass* pGeometryPass{};
 	};
@@ -53,8 +52,8 @@ namespace pompeii
 
 		void Initialize(const Context& context, const DepthPrePassCreateInfo& createInfo);
 		void Destroy();
-		void UpdateCamera(const Context& context, uint32_t imageIndex, Camera* pCamera) const;
-		void Record(CommandBuffer& commandBuffer, const GeometryPass& gPass, uint32_t imageIndex, const Image& depthImage, const RenderDrawContext& renderContext) const;
+		void UpdateCamera(const Context& context, uint32_t imageIndex, const CameraData& camera) const;
+		void Record(CommandBuffer& commandBuffer, const GeometryPass& gPass, uint32_t imageIndex, const Image& depthImage, const std::vector<RenderItem>& renderItems) const;
 
 		//--------------------------------------------------
 		//    Shader Infos

@@ -6,21 +6,19 @@
 //    Constructor & Destructor
 //--------------------------------------------------
 pompeii::LightComponent::LightComponent(SceneObject& parent, const glm::vec3& dirPos, const glm::vec3& col, float luxLumen, LightType type)
-	: LightComponent(parent,
-		{
-			.dirPos = dirPos,
-			.color = col,
-			.luxLumen = luxLumen,
-			.type = type,
-		})
-{
-	if (type == LightType::Point)
-		GetTransform().SetPosition(dirPos);
-}
-pompeii::LightComponent::LightComponent(SceneObject& parent, LightCPU data)
 	: Component(parent, "LightComponent")
-	, lightData(std::move(data))
+	, lightData
+	{
+		.dirPos = dirPos,
+		.type = type,
+		.color = col,
+		.luxLumen = luxLumen,
+		.viewMatrices = {},
+		.projMatrix = {}
+	}
 {
+	if (lightData.type == LightType::Point)
+		GetTransform().SetPosition(lightData.dirPos);
 	lightData.CalculateLightMatrices(GetSceneObject().GetScene().GetAABB());
 	ServiceLocator::Get<LightingSystem>().RegisterLight(*this);
 }
@@ -35,27 +33,27 @@ pompeii::LightComponent::~LightComponent()
 //--------------------------------------------------
 void pompeii::LightComponent::Start()
 {
-	ServiceLocator::Get<RenderSystem>().GetRenderer()->UpdateLights();
+	ServiceLocator::Get<LightingSystem>().UpdateLight(*this);
+}
+void pompeii::LightComponent::Update()
+{
 }
 void pompeii::LightComponent::OnInspectorDraw()
 {
 	ImGui::Text("Type"); ImGui::SameLine();
 	if (ImGui::Combo("##Type", reinterpret_cast<int*>(&lightData.type), "Directional\0Point"))
 	{
-		lightData.CalculateLightMatrices(GetSceneObject().GetScene().GetAABB());
+		ServiceLocator::Get<LightingSystem>().UpdateLight(*this);
 	}
 
 	ImGui::Text("Intensity"); ImGui::SameLine();
-	ImGui::InputFloat("##Intensity", &lightData.luxLumen);
+	if (ImGui::InputFloat("##Intensity", &lightData.luxLumen))
+		ServiceLocator::Get<LightingSystem>().UpdateLight(*this);
 	ImGui::Text("Color"); ImGui::SameLine();
-	ImGui::ColorEdit3("##Color", &lightData.color.r);
+	if (ImGui::ColorEdit3("##Color", &lightData.color.r))
+		ServiceLocator::Get<LightingSystem>().UpdateLight(*this);
+
+	if (ImGui::Button("Recalculate Matrices"))
+		lightData.CalculateLightMatrices(GetSceneObject().GetScene().GetAABB());
 }
 
-
-//--------------------------------------------------
-//    Accessors & Mutators
-//--------------------------------------------------
-LightHandle pompeii::LightComponent::GetLightHandle() const
-{
-	return m_LightHandle;
-}

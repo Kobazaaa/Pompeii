@@ -37,10 +37,11 @@ set(SOURCES
 
 	# datatypes
 	"${RENDERER_SOURCE_DIR}/datatypes/EnvironmentMap.h"				"${RENDERER_SOURCE_DIR}/datatypes/EnvironmentMap.cpp"
+	"${RENDERER_SOURCE_DIR}/datatypes/GPUCamera.h"
 	"${RENDERER_SOURCE_DIR}/datatypes/Light.h"						"${RENDERER_SOURCE_DIR}/datatypes/Light.cpp"
 	"${RENDERER_SOURCE_DIR}/datatypes/Material.h"					"${RENDERER_SOURCE_DIR}/datatypes/Material.cpp"
-	"${RENDERER_SOURCE_DIR}/datatypes/Model.h"						"${RENDERER_SOURCE_DIR}/datatypes/Model.cpp"
-	"${RENDERER_SOURCE_DIR}/datatypes/RenderInstance.h"
+	"${RENDERER_SOURCE_DIR}/datatypes/Mesh.h"						"${RENDERER_SOURCE_DIR}/datatypes/Mesh.cpp"
+	"${RENDERER_SOURCE_DIR}/datatypes/RenderingItems.h"
 	"${RENDERER_SOURCE_DIR}/datatypes/Shapes.h"						"${RENDERER_SOURCE_DIR}/datatypes/Shapes.cpp"
 
 	# graphics
@@ -81,6 +82,9 @@ set(SOURCES
 	"${ENGINE_SOURCE_DIR}/helper/ServiceLocator.h"
 	"${ENGINE_SOURCE_DIR}/helper/Timer.h"							"${ENGINE_SOURCE_DIR}/helper/Timer.cpp"
 
+	# managers
+	"${ENGINE_SOURCE_DIR}/managers/AssetManager.h"					"${ENGINE_SOURCE_DIR}/managers/AssetManager.cpp"
+	
 	# scene
 	"${ENGINE_SOURCE_DIR}/scene/Scene.h"							"${ENGINE_SOURCE_DIR}/scene/Scene.cpp"
 	 # scene/base
@@ -89,7 +93,8 @@ set(SOURCES
 	"${ENGINE_SOURCE_DIR}/scene/components/Camera.h"				"${ENGINE_SOURCE_DIR}/scene/components/Camera.cpp"
 	"${ENGINE_SOURCE_DIR}/scene/components/Component.h"				"${ENGINE_SOURCE_DIR}/scene/components/Component.cpp"
 	"${ENGINE_SOURCE_DIR}/scene/components/LightComponent.h"		"${ENGINE_SOURCE_DIR}/scene/components/LightComponent.cpp"
-	"${ENGINE_SOURCE_DIR}/scene/components/ModelRenderer.h"			"${ENGINE_SOURCE_DIR}/scene/components/ModelRenderer.cpp"
+	"${ENGINE_SOURCE_DIR}/scene/components/MeshFilter.h"			"${ENGINE_SOURCE_DIR}/scene/components/MeshFilter.cpp"
+	"${ENGINE_SOURCE_DIR}/scene/components/MeshRenderer.h"			"${ENGINE_SOURCE_DIR}/scene/components/MeshRenderer.cpp"
 	 # scene/sceneobject
 	"${ENGINE_SOURCE_DIR}/scene/sceneobject/SceneObject.h"			"${ENGINE_SOURCE_DIR}/scene/sceneobject/SceneObject.cpp"
 	"${ENGINE_SOURCE_DIR}/scene/sceneobject/Transform.h"			"${ENGINE_SOURCE_DIR}/scene/sceneobject/Transform.cpp"
@@ -127,6 +132,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 	"${ENGINE_SOURCE_DIR}"
 	"${ENGINE_SOURCE_DIR}/helper"
+	"${ENGINE_SOURCE_DIR}/managers"
 	"${ENGINE_SOURCE_DIR}/scene"
 	"${ENGINE_SOURCE_DIR}/scene/base"
 	"${ENGINE_SOURCE_DIR}/scene/components"

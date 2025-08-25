@@ -3,15 +3,15 @@
 #include "Shader.h"
 #include "Context.h"
 #include "Debugger.h"
-#include "Camera.h"
 #include "DescriptorPool.h"
-#include "RenderInstance.h"
+#include "RenderingItems.h"
+#include "GPUCamera.h"
 
 void pompeii::GeometryPass::Initialize(const Context& context, const GeometryPassCreateInfo& createInfo)
 {
 	// -- GBuffers --
 	{
-		m_vGBuffers.resize(createInfo.maxFramesInFlight);
+		m_vGBuffers.resize(context.maxFramesInFlight);
 		for (GBuffer& gBuffer : m_vGBuffers)
 			gBuffer.Initialize(context, createInfo.extent);
 		m_DeletionQueue.Push([&] { for (GBuffer& gBuffer : m_vGBuffers) gBuffer.Destroy(context); });
@@ -124,8 +124,8 @@ void pompeii::GeometryPass::Initialize(const Context& context, const GeometryPas
 
 	// -- UBO --
 	{
-		m_vUniformBuffers.resize(createInfo.maxFramesInFlight);
-		for (size_t i{}; i < createInfo.maxFramesInFlight; ++i)
+		m_vUniformBuffers.resize(context.maxFramesInFlight);
+		for (size_t i{}; i < context.maxFramesInFlight; ++i)
 		{
 			BufferAllocator bufferAlloc{};
 			bufferAlloc
@@ -140,11 +140,11 @@ void pompeii::GeometryPass::Initialize(const Context& context, const GeometryPas
 
 	// -- Buffers --
 	{
-		m_vUniformDS = context.descriptorPool->AllocateSets(context, m_UniformDSL, createInfo.maxFramesInFlight, "Uniform Buffer DS");
+		m_vUniformDS = context.descriptorPool->AllocateSets(context, m_UniformDSL, context.maxFramesInFlight, "Uniform Buffer DS");
 
 		// -- Write UBO --
 		DescriptorSetWriter writer{};
-		for (size_t i{}; i < createInfo.maxFramesInFlight; ++i)
+		for (size_t i{}; i < context.maxFramesInFlight; ++i)
 		{
 			writer
 				.AddBufferInfo(m_vUniformBuffers[i], 0, sizeof(UniformBufferVS))
@@ -188,14 +188,14 @@ void pompeii::GeometryPass::UpdateTextureDescriptor(const Context& context, cons
 	m_TextureCount = imageCount;
 }
 
-void pompeii::GeometryPass::UpdateCamera(const Context& context, uint32_t imageIndex, Camera* pCamera) const
+void pompeii::GeometryPass::UpdateCamera(const Context& context, uint32_t imageIndex, const CameraData& camera) const
 {
 	UniformBufferVS ubo;
-	ubo.view = pCamera->GetViewMatrix();
-	ubo.proj = pCamera->GetProjectionMatrix();
+	ubo.view = camera.view;
+	ubo.proj = camera.proj;
 	vmaCopyMemoryToAllocation(context.allocator, &ubo, m_vUniformBuffers[imageIndex].GetMemoryHandle(), 0, sizeof(ubo));
 }
-void pompeii::GeometryPass::Record(CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, const RenderDrawContext& renderContext)
+void pompeii::GeometryPass::Record(CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, const std::vector<RenderItem>& renderItems)
 {
 	// Transition GBuffer Images
 	m_vGBuffers[imageIndex].TransitionBufferWriting(commandBuffer);
@@ -256,69 +256,44 @@ void pompeii::GeometryPass::Record(CommandBuffer& commandBuffer, uint32_t imageI
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
 
 		// -- Draw Models --
-		for (const RenderInstance& instance : renderContext.instances)
+		for (uint32_t itemIdx{}; itemIdx < renderItems.size(); ++itemIdx)
 		{
-			const ModelGPU& model = renderContext.resolveModel(instance.handle);
+			const RenderItem& item = renderItems[itemIdx];
+			Mesh* pMesh = item.mesh;
 
 			// -- Bind Model Data --
-			model.Bind(commandBuffer);
+			pMesh->Bind(commandBuffer);
 
 			// -- Draw Opaque --
-			for (const Mesh& mesh : model.opaqueMeshes)
+			for (const SubMesh& subMesh : pMesh->vSubMeshes)
 			{
 				// -- Bind Push Constants --
 				Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
 				PCModelDataVS pcvs
 				{
-					.model = instance.transform * mesh.matrix
+					.model = item.transform * subMesh.matrix
 				};
 				vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
 					sizeof(PCModelDataVS), &pcvs);
 
-				PCMaterialDataFS pcfs
-				{
-					.diffuseIdx = mesh.material.albedoIdx,
-					.opacityIdx = mesh.material.opacityIdx,
-					.normalIdx = mesh.material.normalIdx,
-					.roughnessIdx = mesh.material.roughnessIdx,
-					.metallicIdx = mesh.material.metalnessIdx,
+				uint32_t offset = itemIdx > 0 ? static_cast<uint32_t>(renderItems[itemIdx - 1].mesh->images.size()) : 0;
+				auto applyOffset = [offset](uint32_t idx) {
+					return idx == 0xFFFFFFFF ? idx : idx + offset;
+					};
+				PCMaterialDataFS pcfs{
+					.diffuseIdx = applyOffset(subMesh.material.albedoIdx),
+					.opacityIdx = applyOffset(subMesh.material.opacityIdx),
+					.normalIdx = applyOffset(subMesh.material.normalIdx),
+					.roughnessIdx = applyOffset(subMesh.material.roughnessIdx),
+					.metallicIdx = applyOffset(subMesh.material.metalnessIdx),
 					.textureCount = m_TextureCount,
 				};
 				vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(PCModelDataVS),
 					sizeof(PCMaterialDataFS), &pcfs);
 
 				// -- Drawing Time! --
-				vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
-				Debugger::InsertDebugLabel(commandBuffer, "Draw Opaque Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
-			}
-
-			// -- Draw Transparent using Alpha Cut-Off --
-			for (const Mesh& mesh : model.transparentMeshes)
-			{
-				// -- Bind Push Constants --
-				Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
-				PCModelDataVS pcvs
-				{
-					.model = instance.transform * mesh.matrix
-				};
-				vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0,
-					sizeof(PCModelDataVS), &pcvs);
-
-				PCMaterialDataFS pcfs
-				{
-					.diffuseIdx = mesh.material.albedoIdx,
-					.opacityIdx = mesh.material.opacityIdx,
-					.normalIdx = mesh.material.normalIdx,
-					.roughnessIdx = mesh.material.roughnessIdx,
-					.metallicIdx = mesh.material.metalnessIdx,
-					.textureCount = m_TextureCount,
-				};
-				vkCmdPushConstants(vCmdBuffer, m_PipelineLayout.GetHandle(), VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(PCModelDataVS),
-					sizeof(PCMaterialDataFS), &pcfs);
-
-				// -- Drawing Time! --
-				vkCmdDrawIndexed(vCmdBuffer, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
-				Debugger::InsertDebugLabel(commandBuffer, "Draw Transparent Mesh - " + mesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
+				vkCmdDrawIndexed(vCmdBuffer, subMesh.indexCount, 1, subMesh.indexOffset, subMesh.vertexOffset, 0);
+				Debugger::InsertDebugLabel(commandBuffer, "Draw Mesh - " + subMesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
 			}
 		}
 	}

@@ -12,10 +12,7 @@
 // -- Forward Declarations --
 namespace pompeii
 {
-	class ModelRenderer;
-	class Camera;
 	class LightComponent;
-	struct GPULight;
 }
 
 namespace pompeii
@@ -30,7 +27,8 @@ namespace pompeii
 		//    Lights
 		//--------------------------------------------------
 		void RegisterLight(LightComponent& light);
-		void UnregisterLight(const LightComponent& light);
+		void UnregisterLight(LightComponent& light);
+		void UpdateLight(LightComponent& light);
 
 		//--------------------------------------------------
 		//    Interface
@@ -42,10 +40,18 @@ namespace pompeii
 		void EndFrame() override;
 
 	private:
+		std::vector<LightComponent*> m_vPendingLights{};
 		std::vector<LightComponent*> m_vRegisteredLights{};
 		std::shared_ptr<Renderer> m_pRenderer{};
+		bool m_UpdateLights{};
+
+
+		//--------------------------------------------------
+		//    Helpers
+		//--------------------------------------------------
+		void AddPendingObjects();
+		void UpdateData();
 	};
 }
-
 
 #endif // RENDER_SYSTEM_H

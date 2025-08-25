@@ -70,7 +70,7 @@ pompeii::Image& pompeii::Image::operator=(Image&& other) noexcept
 void pompeii::Image::Destroy(const Context& context)
 {
 	DestroyAllViews(context);
-	if (m_ImageMemory)
+	if (m_ImageMemory && m_Image)
 		vmaDestroyImage(context.allocator, m_Image, m_ImageMemory);
 }
 void pompeii::Image::DestroyAllViews(const Context& context)
@@ -129,9 +129,9 @@ VkFormat pompeii::Image::FindSupportedFormat(const PhysicalDevice& physicalDevic
 //--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
-const VkImage& pompeii::Image::GetHandle()							const { return m_Image; }
+const VkImage& pompeii::Image::GetHandle()								const { return m_Image; }
 const pompeii::ImageView& pompeii::Image::GetView(uint32_t idx)			const { return m_vImageViews.at(idx); }
-uint32_t pompeii::Image::GetViewCount()								const { return static_cast<uint32_t>(m_vImageViews.size()); }
+uint32_t pompeii::Image::GetViewCount()									const { return static_cast<uint32_t>(m_vImageViews.size()); }
 const std::vector<pompeii::ImageView>& pompeii::Image::GetAllViews()	const { return m_vImageViews; }
 
 uint32_t pompeii::Image::GetMipLevels()				const		{ return m_ImageInfo.mipLevels; }

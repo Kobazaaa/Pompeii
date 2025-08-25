@@ -12,10 +12,8 @@
 // -- Forward Declarations --
 namespace pompeii
 {
-	class ModelRenderer;
+	class MeshRenderer;
 	class Camera;
-	class LightComponent;
-	struct GPULight;
 }
 
 namespace pompeii
@@ -29,8 +27,8 @@ namespace pompeii
 		//--------------------------------------------------
 		//    Models
 		//--------------------------------------------------
-		void RegisterModel(ModelRenderer& model, const std::string& path);
-		void UnregisterModel(const ModelRenderer& model);
+		void RegisterMeshRenderer(MeshRenderer& model);
+		void UnregisterMeshRenderer(const MeshRenderer& model);
 
 		//--------------------------------------------------
 		//    Camera
@@ -45,21 +43,23 @@ namespace pompeii
 		Renderer* GetRenderer() const;
 		void BeginFrame() override;
 		void Update() override;
-		void Render();
 		void EndFrame() override;
 
 	private:
-		std::vector<ModelRenderer*> m_vRegisteredModels{};
-		std::vector<ModelRenderer*> m_vVisibleModels{};
+		std::vector<MeshRenderer*> m_vPendingModels{};
+		std::vector<MeshRenderer*> m_vRegisteredModels{};
+		std::vector<MeshRenderer*> m_vVisibleModels{};
 		Camera* m_pMainCamera{};
 		std::shared_ptr<Renderer> m_pRenderer{};
+		bool m_UpdateModels{};
 
 		//--------------------------------------------------
 		//    Helpers
 		//--------------------------------------------------
 		void FrustumCull();
+		void AddPendingObjects();
+		void UpdateData();
 	};
 }
-
 
 #endif // RENDER_SYSTEM_H

@@ -40,8 +40,8 @@ void pompeii::Scene::Update()
 			continue;
 		object->Update();
 	}
-	AddPendingObjects();
 	CleanupDeletedObjects();
+	AddPendingObjects();
 }
 
 //--------------------------------------------------
@@ -77,6 +77,10 @@ std::vector<pompeii::SceneObject*> pompeii::Scene::GetAllObjects() const
 const pompeii::AABB& pompeii::Scene::GetAABB() const
 {
 	return m_AABB;
+}
+void pompeii::Scene::GrowAABB(const AABB& aabb)
+{
+	m_AABB.GrowToInclude(aabb);
 }
 
 void pompeii::Scene::CleanupDeletedObjects()

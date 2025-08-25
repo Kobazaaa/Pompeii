@@ -1,12 +1,13 @@
 // -- Pompeii Includes --
 #include "LightingPass.h"
 #include "EnvironmentMap.h"
-#include "Camera.h"
 #include "Context.h"
 #include "Debugger.h"
 #include "GBuffer.h"
 #include "GeometryPass.h"
 #include "Shader.h"
+#include "GPUCamera.h"
+#include "RenderingItems.h"
 
 void pompeii::LightingPass::Initialize(const Context& context, const LightingPassCreateInfo& createInfo)
 {
@@ -31,16 +32,6 @@ void pompeii::LightingPass::Initialize(const Context& context, const LightingPas
 			.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
 			.Build(context, m_SSBOLightDSL);
 		m_DeletionQueue.Push([&] { m_SSBOLightDSL.Destroy(context); });
-
-		// Light SSBO Matrices
-		builder = {};
-		builder
-			.SetDebugName("Light Matrices Layout")
-			.NewLayoutBinding()
-			.SetType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-			.SetShaderStages(VK_SHADER_STAGE_FRAGMENT_BIT)
-			.Build(context, m_SSBOLightMatricesDSL);
-		m_DeletionQueue.Push([&] { m_SSBOLightMatricesDSL.Destroy(context); });
 
 		// Light UBO Depth Images
 		builder = {};
@@ -99,7 +90,6 @@ void pompeii::LightingPass::Initialize(const Context& context, const LightingPas
 		builder
 			.AddLayout(m_CameraMatricesDSL)
 			.AddLayout(m_SSBOLightDSL)
-			.AddLayout(m_SSBOLightMatricesDSL)
 			.AddLayout(m_UBOLightMapDSL)
 			.AddLayout(m_UBOLightMapDSL)
 			.AddLayout(m_GBufferTexturesDSL)
@@ -170,8 +160,8 @@ void pompeii::LightingPass::Initialize(const Context& context, const LightingPas
 
 	// -- UBO --
 	{
-		m_vCameraMatrices.resize(createInfo.maxFramesInFlight);
-		for (size_t i{}; i < createInfo.maxFramesInFlight; ++i)
+		m_vCameraMatrices.resize(context.maxFramesInFlight);
+		for (size_t i{}; i < context.maxFramesInFlight; ++i)
 		{
 			BufferAllocator bufferAlloc{};
 			bufferAlloc
@@ -186,14 +176,16 @@ void pompeii::LightingPass::Initialize(const Context& context, const LightingPas
 
 	// -- Buffers --
 	{
-		m_vGBufferTexturesDS = context.descriptorPool->AllocateSets(context, m_GBufferTexturesDSL, createInfo.maxFramesInFlight, "GBuffer Textures DS");
+		m_vUBODirLightMapDS.resize(context.maxFramesInFlight);
+		m_vUBOPointLightMapDS.resize(context.maxFramesInFlight);
+
+		m_vGBufferTexturesDS = context.descriptorPool->AllocateSets(context, m_GBufferTexturesDSL, context.maxFramesInFlight, "GBuffer Textures DS");
 		m_SSBOLightDS = context.descriptorPool->AllocateSets(context, m_SSBOLightDSL, 1, "Light SSBO DS").front();
-		m_SSBOLightMatricesDS = context.descriptorPool->AllocateSets(context, m_SSBOLightMatricesDSL, 1, "Light Matrices SSBO DS").front();
-		m_vCameraMatricesDS = context.descriptorPool->AllocateSets(context, m_CameraMatricesDSL, createInfo.maxFramesInFlight, "Camera Matrices DS");
+		m_vCameraMatricesDS = context.descriptorPool->AllocateSets(context, m_CameraMatricesDSL, context.maxFramesInFlight, "Camera Matrices DS");
 		UpdateGBufferDescriptors(context, *createInfo.pGeometryPass, *createInfo.pDepthImages);
 
 		DescriptorSetWriter writer{};
-		for (uint32_t i{}; i < createInfo.maxFramesInFlight; ++i)
+		for (uint32_t i{}; i < context.maxFramesInFlight; ++i)
 		{
 			writer
 				.AddBufferInfo(m_vCameraMatrices[i], 0, sizeof(glm::mat4)*2)
@@ -277,7 +269,7 @@ void pompeii::LightingPass::UpdateEnvironmentMap(const Context& context, const E
 	}
 }
 
-void pompeii::LightingPass::UpdateLightDescriptors(const Context& context, const std::vector<LightGPU*>& data)
+void pompeii::LightingPass::UpdateLightData(const Context& context, const std::vector<Light*>& data)
 {
 	uint32_t lightCount = static_cast<uint32_t>(data.size());
 
@@ -286,62 +278,50 @@ void pompeii::LightingPass::UpdateLightDescriptors(const Context& context, const
 	DescriptorSetWriter pointWriter{};
 	uint32_t dirCount = 0;
 	uint32_t pointCount = 0;
-	for (LightGPU* light : data)
+
+	// -- Extract GPU Light Data --
+	std::vector<LightData> gpuData{};
+	gpuData.reserve(data.size());
+	for (Light* light : data)
 	{
-		if (light->shadowMap.GetHandle() == VK_NULL_HANDLE)
+		if (light->vShadowMaps[context.currentFrame].GetHandle() == VK_NULL_HANDLE)
 			continue;
+
+		LightData ld{};
+		ld.dirPos = light->dirPos;
+		ld.type = light->type;
+		ld.color = light->color;
+		ld.intensity = light->luxLumen;
+
+		int idx = 0;
+		for (glm::mat4& v : light->viewMatrices)
+		{
+			ld.matrices[idx] = light->projMatrix * v;
+			++idx;
+		}
 
 		if (light->type == LightType::Directional)
 		{
+			ld.depthIndex = dirCount;
 			++dirCount;
-			directionalWriter.AddImageInfo(light->shadowMap.GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_ShadowSampler);
+			directionalWriter.AddImageInfo(light->vShadowMaps[context.currentFrame].GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_ShadowSampler);
 		}
 		else
 		{
+			ld.depthIndex = pointCount;
 			++pointCount;
-			pointWriter.AddImageInfo(light->shadowMap.GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_ShadowSampler);
+			pointWriter.AddImageInfo(light->vShadowMaps[context.currentFrame].GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_ShadowSampler);
 		}
+
+		gpuData.push_back(ld);
 	}
 
-	// -- Free the Descriptor Sets if we had any --
-	if (m_UBODirLightMapDS.GetHandle())
-		vkFreeDescriptorSets(context.device.GetHandle(), context.descriptorPool->GetHandle(), 1, &m_UBODirLightMapDS.GetHandle());
-	if (m_UBOPointLightMapDS.GetHandle())
-		vkFreeDescriptorSets(context.device.GetHandle(), context.descriptorPool->GetHandle(), 1, &m_UBOPointLightMapDS.GetHandle());
-
-	// -- Allocate new Descriptor Sets for the Depth Maps --
-	VkDescriptorSetVariableDescriptorCountAllocateInfo variableCountInfo{};
-	variableCountInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
-	variableCountInfo.descriptorSetCount = 1;
-	// -- Directional Maps --
-	uint32_t variableCount = dirCount;
-	variableCountInfo.pDescriptorCounts = &variableCount;
-	m_UBODirLightMapDS = context.descriptorPool->AllocateSets(context, m_UBOLightMapDSL, 1, "UBO Light Directional Shadow Maps", &variableCountInfo).front();
-	// -- Point Maps --
-	variableCount = pointCount;
-	variableCountInfo.pDescriptorCounts = &variableCount;
-	m_UBOPointLightMapDS = context.descriptorPool->AllocateSets(context, m_UBOLightMapDSL, 1, "UBO Light Point Shadow Maps", &variableCountInfo).front();
-
-	// -- Update the Descriptor Sets with the Images --
-	if (dirCount > 0)
-		directionalWriter.WriteImages(m_UBODirLightMapDS, 0, dirCount).Execute(context);
-	if (pointCount > 0)
-		pointWriter.WriteImages(m_UBOPointLightMapDS, 0, pointCount).Execute(context);
-
-	// -- Extract GPU Light Data --
-	std::vector<LightGPUData> res{};
-	res.reserve(data.size());
-	for (auto& l : data)
-		res.push_back(l->data);
-
 	// -- Calculate buffer sizes --
-	const VkDeviceSize totalLightSize = /*uint + 3padding*/4 * sizeof(uint32_t) + sizeof(LightGPUData) * lightCount;
-	const VkDeviceSize totalMatricesSize = /*uint + 3padding*/4 * sizeof(uint32_t) + sizeof(glm::mat4) * dirCount;
-	if (m_SSBOLights.Size() < totalLightSize || m_SSBOLightsMatrices.Size() < totalMatricesSize)
+	const VkDeviceSize totalLightSize = /*uint + 3padding*/4 * sizeof(uint32_t) + sizeof(LightData) * lightCount;
+	if (m_SSBOLights.Size() != totalLightSize) // there new data changes 
 	{
 		// -- Destroy previous buffers --
 		m_SSBOLights.Destroy(context);
-		m_SSBOLightsMatrices.Destroy(context);
 
 		// -- Allocate Light Buffer --
 		BufferAllocator bufferAlloc{};
@@ -350,48 +330,112 @@ void pompeii::LightingPass::UpdateLightDescriptors(const Context& context, const
 			.SetUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
 			.SetSize(static_cast<uint32_t>(totalLightSize))
 			.AddInitialData(&lightCount, 0, sizeof(uint32_t))
-			.AddInitialData(res.data(), 4 * sizeof(uint32_t), sizeof(LightGPUData) * lightCount)
+			.AddInitialData(gpuData.data(), 4 * sizeof(uint32_t), sizeof(LightData) * lightCount)
+			.HostAccess(true)
 			.Allocate(context, m_SSBOLights);
-
-		// -- Allocate Light Matrices Buffer --
-		bufferAlloc = {};
-		bufferAlloc
-			.SetDebugName("SSBO (Light Matrices)")
-			.SetUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
-			.SetSize(static_cast<uint32_t>(totalMatricesSize))
-			.AddInitialData(&dirCount, 0, sizeof(uint32_t))
-			.AddInitialData(res.data(), 4 * sizeof(uint32_t), sizeof(glm::mat4) * dirCount)
-			.Allocate(context, m_SSBOLightsMatrices);
 
 		static uint32_t prevIdx = 0xFFFFFFFF;
 		if (prevIdx != 0xFFFFFFFF)
 		{
 			m_DeletionQueue.Erase(prevIdx);
-			m_DeletionQueue.Erase(prevIdx);
 		}
 		prevIdx = m_DeletionQueue.Push([&] { m_SSBOLights.Destroy(context); });
-		m_DeletionQueue.Push([&] { m_SSBOLightsMatrices.Destroy(context); });
+	}
+	else // there is no new data changes
+	{
+		vmaCopyMemoryToAllocation(context.allocator, gpuData.data(), m_SSBOLights.GetMemoryHandle(), 4 * sizeof(uint32_t), sizeof(LightData) * lightCount);
 	}
 
-	// -- Update the Light and Matrix Descriptor Sets --
+	// -- Update the Light Descriptor Sets --
 	DescriptorSetWriter writer{};
 	writer
 		.AddBufferInfo(m_SSBOLights, 0, static_cast<uint32_t>(totalLightSize))
 		.WriteBuffers(m_SSBOLightDS, 0)
 		.Execute(context);
-	writer
-		.AddBufferInfo(m_SSBOLightsMatrices, 0, static_cast<uint32_t>(totalMatricesSize))
-		.WriteBuffers(m_SSBOLightMatricesDS, 0)
-		.Execute(context);
+}
+void pompeii::LightingPass::UpdateShadowMaps(const Context& context, const std::vector<LightItem>& lightItems)
+{
+	// -- Prepare and Count Light Depth Maps --
+	DescriptorSetWriter directionalWriter{};
+	DescriptorSetWriter pointWriter{};
+	uint32_t dirCount = 0;
+	uint32_t pointCount = 0;
+
+	// -- Extract GPU Light Data --
+	for (const LightItem& item : lightItems)
+	{
+		Light* light = item.light;
+		if (light->vShadowMaps[context.currentFrame].GetHandle() == VK_NULL_HANDLE)
+			continue;
+
+		if (light->type == LightType::Directional)
+		{
+			++dirCount;
+			directionalWriter.AddImageInfo(
+				light->vShadowMaps[context.currentFrame].GetView(), 
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 
+				m_ShadowSampler);
+		}
+		else
+		{
+			++pointCount;
+			pointWriter.AddImageInfo(
+				light->vShadowMaps[context.currentFrame].GetView(), 
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 
+				m_ShadowSampler);
+		}
+	}
+
+	auto& directionalImages = m_vUBODirLightMapDS[context.currentFrame];
+	static std::vector<uint32_t> oldDirCount(context.maxFramesInFlight);
+	if (dirCount > oldDirCount[context.currentFrame] || !directionalImages.GetHandle())
+	{
+		oldDirCount[context.currentFrame] = dirCount;
+
+		VkDescriptorSetVariableDescriptorCountAllocateInfo variableCountInfo{};
+		variableCountInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
+		variableCountInfo.descriptorSetCount = 1;
+		uint32_t variableCount = dirCount;
+		variableCountInfo.pDescriptorCounts = &variableCount;
+
+		directionalImages = context.descriptorPool->AllocateSets(
+			context, m_UBOLightMapDSL, 1, 
+			"UBO Light Directional Shadow Maps",
+			&variableCountInfo).front();
+	}
+
+	auto& pointImages = m_vUBOPointLightMapDS[context.currentFrame];
+	static std::vector<uint32_t> oldPointCount(context.maxFramesInFlight);
+	if (pointCount > oldPointCount[context.currentFrame] || !pointImages.GetHandle())
+	{
+		oldPointCount[context.currentFrame] = pointCount;
+
+		VkDescriptorSetVariableDescriptorCountAllocateInfo variableCountInfo{};
+		variableCountInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
+		variableCountInfo.descriptorSetCount = 1;
+		uint32_t variableCount = pointCount;
+		variableCountInfo.pDescriptorCounts = &variableCount;
+
+		pointImages = context.descriptorPool->AllocateSets(
+			context, m_UBOLightMapDSL, 1, 
+			"UBO Light Directional Shadow Maps",
+			&variableCountInfo).front();
+	}
+
+	// -- Update the Descriptor Sets with the Images --
+	if (dirCount > 0)
+		directionalWriter.WriteImages(directionalImages, 0, dirCount).Execute(context);
+	if (pointCount > 0)
+		pointWriter.WriteImages(pointImages, 0, pointCount).Execute(context);
 }
 
-void pompeii::LightingPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, Camera* pCamera) const
+void pompeii::LightingPass::Record(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const CameraData& camera) const
 {
 	// -- Update DS --
 	struct cam
 	{
-		glm::mat4 view = pCamera->GetViewMatrix();
-		glm::mat4 proj = pCamera->GetProjectionMatrix();
+		glm::mat4 view = camera.view;
+		glm::mat4 proj = camera.proj;
 	} camubo{};
 	vmaCopyMemoryToAllocation(context.allocator, &camubo, m_vCameraMatrices[imageIndex].GetMemoryHandle(), 0, sizeof(camubo));
 
@@ -440,11 +484,10 @@ void pompeii::LightingPass::Record(const Context& context, CommandBuffer& comman
 		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vCameraMatricesDS[imageIndex].GetHandle(), 0, nullptr);
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Light Data", glm::vec4(0.f, 1.f, 1.f, 1.f));
 		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 1, 1, &m_SSBOLightDS.GetHandle(), 0, nullptr);
-		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 2, 1, &m_SSBOLightMatricesDS.GetHandle(), 0, nullptr);
-		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 3, 1, &m_UBODirLightMapDS.GetHandle(), 0, nullptr);
-		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 4, 1, &m_UBOPointLightMapDS.GetHandle(), 0, nullptr);
+		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 2, 1, &m_vUBODirLightMapDS[imageIndex].GetHandle(), 0, nullptr);
+		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 3, 1, &m_vUBOPointLightMapDS[imageIndex].GetHandle(), 0, nullptr);
 		Debugger::InsertDebugLabel(commandBuffer, "Bind GBuffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
-		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 5, 1, &m_vGBufferTexturesDS[imageIndex].GetHandle(), 0, nullptr);
+		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 4, 1, &m_vGBufferTexturesDS[imageIndex].GetHandle(), 0, nullptr);
 
 		// -- Draw Triangle --
 		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Lighting)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));

@@ -1,8 +1,12 @@
 // -- Pompeii Includes --
 #include "EditorUI.h"
 #include "ServiceLocator.h"
-#include "ModelRenderer.h"
+#include "MeshRenderer.h"
 #include "LightComponent.h"
+#include "AssetManager.h"
+
+// -- Standard Library --
+#include <iostream>
 
 // -- ImGui --
 #include "ImGuiFileDialog.h"
@@ -67,7 +71,8 @@ void pompeii::SceneHierarchy::DrawSceneObjectNode(SceneObject* sceneObj)
     {
         if (ImGui::MenuItem("Delete"))
         {
-            sceneObj->Destroy();
+            if (sceneObj == m_pSelectedObject) m_pSelectedObject = nullptr;
+        	sceneObj->Destroy();
         }
         ImGui::EndPopup();
     }
@@ -128,9 +133,49 @@ void pompeii::MenuBar::Draw(ImGuiID)
             ImGuiFileDialog::Instance()->OpenDialog("DumpVMA", "Dump VMA", ".json");
             ImGui::EndMenu();
         }
+
+        // -- VRAM --
+        if (ImGui::BeginMenu("VRAM"))
+        {
+            VmaBudget budgets[VK_MAX_MEMORY_HEAPS];
+            vmaGetHeapBudgets(ServiceLocator::Get<RenderSystem>().GetRenderer()->GetContext().allocator, budgets);
+
+            VkPhysicalDeviceMemoryProperties memProps{};
+            vkGetPhysicalDeviceMemoryProperties(
+                ServiceLocator::Get<RenderSystem>().GetRenderer()->GetContext().physicalDevice.GetHandle(),
+                &memProps
+            );
+
+            for (uint32_t i = 0; i < memProps.memoryHeapCount; i++)
+            {
+                const VmaBudget& b = budgets[i];
+                if (b.budget == 0) continue;
+
+                const double usedMB = static_cast<double>(b.usage) / (1024.0 * 1024.0);
+                const double budgetMB = static_cast<double>(b.budget) / (1024.0 * 1024.0);
+
+                char buf[128];
+                if (memProps.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+                    snprintf(buf, sizeof(buf), "Heap %u (Device local): %.1f / %.1f MB", i, usedMB, budgetMB);
+                else
+                    snprintf(buf, sizeof(buf), "Heap %u: %.1f / %.1f MB", i, usedMB, budgetMB);
+
+                ImGui::MenuItem(buf, nullptr, false, false);
+
+                double appUsedMB = double(b.statistics.allocationBytes) / (1024.0 * 1024.0);
+                double reservedMB = double(b.statistics.blockBytes) / (1024.0 * 1024.0);
+
+                snprintf(buf, sizeof(buf), "Heap %u: App %.1f MB / Reserved %.1f MB", i, appUsedMB, reservedMB);
+                ImGui::MenuItem(buf, nullptr, false, false);
+            }
+
+            ImGui::EndMenu();
+        }
+
         ImGui::EndMainMenuBar();
     }
 
+    // -- File Dialog Handles --
     HandleFileDialog("SaveLayout",  [](const std::string& path) { ImGui::SaveIniSettingsToDisk(path.c_str()); });
     HandleFileDialog("LoadLayout",  [](const std::string& path) { ImGui::LoadIniSettingsFromDisk(path.c_str()); });
     HandleFileDialog("DumpVMA",     [](const std::string& path)
@@ -158,8 +203,11 @@ void pompeii::Utilities::Draw(ImGuiID dockID)
             ImGuiFileDialog::Instance()->OpenDialog("ChooseModel", "Choose a File", ".gltf");
         HandleFileDialog("ChooseModel", [](const std::string& path)
         {
+			Mesh* mesh = ServiceLocator::Get<AssetManager>().LoadMesh(path);
             auto& obj = ServiceLocator::Get<SceneManager>().GetActiveScene().AddEmpty();
-            obj.AddComponent<ModelRenderer>(path);
+            auto filter = obj.AddComponent<MeshFilter>();
+            filter->pMesh = mesh;
+            obj.AddComponent<MeshRenderer>(*filter);
         });
 
         ImGui::Separator();
@@ -169,9 +217,9 @@ void pompeii::Utilities::Draw(ImGuiID dockID)
         {
             auto& obj = ServiceLocator::Get<SceneManager>().GetActiveScene().AddEmpty();
             obj.AddComponent<LightComponent>(
-                /* direction */	glm::vec3{ 0.f, -1.f, 0.f },
+                /* direction */	glm::vec3{ 0.577f, -0.577f, 0.577f },
                 /* color */		glm::vec3{ 0.f, 1.f, 0.f },
-                /* lux */			100'000.f, LightType::Directional
+                /* lux */			10.f, LightType::Directional
             );
         }
     }

@@ -5,10 +5,13 @@
 #include "imgui_internal.h"
 
 
-void pompeii::Editor::Draw()
+void pompeii::Editor::Draw() const
 {
+	// -- DockSpace --
 	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_DockingEnable)
 		SetupDockSpace();
+
+	// -- UI --
 	m_pMenuBarUI->Draw();
 	m_pSceneHierarchyUI->Draw(m_DockLeftID);
 	m_pUtilitiesUI->Draw(m_DockLeftID);

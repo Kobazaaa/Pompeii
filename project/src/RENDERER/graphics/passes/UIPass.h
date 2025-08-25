@@ -5,9 +5,6 @@
 #include "DeletionQueue.h"
 #include "DescriptorPool.h"
 
-// -- ImGui --
-#include "imgui.h"
-
 // -- Forward Declarations --
 namespace pompeii
 {
@@ -23,7 +20,6 @@ namespace pompeii
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	struct UIPassCreateInfo
 	{
-		uint32_t maxFramesInFlight{};
 		uint32_t swapchainImageCount{};
 		VkFormat swapchainImageFormat{};
 		Window* pWindow{};

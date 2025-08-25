@@ -1,13 +1,14 @@
 // -- Pompeii Includes --
 #include "BlitPass.h"
 #include "Buffer.h"
-#include "Camera.h"
 #include "Context.h"
 #include "Debugger.h"
 #include "DescriptorPool.h"
 #include "GeometryPass.h"
+#include "GPUCamera.h"
 #include "Shader.h"
 #include "Timer.h"
+#include "Mesh.h"
 
 void pompeii::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo& createInfo)
 {
@@ -143,8 +144,8 @@ void pompeii::BlitPass::Initialize(const Context& context, const BlitPassCreateI
 	// -- Buffers --
 	{
 		// Camera Settings
-		m_vCameraSettings.resize(createInfo.maxFramesInFlight);
-		for (size_t i{}; i < createInfo.maxFramesInFlight; ++i)
+		m_vCameraSettings.resize(context.maxFramesInFlight);
+		for (size_t i{}; i < context.maxFramesInFlight; ++i)
 		{
 			BufferAllocator bufferAlloc{};
 			bufferAlloc
@@ -157,8 +158,8 @@ void pompeii::BlitPass::Initialize(const Context& context, const BlitPassCreateI
 		m_DeletionQueue.Push([&] { for (auto& ubo : m_vCameraSettings) ubo.Destroy(context); });
 
 		// Histogram
-		m_vHistogram.resize(createInfo.maxFramesInFlight);
-		for (size_t i{}; i < createInfo.maxFramesInFlight; ++i)
+		m_vHistogram.resize(context.maxFramesInFlight);
+		for (size_t i{}; i < context.maxFramesInFlight; ++i)
 		{
 			BufferAllocator bufferAlloc{};
 			bufferAlloc
@@ -172,7 +173,7 @@ void pompeii::BlitPass::Initialize(const Context& context, const BlitPassCreateI
 
 	// -- Average Luminance Images --
 	{
-		m_vAverageLuminance.resize(createInfo.maxFramesInFlight);
+		m_vAverageLuminance.resize(context.maxFramesInFlight);
 		for (Image& image : m_vAverageLuminance)
 		{
 			ImageBuilder imageBuilder{};
@@ -192,13 +193,13 @@ void pompeii::BlitPass::Initialize(const Context& context, const BlitPassCreateI
 
 	// -- Descriptors --
 	{
-		m_vFragmentDS = context.descriptorPool->AllocateSets(context, m_FragmentDSL, createInfo.maxFramesInFlight, "Render Texture DS");
-		m_vComputeLumDS = context.descriptorPool->AllocateSets(context, m_ComputeDSL, createInfo.maxFramesInFlight, "HDR Image | Average Luminance Last Frame | Histogram DS");
-		m_vComputeAveDS = context.descriptorPool->AllocateSets(context, m_ComputeDSL, createInfo.maxFramesInFlight, "Average Luminance | Average Luminance Last Frame | Histogram DS");
+		m_vFragmentDS = context.descriptorPool->AllocateSets(context, m_FragmentDSL, context.maxFramesInFlight, "Render Texture DS");
+		m_vComputeLumDS = context.descriptorPool->AllocateSets(context, m_ComputeDSL, context.maxFramesInFlight, "HDR Image | Average Luminance Last Frame | Histogram DS");
+		m_vComputeAveDS = context.descriptorPool->AllocateSets(context, m_ComputeDSL, context.maxFramesInFlight, "Average Luminance | Average Luminance Last Frame | Histogram DS");
 		DescriptorSetWriter writer{};
-		for (uint32_t i{}; i < createInfo.maxFramesInFlight; ++i)
+		for (uint32_t i{}; i < context.maxFramesInFlight; ++i)
 		{
-			uint32_t prevI = (i + createInfo.maxFramesInFlight - 1) % createInfo.maxFramesInFlight;
+			uint32_t prevI = (i + context.maxFramesInFlight - 1) % context.maxFramesInFlight;
 			// Fragment
 			writer // HDR Image
 				.AddImageInfo((*createInfo.renderImages)[i].GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_Sampler)
@@ -269,11 +270,11 @@ void pompeii::BlitPass::UpdateDescriptors(const Context& context, const std::vec
 	}
 }
 
-void pompeii::BlitPass::RecordGraphic(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const Camera* pCamera)
+void pompeii::BlitPass::RecordGraphic(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const CameraData& camera)
 {
 	// -- Update Camera Settings --
 	//todo really? every frame? camera exposure settings don't often change i feel ike, maybe this can be optimized using some dirty flag
-	vmaCopyMemoryToAllocation(context.allocator, &pCamera->GetExposureSettings(), m_vCameraSettings[imageIndex].GetMemoryHandle(), 0, sizeof(ExposureSettings));
+	vmaCopyMemoryToAllocation(context.allocator, &camera.exposureSettings, m_vCameraSettings[imageIndex].GetMemoryHandle(), 0, sizeof(ExposureSettings));
 
 	m_vAverageLuminance[imageIndex].TransitionLayout(commandBuffer,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,

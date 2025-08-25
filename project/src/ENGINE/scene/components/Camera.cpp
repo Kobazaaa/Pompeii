@@ -138,7 +138,8 @@ void pompeii::Camera::HandleAim()
 			float pitch = euler.x + deltaY * m_Sensitivity;
 			float yaw = euler.y + deltaX * m_Sensitivity;
 			pitch = std::clamp(pitch, -89.f, 89.f);
-			GetTransform().SetEulerAngles({ pitch, yaw, 0 });
+			float roll = euler.z;
+			GetTransform().SetEulerAngles({ pitch, yaw, roll });
 
 			m_LastX = static_cast<float>(x);
 			m_LastY = static_cast<float>(y);

@@ -28,7 +28,6 @@ namespace pompeii
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		LightComponent(SceneObject& parent, const glm::vec3& dirPos, const glm::vec3& col, float luxLumen, LightType type);
-		LightComponent(SceneObject& parent, LightCPU data);
 		~LightComponent() override;
 
 		LightComponent(const LightComponent& other) = delete;
@@ -41,17 +40,13 @@ namespace pompeii
 		//    Loop
 		//--------------------------------------------------
 		void Start() override;
+		void Update() override;
 		void OnInspectorDraw() override;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		LightCPU lightData{};
-		LightHandle GetLightHandle() const;
-
-	private:
-		LightHandle m_LightHandle{};
-		friend class LightingSystem;
+		Light lightData{};
 	};
 }
 

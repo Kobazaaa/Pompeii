@@ -15,7 +15,7 @@ namespace pompeii
 	class Editor
 	{
 	public:
-		void Draw();
+		void Draw() const;
 	private:
 		void SetupDockSpace() const;
 
@@ -28,6 +28,7 @@ namespace pompeii
 		mutable ImGuiID m_DockBottomID = 0;
 		mutable ImGuiID m_DockLeftBottomID = 0;
 
+		// -- UI --
 		std::unique_ptr<SceneHierarchy> m_pSceneHierarchyUI{ std::make_unique<SceneHierarchy>() };
 		std::unique_ptr<MenuBar> m_pMenuBarUI{ std::make_unique<MenuBar>() };
 		std::unique_ptr<Utilities> m_pUtilitiesUI{ std::make_unique<Utilities>() };

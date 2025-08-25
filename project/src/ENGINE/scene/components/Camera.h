@@ -12,6 +12,7 @@
 
 // -- Pompeii Includes --
 #include "Component.h"
+#include "GPUCamera.h"
 
 // -- Forward Declarations --
 namespace pompeii { class Window; }
@@ -27,12 +28,6 @@ namespace pompeii
 		float aspectRatio;
 		float nearPlane;
 		float farPlane;
-	};
-	struct ExposureSettings
-	{
-		float aperture;
-		float shutterSpeed;
-		float iso;
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

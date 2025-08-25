@@ -6,16 +6,7 @@
 
 // -- Pompeii Includes --
 #include "Shapes.h"
-
-// -- Math Includes --
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_FORCE_LEFT_HANDED
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-
-// -- Pompeii Includes --
 #include "Image.h"
-using LightHandle = uint32_t;
 
 namespace pompeii
 {
@@ -28,46 +19,38 @@ namespace pompeii
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  Light CPU
+	//? ~~	  Light
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	struct LightCPU
+	struct Light
 	{
+		// -- Data --
 		glm::vec3 dirPos;
+		LightType type;
 		glm::vec3 color;
 		float luxLumen;
-		LightType type;
 
+		// -- Matrices --
 		std::vector<glm::mat4> viewMatrices;
 		glm::mat4 projMatrix;
 		void CalculateLightMatrices(const AABB& aabb);
+
+		// -- Shadow --
+		std::vector<Image> vShadowMaps{};
+		void CreateDepthImage(const Context& context, uint32_t size);
+		void DestroyDepthMap(const Context& context);
 	};
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~	  Light GPU
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	struct alignas(16) LightGPUData
+	struct alignas(16) LightData
 	{
-		glm::vec4 dirPosType;
+		glm::vec3 dirPos;
+		LightType type;
 		glm::vec3 color;
 		float intensity;
-		uint32_t matrixIndex;
+		glm::mat4 matrices[6]; //todo this wastes a lot of memory for directional lights, but we can fix this later
 		uint32_t depthIndex;
-		float _padding[2];
-	};
-	struct LightGPU
-	{
-		LightGPUData data;
-		LightType type;
-		std::vector<glm::mat4> viewMatrices;
-		glm::mat4 projMatrix;
-
-		Image shadowMap;
-		std::vector<ImageView> views;
-
-		void GenerateDepthMap(const Context& context, uint32_t size);
-		void DestroyDepthMap(const Context& context);
-
-	private:
-		void GenerateDepthMap(const Context& context, Image& outImage, std::vector<ImageView>& outViews, uint32_t size) const;
+		float _padding[3];
 	};
 }
 

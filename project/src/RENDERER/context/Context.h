@@ -25,6 +25,9 @@ namespace pompeii
 		DescriptorPool*	descriptorPool	{};
 
 		DeletionQueue	deletionQueue	{};
+
+		uint32_t maxFramesInFlight		{3u};
+		uint32_t currentFrame			{0u};
 	};
 }
 

@@ -16,8 +16,10 @@
 #include "ServiceLocator.h"
 #include "Timer.h"
 #include "Editor.h"
+#include "AssetManager.h"
 #include "LightComponent.h"
-#include "ModelRenderer.h"
+#include "MeshRenderer.h"
+#include "GPUCamera.h"
 
 // -- Using Pompeii namespace --
 using namespace pompeii;
@@ -34,7 +36,10 @@ static void CreateDefaultScene(Window* pWindow)
 
 	// model
 	auto& model = scene.AddEmpty("Model");
-	model.AddComponent<ModelRenderer>("models/Sponza.gltf");
+	auto filter = model.AddComponent<MeshFilter>();
+	Mesh* pMesh = ServiceLocator::Get<AssetManager>().LoadMesh("models/Sponza.gltf");
+	filter->pMesh = pMesh;
+	model.AddComponent<MeshRenderer>(*filter);
 
 	// light
 	auto& light = scene.AddEmpty("Light");
@@ -54,19 +59,20 @@ int main()
 		Window* pWindow = new Window("V - Pompeii", false, 800, 600);
 
 		// -- Register Services --
-		{
-			auto renderer = std::make_shared<Renderer>(pWindow);
-			ServiceLocator::Register(std::make_unique<SceneManager>());
-			ServiceLocator::Register(std::make_unique<RenderSystem>());
-			ServiceLocator::Register(std::make_unique<LightingSystem>());
-			ServiceLocator::Register(std::make_unique<Editor>());
-			ServiceLocator::Get<LightingSystem>().SetRenderer(renderer);
-			ServiceLocator::Get<RenderSystem>().SetRenderer(renderer);
-			ServiceLocator::Get<RenderSystem>().GetRenderer()->InsertUI([]
-				{
-					ServiceLocator::Get<Editor>().Draw();
-				});
-		}
+		auto renderer = std::make_shared<Renderer>(pWindow);
+		ServiceLocator::Register(std::make_unique<SceneManager>());
+		ServiceLocator::Register(std::make_unique<RenderSystem>());
+		ServiceLocator::Register(std::make_unique<LightingSystem>());
+		ServiceLocator::Register(std::make_unique<Editor>());
+		ServiceLocator::Register(std::make_unique<AssetManager>());
+
+		ServiceLocator::Get<LightingSystem>().SetRenderer(renderer);
+		ServiceLocator::Get<RenderSystem>().SetRenderer(renderer);
+		ServiceLocator::Get<AssetManager>().SetRenderer(renderer);
+		renderer->InsertUI([]
+			{
+				ServiceLocator::Get<Editor>().Draw();
+			});
 
 
 		// -- Create Default Scene --
@@ -106,12 +112,12 @@ int main()
 			ServiceLocator::Get<RenderSystem>().Update();
 
 			// -- Render Phase --
-			ServiceLocator::Get<RenderSystem>().Render();
+			renderer->Render();
 
 			// -- End Frame Phase --
 			ServiceLocator::Get<LightingSystem>().EndFrame();
 			ServiceLocator::Get<RenderSystem>().EndFrame();
-
+			 
 
 
 			// -- Print --
@@ -128,9 +134,11 @@ int main()
 		// -- Cleanup --
 		ServiceLocator::Get<RenderSystem>().GetRenderer()->GetContext().device.WaitIdle();
 		ServiceLocator::Deregister<SceneManager>();
+		ServiceLocator::Get<AssetManager>().UnloadAll();
+		ServiceLocator::Deregister<AssetManager>();
 		ServiceLocator::Deregister<LightingSystem>();
 		ServiceLocator::Deregister<RenderSystem>();
-		ServiceLocator::Deregister<Renderer>();
+		renderer.reset();
 		delete pWindow;
 	}
 	// -- Catch Failures --

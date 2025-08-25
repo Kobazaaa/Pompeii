@@ -1,8 +1,7 @@
 // -- Pompeii Includes --
-#include "Transform.h"
 #include "RenderSystem.h"
-#include "ModelRenderer.h"
-#include "LightComponent.h"
+#include "MeshRenderer.h"
+#include "Camera.h"
 
 // -- Standard Library --
 #include <numeric>
@@ -10,27 +9,33 @@
 //--------------------------------------------------
 //    Models
 //--------------------------------------------------
-void pompeii::RenderSystem::RegisterModel(ModelRenderer& model, const std::string& path)
+void pompeii::RenderSystem::RegisterMeshRenderer(MeshRenderer& model)
 {
-	if (std::ranges::find(m_vRegisteredModels, &model) != m_vRegisteredModels.end())
+	auto it = std::ranges::find(m_vRegisteredModels, &model);
+	if (it != m_vRegisteredModels.end())
 		return;
-	ModelCPU modelData{path};
-	m_vRegisteredModels.emplace_back(&model);
-	auto handle = m_pRenderer->CreateModel(modelData);
-	model.m_ModelHandle = handle;
-	m_pRenderer->UpdateTextures();
+	it = std::ranges::find(m_vPendingModels, &model);
+	if (it != m_vPendingModels.end())
+		return;
+
+	m_vPendingModels.emplace_back(&model);
+	m_UpdateModels = true;
 }
-void pompeii::RenderSystem::UnregisterModel(const ModelRenderer& model)
+void pompeii::RenderSystem::UnregisterMeshRenderer(const MeshRenderer& model)
 {
-	std::erase_if(m_vRegisteredModels, [&](const ModelRenderer* pModel)
+	std::erase_if(m_vRegisteredModels, [&](const MeshRenderer* pModel)
 	{
-		if (pModel == &model)
-		{
-			m_pRenderer->DestroyModel(model.GetModelHandle());
-			return true;
-		}
-		return false;
+		return pModel == &model;
 	});
+	std::erase_if(m_vPendingModels, [&](const MeshRenderer* pModel)
+	{
+		return pModel == &model;
+	});
+	std::erase_if(m_vVisibleModels, [&](const MeshRenderer* pModel)
+	{
+		return pModel == &model;
+	});
+	m_UpdateModels = true;
 }
 
 
@@ -51,23 +56,30 @@ void pompeii::RenderSystem::SetMainCamera(Camera& camera)
 //--------------------------------------------------
 void pompeii::RenderSystem::Update()
 {
-	for (auto& m : m_vVisibleModels)
+	for (auto& visibleModel : m_vVisibleModels)
 	{
-		m_pRenderer->AddRenderInstance(m->GetModelHandle(), m->GetTransform().GetMatrix());
+		m_pRenderer->SubmitRenderItem(RenderItem
+			{
+				.mesh = visibleModel->pMeshFilter->pMesh,
+				.transform = visibleModel->GetTransform().GetMatrix()
+			});
 	}
-}
-void pompeii::RenderSystem::Render()
-{
-	m_pRenderer->Render();
+	m_pRenderer->SetCamera(CameraData{
+			.view = m_pMainCamera->GetViewMatrix(),
+			.proj = m_pMainCamera->GetProjectionMatrix(),
+			.exposureSettings = m_pMainCamera->GetExposureSettings(),
+			.autoExposure = true,
+		});
+	UpdateData();
 }
 void pompeii::RenderSystem::BeginFrame()
 {
+	AddPendingObjects();
 	FrustumCull();
 }
 void pompeii::RenderSystem::EndFrame()
 {
 	m_vVisibleModels.clear();
-	m_pRenderer->ClearRenderInstances();
 }
 
 void pompeii::RenderSystem::SetRenderer(const std::shared_ptr<Renderer>& renderer)
@@ -84,8 +96,30 @@ pompeii::Renderer* pompeii::RenderSystem::GetRenderer() const
 //--------------------------------------------------
 void pompeii::RenderSystem::FrustumCull()
 {
-	for (ModelRenderer* pModel : m_vRegisteredModels)
+	for (MeshRenderer* registeredModel : m_vRegisteredModels)
 	{
-		m_vVisibleModels.push_back(pModel);
+		m_vVisibleModels.push_back(registeredModel);
+	}
+}
+void pompeii::RenderSystem::AddPendingObjects()
+{
+	if (!m_vPendingModels.empty())
+	{
+		for (auto& pendingModel : m_vPendingModels)
+			m_vRegisteredModels.emplace_back(pendingModel);
+		m_vPendingModels.clear();
+	}
+}
+void pompeii::RenderSystem::UpdateData()
+{
+	if (m_UpdateModels)
+	{
+		m_UpdateModels = false;
+
+		std::vector<Image*> newTextures{};
+		for (const auto& registeredModel : m_vRegisteredModels)
+			for (auto& image : registeredModel->pMeshFilter->pMesh->images)
+				newTextures.push_back(&image);
+		m_pRenderer->UpdateTextures(newTextures);
 	}
 }

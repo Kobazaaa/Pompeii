@@ -15,9 +15,9 @@
 // -- Forward Declarations --
 namespace pompeii
 {
+	struct RenderItem;
 	class DescriptorPool;
-	class Scene;
-	class Camera;
+	struct CameraData;
 	class CommandBuffer;
 	struct RenderDrawContext;
 	struct RenderInstance;
@@ -30,7 +30,6 @@ namespace pompeii
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	struct GeometryPassCreateInfo
 	{
-		uint32_t maxFramesInFlight{};
 		VkExtent2D extent{};
 		VkFormat depthFormat{};
 	};
@@ -56,8 +55,8 @@ namespace pompeii
 		void Destroy();
 		void Resize(const Context& context, VkExtent2D extent);
 		void UpdateTextureDescriptor(const Context& context, const std::vector<Image*>& vTextures);
-		void UpdateCamera(const Context& context, uint32_t imageIndex, Camera* pCamera) const;
-		void Record(CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, const RenderDrawContext& renderContext);
+		void UpdateCamera(const Context& context, uint32_t imageIndex, const CameraData& camera) const;
+		void Record(CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& depthImage, const std::vector<RenderItem>& renderItems);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
