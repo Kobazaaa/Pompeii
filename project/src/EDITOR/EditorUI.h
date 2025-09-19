@@ -6,7 +6,7 @@
 #include <string>
 
 // -- ImGui --
-#include <imgui.h>
+#include "imgui.h"
 
 // -- Forward Declarations --
 namespace pompeii
@@ -38,7 +38,7 @@ namespace pompeii
 		SceneObject* GetSelectedObject() const;
 	private:
 		void DrawSceneObjectNode(SceneObject* sceneObj);
-		int m_Index{};
+		void DrawGeneralContextMenu();
 		SceneObject* m_pSelectedObject{};
 	};
 
@@ -69,6 +69,7 @@ namespace pompeii
 		void Draw(SceneObject* pSelectedObject, ImGuiID dockID = -1);
 	private:
 		void Draw(ImGuiID dockID = -1) override;
+		void DrawGeneralContextMenu() const;
 		SceneObject* m_pSelectedObject{};
 	};
 }

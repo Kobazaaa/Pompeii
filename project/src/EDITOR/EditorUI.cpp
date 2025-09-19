@@ -1,15 +1,13 @@
+// -- ImGui --
+#include "ImGuiFileDialog.h"
+#include "imgui_internal.h"
+
 // -- Pompeii Includes --
 #include "EditorUI.h"
 #include "ServiceLocator.h"
 #include "MeshRenderer.h"
 #include "LightComponent.h"
 #include "AssetManager.h"
-
-// -- Standard Library --
-#include <iostream>
-
-// -- ImGui --
-#include "ImGuiFileDialog.h"
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  Interface	
@@ -37,10 +35,20 @@ void pompeii::SceneHierarchy::Draw(ImGuiID dockID)
     ImGui::SetNextWindowDockID(dockID, ImGuiCond_Once);
     ImGui::Begin("Scene Hierarchy", nullptr, ImGuiWindowFlags_None);
 
-    m_Index = 0;
     for (SceneObject* obj : ServiceLocator::Get<SceneManager>().GetActiveScene().GetAllObjects())
         if (!obj->transform->GetParent())
             DrawSceneObjectNode(obj);
+
+    // -- Drag & Drop Unparenting --
+    if (ImGui::BeginDragDropTargetCustom(ImGui::GetCurrentWindow()->ContentRegionRect, ImGui::GetCurrentWindow()->ID))
+    {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PAYLOAD_SCENE_OBJECT"))
+            if (const SceneObject* dropped = *static_cast<SceneObject**>(payload->Data))
+                dropped->transform->SetParent(nullptr, true);
+        ImGui::EndDragDropTarget();
+    }
+
+    DrawGeneralContextMenu();
 
     ImGui::End();
 }
@@ -55,19 +63,19 @@ void pompeii::SceneHierarchy::DrawSceneObjectNode(SceneObject* sceneObj)
 							   ImGuiTreeNodeFlags_OpenOnArrow |
 							   ImGuiTreeNodeFlags_FramePadding |
 							   ImGuiTreeNodeFlags_SpanAvailWidth;
+    if (m_pSelectedObject == sceneObj)
+        flags |= ImGuiTreeNodeFlags_Selected;
     if (sceneObj->transform->GetAllChildren().empty())
         flags |= ImGuiTreeNodeFlags_Leaf;
 
-    ImGui::PushID(m_Index);
+    ImGui::PushID(sceneObj);
     const bool nodeOpen = ImGui::TreeNodeEx(sceneObj->name.c_str(), flags, "%s", sceneObj->name.c_str());
-    ImGui::PopID();
-    ++m_Index;
 
     if (ImGui::IsItemClicked())
         m_pSelectedObject = sceneObj;
 
-    // Right-click context menu
-    if (ImGui::BeginPopupContextItem())
+    // -- Right Click Context Menu --
+	if (ImGui::BeginPopupContextItem())
     {
         if (ImGui::MenuItem("Delete"))
         {
@@ -77,35 +85,71 @@ void pompeii::SceneHierarchy::DrawSceneObjectNode(SceneObject* sceneObj)
         ImGui::EndPopup();
     }
 
-    // Drag source
+    // -- Drag & Drop Source --
     if (ImGui::BeginDragDropSource())
     {
-        const SceneObject* payload = sceneObj;
-        ImGui::SetDragDropPayload("SceneHierarchy", payload, sizeof(*payload));
+        SceneObject* payload = sceneObj;
+        ImGui::SetDragDropPayload("PAYLOAD_SCENE_OBJECT", &payload, sizeof(SceneObject*));
         ImGui::Text("%s", sceneObj->name.c_str());
         ImGui::EndDragDropSource();
     }
 
-    // Drop target
+    // Drag & Drop Parenting --
     if (ImGui::BeginDragDropTarget())
     {
-        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SceneHierarchy"))
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PAYLOAD_SCENE_OBJECT"))
         {
-            if (payload->DataSize == sizeof(SceneObject))
-            {
-                const SceneObject* dropped = reinterpret_cast<const SceneObject*>(payload->Data);
-                if (dropped && dropped != sceneObj)
-                    dropped->transform->SetParent(sceneObj->transform.get(), true);
-            }
+            SceneObject* dropped = *static_cast<SceneObject**>(payload->Data);
+            if (dropped && dropped != sceneObj)
+                dropped->transform->SetParent(sceneObj->transform.get(), true);
         }
         ImGui::EndDragDropTarget();
     }
 
+    // -- Draw Children --
     if (nodeOpen)
     {
         for (const Transform* child : sceneObj->transform->GetAllChildren())
             DrawSceneObjectNode(child->GetSceneObject());
         ImGui::TreePop();
+    }
+    ImGui::PopID();
+}
+void pompeii::SceneHierarchy::DrawGeneralContextMenu()
+{
+    if (ImGui::BeginPopupContextWindow("SceneHierarchyGeneral", ImGuiPopupFlags_NoOpenOverItems
+																| ImGuiPopupFlags_MouseButtonRight))
+    {
+        ImGui::Text("Objects");
+        ImGui::Separator();
+
+        if (ImGui::MenuItem("Add Empty Object"))
+        {
+            SceneObject& newObj = ServiceLocator::Get<SceneManager>().GetActiveScene().AddEmpty();
+            m_pSelectedObject = &newObj;
+        }
+        if (ImGui::MenuItem("Add Light"))
+        {
+            SceneObject& newObj = ServiceLocator::Get<SceneManager>().GetActiveScene().AddEmpty("Light");
+            newObj.AddComponent<LightComponent>(
+                /* direction */	glm::vec3{ 0.262f, -0.766f, 0.585f },
+                /* color */		glm::vec3{ 1.f, 0.9569f, 0.8392f },
+                /* lux */			10.f, LightType::Directional
+            );
+            m_pSelectedObject = &newObj;
+        }
+
+        ImGui::Spacing();
+        ImGui::Spacing();
+        ImGui::Spacing();
+        ImGui::Text("Test");
+        ImGui::Separator();
+
+        if (ImGui::MenuItem("Test"))
+        {
+        }
+
+        ImGui::EndPopup();
     }
 }
 
@@ -241,5 +285,35 @@ void pompeii::Inspector::Draw(ImGuiID dockID)
     ImGui::SetNextWindowDockID(dockID, ImGuiCond_Once);
     ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_None);
     m_pSelectedObject->OnInspectorDraw();
+    DrawGeneralContextMenu();
 	ImGui::End();
+}
+void pompeii::Inspector::DrawGeneralContextMenu() const
+{
+    if (ImGui::BeginPopupContextWindow("InspectorGeneral", ImGuiPopupFlags_NoOpenOverItems
+															| ImGuiPopupFlags_MouseButtonRight))
+    {
+        ImGui::Text("Components");
+        ImGui::Separator();
+
+        if (ImGui::MenuItem("Add Light Component"))
+        {
+            m_pSelectedObject->AddComponent<LightComponent>(
+                /* direction */	glm::vec3{ 0.262f, -0.766f, 0.585f },
+                /* color */		glm::vec3{ 1.f, 0.9569f, 0.8392f },
+                /* lux */			10.f, LightType::Directional
+            );
+        }
+        if (ImGui::MenuItem("Add MeshFilter Component"))
+        {
+            m_pSelectedObject->AddComponent<MeshFilter>();
+        }
+        if (ImGui::MenuItem("Add MeshRenderer Component"))
+        {
+            if (m_pSelectedObject->HasComponent<MeshFilter>())
+				m_pSelectedObject->AddComponent<MeshRenderer>(*m_pSelectedObject->GetComponent<MeshFilter>());
+        }
+
+    	ImGui::EndPopup();
+    }
 }

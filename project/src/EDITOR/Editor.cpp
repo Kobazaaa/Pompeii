@@ -14,7 +14,7 @@ void pompeii::Editor::Draw() const
 	// -- UI --
 	m_pMenuBarUI->Draw();
 	m_pSceneHierarchyUI->Draw(m_DockLeftID);
-	m_pUtilitiesUI->Draw(m_DockLeftID);
+	//m_pUtilitiesUI->Draw(m_DockLeftID);
 	m_pInspectorUI->Draw(m_pSceneHierarchyUI->GetSelectedObject(), m_DockLeftBottomID);
 }
 void pompeii::Editor::SetupDockSpace() const

@@ -3,6 +3,8 @@
 #include "AssetManager.h"
 #include "ServiceLocator.h"
 
+// -- ImGui --
+#include "ImGuiFileDialog.h"
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  MeshFilter	
@@ -25,9 +27,7 @@ pompeii::MeshFilter::~MeshFilter()
 //--------------------------------------------------
 void pompeii::MeshFilter::Start()
 {
-	Component::Start();
 }
 void pompeii::MeshFilter::OnInspectorDraw()
 {
-	Component::OnInspectorDraw();
 }

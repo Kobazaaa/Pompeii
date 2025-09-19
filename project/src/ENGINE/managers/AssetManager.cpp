@@ -57,3 +57,10 @@ void pompeii::AssetManager::UnloadAll()
 		mesh->Destroy(m_pRenderer->GetContext());
 	m_vMeshRegistry.clear();
 }
+std::vector<pompeii::Mesh*> pompeii::AssetManager::GetAllMeshes() const
+{
+	std::vector<Mesh*> res(m_vMeshRegistry.size());
+	for (const auto& val : m_vMeshRegistry | std::views::values)
+		res.emplace_back(val.get());
+	return res;
+}

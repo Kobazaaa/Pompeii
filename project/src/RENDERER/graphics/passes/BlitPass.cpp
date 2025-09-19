@@ -151,7 +151,7 @@ void pompeii::BlitPass::Initialize(const Context& context, const BlitPassCreateI
 			bufferAlloc
 				.SetDebugName("Camera Settings UBO")
 				.SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
-				.SetSize(sizeof(ExposureSettings))
+				.SetSize(sizeof(ManualExposureSettings) + sizeof(bool))
 				.HostAccess(true)
 				.Allocate(context, m_vCameraSettings[i]);
 		}
@@ -206,7 +206,7 @@ void pompeii::BlitPass::Initialize(const Context& context, const BlitPassCreateI
 				.WriteImages(m_vFragmentDS[i], 0)
 				.Execute(context);
 			writer // Camera Settings
-				.AddBufferInfo(m_vCameraSettings[i], 0, sizeof(ExposureSettings))
+				.AddBufferInfo(m_vCameraSettings[i], 0, sizeof(ManualExposureSettings) + sizeof(bool))
 				.WriteBuffers(m_vFragmentDS[i], 1)
 				.Execute(context);
 			writer // Average Luminance
@@ -274,7 +274,8 @@ void pompeii::BlitPass::RecordGraphic(const Context& context, CommandBuffer& com
 {
 	// -- Update Camera Settings --
 	//todo really? every frame? camera exposure settings don't often change i feel ike, maybe this can be optimized using some dirty flag
-	vmaCopyMemoryToAllocation(context.allocator, &camera.exposureSettings, m_vCameraSettings[imageIndex].GetMemoryHandle(), 0, sizeof(ExposureSettings));
+	vmaCopyMemoryToAllocation(context.allocator, &camera.manualExposureSettings, m_vCameraSettings[imageIndex].GetMemoryHandle(), 0, sizeof(ManualExposureSettings));
+	vmaCopyMemoryToAllocation(context.allocator, &camera.autoExposure, m_vCameraSettings[imageIndex].GetMemoryHandle(), sizeof(ManualExposureSettings), sizeof(bool));
 
 	m_vAverageLuminance[imageIndex].TransitionLayout(commandBuffer,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -334,7 +335,7 @@ void pompeii::BlitPass::RecordGraphic(const Context& context, CommandBuffer& com
 	vkCmdEndRendering(vCmdBuffer);
 	Debugger::EndDebugLabel(commandBuffer);
 }
-void pompeii::BlitPass::RecordCompute(CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage)
+void pompeii::BlitPass::RecordCompute(CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const CameraData& camera)
 {
 	// -- Compute --
 	Debugger::BeginDebugLabel(commandBuffer, "Compute Luminance | Exposure Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
@@ -346,14 +347,13 @@ void pompeii::BlitPass::RecordCompute(CommandBuffer& commandBuffer, uint32_t ima
 		vkCmdBindDescriptorSets(commandBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout.GetHandle(), 0, 1, &m_vComputeLumDS[imageIndex].GetHandle(), 0, nullptr);
 
 		// -- Bind Push Constants --
-		//todo hardcoded min and range? eeh??
 		const VkExtent2D extent = renderImage.GetExtent2D();
 		glm::vec4 param =
 		{
-			-8.f,							// minLogLum
-			12.f,							// logLumRange
-			Timer::GetDeltaSeconds(),		// deltaS
-			extent.width* extent.height		// numPixels
+			camera.autoExposureSettings.minLogLum,		// minLogLum
+			camera.autoExposureSettings.logLumRange,	// logLumRange
+			Timer::GetDeltaSeconds(),					// deltaS
+			extent.width * extent.height				// numPixels
 		};
 		vkCmdPushConstants(commandBuffer.GetHandle(), m_ComputePipelineLayout.GetHandle(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(param), &param);
 

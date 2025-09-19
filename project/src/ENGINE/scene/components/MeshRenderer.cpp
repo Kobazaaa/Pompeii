@@ -31,4 +31,20 @@ void pompeii::MeshRenderer::Start()
 }
 void pompeii::MeshRenderer::OnInspectorDraw()
 {
+    if (pMeshFilter)
+        ImGui::Text("Mesh Filter: %s", pMeshFilter->GetSceneObject().name.c_str());
+    else
+        ImGui::Text("Mesh Filter: None");
+
+    if (ImGui::BeginDragDropTarget())
+    {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MeshFilter"))
+        {
+            Component* dropped = *static_cast<Component**>(payload->Data);
+            if (MeshFilter* mf = dynamic_cast<MeshFilter*>(dropped))
+                if (mf != pMeshFilter)
+                    pMeshFilter = mf;
+        }
+        ImGui::EndDragDropTarget();
+    }
 }

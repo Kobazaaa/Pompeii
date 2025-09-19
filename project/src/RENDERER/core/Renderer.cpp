@@ -543,7 +543,7 @@ void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32
 		// -- Blit Pass --
 		{
 			// The blit pass will blit the rendered image to the swapchain and potentially do post-processing.
-			m_BlitPass.RecordCompute(commandBuffer, imageIndex, renderImage);
+			m_BlitPass.RecordCompute(commandBuffer, imageIndex, renderImage, m_Camera);
 
 			// Insert a barrier for the Render Image to be used in fragment
 			renderImage.TransitionLayout(commandBuffer,

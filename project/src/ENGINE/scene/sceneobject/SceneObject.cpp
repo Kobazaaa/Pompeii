@@ -45,6 +45,13 @@ void pompeii::SceneObject::OnInspectorDraw()
 	// -- Transform --
 	if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
 	{
+		if (ImGui::BeginDragDropSource())
+		{
+			ImGui::SetDragDropPayload("Transform", transform.get(), sizeof(Transform*));
+			ImGui::Text("%s", "Transform");
+			ImGui::EndDragDropSource();
+		}
+
 		glm::vec3 pos = transform->GetPosition();
 		glm::vec3 rot = transform->GetEulerAngles();
 		glm::vec3 scale = transform->GetScale();
@@ -70,11 +77,23 @@ void pompeii::SceneObject::OnInspectorDraw()
 	}
 
 	// -- Other Components --
+	int id = 0;
 	for (const auto& component : m_vComponents)
 	{
 		if (!component) continue;
+		ImGui::PushID(id++);
 		if (ImGui::CollapsingHeader(component->name.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			if (ImGui::BeginDragDropSource())
+			{
+				Component* payload = component.get();
+				ImGui::SetDragDropPayload(payload->name.c_str(), payload, sizeof(*payload));
+				ImGui::Text("%s", payload->name.c_str());
+				ImGui::EndDragDropSource();
+			}
 			component->OnInspectorDraw();
+		}
+		ImGui::PopID();
 		ImGui::Separator();
 	}
 }

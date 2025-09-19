@@ -11,6 +11,7 @@ layout(set = 0, binding = 1) uniform CameraSettings
 	float aperture;
 	float shutterspeed;
 	float iso;
+	bool autoExposure;
 } camSettings;
 layout(set = 0, binding = 2) uniform sampler2D AverageLum;
 
@@ -33,7 +34,7 @@ void main()
 	float averageLum = texelFetch(AverageLum, ivec2(0,0), 0).x;
 	const float autoEV100 = AverageLuminanceToEV100(averageLum);
 	const float autoExposure = EV100ToExposure(autoEV100);
-	hdrColor = hdrColor * autoExposure;
+	hdrColor = hdrColor * (camSettings.autoExposure ? autoExposure : exposure);
 
 	// -- Tone Mapping --
 	const vec3 aces = ACESFilmToneMapping(hdrColor);

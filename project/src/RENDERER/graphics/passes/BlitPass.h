@@ -47,7 +47,7 @@ namespace pompeii
 		void Destroy();
 		void UpdateDescriptors(const Context& context, const std::vector<Image>& renderImages) const;
 		void RecordGraphic(const Context& context, CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const CameraData& camera);
-		void RecordCompute(CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage);
+		void RecordCompute(CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const CameraData& camera);
 
 	private:
 		// -- Pipeline --

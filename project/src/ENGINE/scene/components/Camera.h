@@ -39,7 +39,7 @@ namespace pompeii
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit Camera(SceneObject& parent, const CameraSettings& settings, const ExposureSettings& exposureSettings, const Window* pWindow, bool mainCam = false);
+		explicit Camera(SceneObject& parent, const CameraSettings& settings, const Window* pWindow, bool mainCam = false);
 
 		//--------------------------------------------------
 		//    Loop
@@ -54,8 +54,9 @@ namespace pompeii
 		// -- Settings --
 		void ChangeSettings(const CameraSettings& settings);
 		const CameraSettings& GetSettings() const;
-		void ChangeExposureSettings(const ExposureSettings& settings);
-		const ExposureSettings& GetExposureSettings() const;
+		const ManualExposureSettings& GetManualExposureSettings() const;
+		const AutoExposureSettings& GetAutoExposureSettings() const;
+		bool IsAutoExposureEnabled() const;
 
 		void SetSpeed(float speed);
 		void SetSensitivity(float sensitivity);
@@ -72,8 +73,10 @@ namespace pompeii
 		glm::mat4 m_ProjectionMatrix		{ };
 
 		// -- Settings --
-		CameraSettings	 m_Settings			{ };
-		ExposureSettings m_ExposureSettings	{ };
+		CameraSettings	 m_Settings						{ };
+		bool m_AutoExposure								{ true };
+		ManualExposureSettings m_ManualExposureSettings	{ };
+		AutoExposureSettings m_AutoExposureSettings		{ };
 
 		float m_Speed						{ 1.f };
 		float m_Sensitivity					{ 0.1f };

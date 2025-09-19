@@ -48,7 +48,7 @@ namespace pompeii
 		[[nodiscard]] bool HasComponent() const
 		{
 			return std::ranges::any_of(m_vComponents, [](const auto& component) 
-					{ return dynamic_cast<ComponentType>(component.get()); });
+					{ return dynamic_cast<ComponentType*>(component.get()); });
 		}
 		template <typename ComponentType>
 			requires std::derived_from<ComponentType, Component>

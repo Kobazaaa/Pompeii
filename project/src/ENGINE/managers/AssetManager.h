@@ -31,7 +31,7 @@ namespace pompeii
 		Mesh* GetMesh(const std::string& path);
 		void UnloadMesh(const Mesh* pMesh);
 		void UnloadAll();
-
+		std::vector<Mesh*> GetAllMeshes() const;
 
 	private:
 		std::unordered_map<std::string, std::unique_ptr<Mesh>> m_vMeshRegistry{};

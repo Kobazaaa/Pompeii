@@ -58,17 +58,19 @@ void pompeii::RenderSystem::Update()
 {
 	for (auto& visibleModel : m_vVisibleModels)
 	{
-		m_pRenderer->SubmitRenderItem(RenderItem
-			{
-				.mesh = visibleModel->pMeshFilter->pMesh,
-				.transform = visibleModel->GetTransform().GetMatrix()
-			});
+		if (visibleModel->pMeshFilter)
+			m_pRenderer->SubmitRenderItem(RenderItem
+				{
+					.mesh = visibleModel->pMeshFilter->pMesh,
+					.transform = visibleModel->GetTransform().GetMatrix()
+				});
 	}
 	m_pRenderer->SetCamera(CameraData{
 			.view = m_pMainCamera->GetViewMatrix(),
 			.proj = m_pMainCamera->GetProjectionMatrix(),
-			.exposureSettings = m_pMainCamera->GetExposureSettings(),
-			.autoExposure = true,
+			.manualExposureSettings = m_pMainCamera->GetManualExposureSettings(),
+			.autoExposureSettings = m_pMainCamera->GetAutoExposureSettings(),
+			.autoExposure = m_pMainCamera->IsAutoExposureEnabled(),
 		});
 	UpdateData();
 }
@@ -118,8 +120,9 @@ void pompeii::RenderSystem::UpdateData()
 
 		std::vector<Image*> newTextures{};
 		for (const auto& registeredModel : m_vRegisteredModels)
-			for (auto& image : registeredModel->pMeshFilter->pMesh->images)
-				newTextures.push_back(&image);
+			if (registeredModel->pMeshFilter)
+				for (auto& image : registeredModel->pMeshFilter->pMesh->images)
+					newTextures.push_back(&image);
 		m_pRenderer->UpdateTextures(newTextures);
 	}
 }

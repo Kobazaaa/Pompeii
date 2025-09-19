@@ -20,10 +20,11 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pompeii::Camera::Camera(SceneObject& parent, const CameraSettings& settings, const ExposureSettings& exposureSettings, const Window* pWindow, bool mainCam)
+pompeii::Camera::Camera(SceneObject& parent, const CameraSettings& settings, const Window* pWindow, bool mainCam)
 	: Component(parent, "Camera")
 	, m_Settings(settings)
-	, m_ExposureSettings(exposureSettings)
+	, m_ManualExposureSettings{ .aperture = 16.f, .shutterSpeed = 1.f / 100.f, .iso = 100.f}
+	, m_AutoExposureSettings{ .minLogLum = -8.f, .logLumRange = 12.f }
 	, m_pWindow(pWindow->GetHandle())
 {
 	if (mainCam)
@@ -49,7 +50,34 @@ void pompeii::Camera::Update()
 		HandleMovement();
 }
 void pompeii::Camera::OnInspectorDraw()
-{}
+{
+	// --- Movement ---
+	ImGui::SeparatorText("Movement");
+	ImGui::InputFloat("Speed", &m_Speed);
+	ImGui::InputFloat("Sensitivity", &m_Sensitivity);
+
+	// --- Projection ---
+	ImGui::SeparatorText("Projection");
+	if (ImGui::DragFloat("Field Of View", &m_Settings.fov, 0.1f, 1.f, 179.f))
+		m_SettingsDirty = true;
+	if (ImGui::DragFloat2("View Plane", &m_Settings.nearPlane, 0.01f))
+		m_SettingsDirty = true;
+
+	// --- Exposure ---
+	ImGui::SeparatorText("Exposure");
+	ImGui::Checkbox("Auto-Exposure", &m_AutoExposure);
+	if (m_AutoExposure)
+	{
+		ImGui::DragFloat("Min Log Lum", &m_AutoExposureSettings.minLogLum, 0.01f);
+		ImGui::DragFloat("Log Lum Range", &m_AutoExposureSettings.logLumRange, 0.01f);
+	}
+	else
+	{
+		ImGui::DragFloat("Aperture", &m_ManualExposureSettings.aperture, 0.01f, 0.1f, 32.0f);
+		ImGui::DragFloat("ISO", &m_ManualExposureSettings.iso, 1.0f, 10.f, 12800.f);
+		ImGui::DragFloat("ShutterSpeed", &m_ManualExposureSettings.shutterSpeed, 0.001f, 0.0001f, 10.f);
+	}
+}
 
 
 //--------------------------------------------------
@@ -58,8 +86,10 @@ void pompeii::Camera::OnInspectorDraw()
 // -- Settings --
 void pompeii::Camera::ChangeSettings(const CameraSettings& settings) { m_Settings = settings; m_SettingsDirty = true; }
 const pompeii::CameraSettings& pompeii::Camera::GetSettings() const	{ return m_Settings; }
-void pompeii::Camera::ChangeExposureSettings(const ExposureSettings& settings) { m_ExposureSettings = settings; }
-const pompeii::ExposureSettings& pompeii::Camera::GetExposureSettings() const	{ return m_ExposureSettings; }
+
+const pompeii::ManualExposureSettings& pompeii::Camera::GetManualExposureSettings() const { return m_ManualExposureSettings; }
+const pompeii::AutoExposureSettings& pompeii::Camera::GetAutoExposureSettings() const { return m_AutoExposureSettings; }
+bool pompeii::Camera::IsAutoExposureEnabled() const { return m_AutoExposure; }
 
 void pompeii::Camera::SetSpeed(float speed) { m_Speed = speed; }
 void pompeii::Camera::SetSensitivity(float sensitivity) { m_Sensitivity = sensitivity; }

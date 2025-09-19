@@ -31,8 +31,7 @@ static void CreateDefaultScene(Window* pWindow)
 
 	// cam
 	auto& camera = scene.AddEmpty("Camera");
-	camera.AddComponent<Camera>(CameraSettings{ .fov = 45.f, .aspectRatio = pWindow->GetAspectRatio(), .nearPlane = 0.001f, .farPlane = 1000.f },
-		ExposureSettings{ .aperture = 16.f, .shutterSpeed = 1.f / 100.f, .iso = 100.f }, pWindow, true);
+	camera.AddComponent<Camera>(CameraSettings{ .fov = 45.f, .aspectRatio = pWindow->GetAspectRatio(), .nearPlane = 0.001f, .farPlane = 1000.f }, pWindow, true);
 
 	// model
 	auto& model = scene.AddEmpty("Model");
@@ -45,8 +44,8 @@ static void CreateDefaultScene(Window* pWindow)
 	auto& light = scene.AddEmpty("Light");
 	light.AddComponent<LightComponent>(
 		/* direction */	glm::vec3{ 0.f, -1.f, 0.f },
-		/* color */		glm::vec3{ 0.f, 1.f, 0.f },
-		/* lux */			100'000.f, LightType::Directional
+		/* color */		glm::vec3{ 1.f, 1.f, 1.f },
+		/* lux */			100.f, LightType::Directional
 	);
 }
 
@@ -56,7 +55,7 @@ int main()
 	try
 	{
 		// -- Create Window --
-		Window* pWindow = new Window("V - Pompeii", false, 800, 600);
+		Window* pWindow = new Window("V - Pompeii", false, 1200, 900);
 
 		// -- Register Services --
 		auto renderer = std::make_shared<Renderer>(pWindow);
