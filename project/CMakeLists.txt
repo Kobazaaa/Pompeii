@@ -88,11 +88,11 @@ endif()
 #--------------------------------------------------
 #    LIBRARIES
 #--------------------------------------------------
-include("${CMAKE_SOURCE_DIR}/cmake/FetchAndIncludeLibraries.cmake")
+include("../cmake/FetchAndIncludeLibraries.cmake")
 
 #--------------------------------------------------
 #    RESOURCES
 #--------------------------------------------------
-include("${CMAKE_SOURCE_DIR}/cmake/CompileShaders.cmake")
-include("${CMAKE_SOURCE_DIR}/cmake/CopyFolder.cmake")
+include("../cmake/CompileShaders.cmake")
+include("../cmake/CopyFolder.cmake")
 copy_repo_to_exe("https://github.com/Kobazaaa/PompeiiResources.git")
