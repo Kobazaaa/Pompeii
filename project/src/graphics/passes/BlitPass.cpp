@@ -7,7 +7,6 @@
 #include "GeometryPass.h"
 #include "GPUCamera.h"
 #include "Shader.h"
-#include "Timer.h"
 #include "Mesh.h"
 
 void pompeii::BlitPass::Initialize(const Context& context, const BlitPassCreateInfo& createInfo)
@@ -348,11 +347,12 @@ void pompeii::BlitPass::RecordCompute(CommandBuffer& commandBuffer, uint32_t ima
 
 		// -- Bind Push Constants --
 		const VkExtent2D extent = renderImage.GetExtent2D();
+		//todo don't hardcode deltaS
 		glm::vec4 param =
 		{
 			camera.autoExposureSettings.minLogLum,		// minLogLum
 			camera.autoExposureSettings.logLumRange,	// logLumRange
-			Timer::GetDeltaSeconds(),					// deltaS
+			0.01f,										// deltaS
 			extent.width * extent.height				// numPixels
 		};
 		vkCmdPushConstants(commandBuffer.GetHandle(), m_ComputePipelineLayout.GetHandle(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(param), &param);

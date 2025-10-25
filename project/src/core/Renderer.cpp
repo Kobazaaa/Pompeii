@@ -2,15 +2,12 @@
 #include <stdexcept>
 #include <array>
 #include <ranges>
+#include <numeric>
 
 // -- Pompeii Includes --
 #include "Renderer.h"
-
-#include <numeric>
-
 #include "Debugger.h"
 #include "CommandBuffer.h"
-#include "Timer.h"
 #include "Window.h"
 #include "RenderingItems.h"
 
