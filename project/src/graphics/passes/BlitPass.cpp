@@ -347,7 +347,7 @@ void pompeii::BlitPass::RecordCompute(CommandBuffer& commandBuffer, uint32_t ima
 
 		// -- Bind Push Constants --
 		const VkExtent2D extent = renderImage.GetExtent2D();
-		//todo don't hardcode deltaS
+		//todo don't hardcode delta time
 		glm::vec4 param =
 		{
 			camera.autoExposureSettings.minLogLum,		// minLogLum
