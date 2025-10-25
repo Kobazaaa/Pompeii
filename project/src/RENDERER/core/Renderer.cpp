@@ -157,7 +157,7 @@ void pompeii::Renderer::InitializeVulkan()
 		Debugger::SetEnabled(true);
 		Debugger::AddValidationLayer("VK_LAYER_KHRONOS_validation");
 #else
-		pom::Debugger::SetEnabled(false);
+		Debugger::SetEnabled(false);
 #endif
 	}
 

@@ -36,16 +36,30 @@ static void CreateDefaultScene(Window* pWindow)
 	// model
 	auto& model = scene.AddEmpty("Model");
 	auto filter = model.AddComponent<MeshFilter>();
-	Mesh* pMesh = ServiceLocator::Get<AssetManager>().LoadMesh("models/Sponza.gltf");
+	Mesh* pMesh = ServiceLocator::Get<AssetManager>().LoadMesh("models/ABeautifulGame.gltf");
 	filter->pMesh = pMesh;
 	model.AddComponent<MeshRenderer>(*filter);
 
 	// light
-	auto& light = scene.AddEmpty("Light");
-	light.AddComponent<LightComponent>(
-		/* direction */	glm::vec3{ 0.f, -1.f, 0.f },
-		/* color */		glm::vec3{ 1.f, 1.f, 1.f },
-		/* lux */			100.f, LightType::Directional
+	auto& light1 = scene.AddEmpty("SunLight");
+	light1.AddComponent<LightComponent>(
+			/* direction */	glm::vec3{ 0.577f, -0.577f, 0.577f },
+			/* color */		glm::vec3{ 1.f, 1.f, 1.f },
+			/* lux */			20.f, LightType::Directional
+	);
+
+	auto& light2 = scene.AddEmpty("GreenLight");
+	light2.AddComponent<LightComponent>(
+			/* position */		glm::vec3{ 3.f, 0.5f, 0.f },
+			/* color */		glm::vec3{ 0.f, 1.f, 0.f },
+			/* lumen */		1000.f, LightType::Point
+	);
+
+	auto& light3 = scene.AddEmpty("YellowLight");
+	light3.AddComponent<LightComponent>(
+			/* position */		glm::vec3{ 7.f, 0.5f, 0.f },
+			/* color */		glm::vec3{ 1.f, 1.f, 0.f},
+			/* lumen */		1200.f, LightType::Point
 	);
 }
 
@@ -55,7 +69,7 @@ int main()
 	try
 	{
 		// -- Create Window --
-		Window* pWindow = new Window("V - Pompeii", false, 1200, 900);
+		Window* pWindow = new Window("V - Pompeii", false, 1920, 1080);
 
 		// -- Register Services --
 		auto renderer = std::make_shared<Renderer>(pWindow);

@@ -16,7 +16,8 @@ layout(set = 0, binding = 0) uniform CameraUbo
 // -- Lights --
 struct Light
 {
-    vec4 dirpostype;
+    vec3 dirpos;
+	int type;
     vec3 color;
     float luxLumen;
 	mat4 matrices[6];
@@ -84,14 +85,14 @@ void main()
 	{
 		// -- Extract Light Type --
 		Light light = lightBuffer.lights[lightIdx];
-		int type = int(round(light.dirpostype.w));
+		int type = int(round(light.type));
 		vec3 l = vec3(0);
 		vec3 radiance = vec3(0);
 
 		// 0 == Directional Light
 		if(type == 0)
 		{
-			l = -normalize(light.dirpostype.xyz);
+			l = -normalize(light.dirpos.xyz);
 			float illuminance = light.luxLumen;
 			radiance = illuminance * light.color;
 		}
@@ -99,10 +100,10 @@ void main()
 		// 1 == Point Light
 		else if(type == 1)
 		{
-			l = normalize(light.dirpostype.xyz - worldPos);
+			l = normalize(light.dirpos.xyz - worldPos);
 
 			float luminousIntensity = light.luxLumen / (4.0 * PI);
-			float dst = length(light.dirpostype.xyz - worldPos);
+			float dst = length(light.dirpos.xyz - worldPos);
 			float attenuation = 1.0 / max((dst * dst), 0.0001);
 			float illuminance = attenuation * luminousIntensity;
 			radiance = illuminance * light.color;
@@ -130,7 +131,7 @@ void main()
 		if(type == 0) // 0 == Directional Light
 			shadowTerm = CalculateShadowTermDirectional(light.matrices[0], worldPos, DirectionalShadowMaps[light.depthIndex]);
 		else if(type == 1) // 1 == Point Light
-			shadowTerm = CalculateShadowTermPoint(light.dirpostype.xyz, worldPos, PointShadowMaps[light.depthIndex]);
+			shadowTerm = CalculateShadowTermPoint(light.dirpos.xyz, worldPos, PointShadowMaps[light.depthIndex]);
 
 		// -- Add to outgoing light --
 		Lo += (diff + spec) * radiance * oa * shadowTerm;
