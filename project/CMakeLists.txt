@@ -59,14 +59,13 @@ add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
 # Set include directories
 target_include_directories(${PROJECT_NAME} PUBLIC
-	"${SOURCE_DIR}/core"
-	"${SOURCE_DIR}/datatypes"
 )
-target_include_directories(${PROJECT_NAME} PRIVATE
+target_include_directories(${PROJECT_NAME} PUBLIC
 	"${SOURCE_DIR}"
 	"${SOURCE_DIR}/commands"
 	"${SOURCE_DIR}/context"
 	"${SOURCE_DIR}/core"
+	"${SOURCE_DIR}/datatypes"
 	"${SOURCE_DIR}/graphics"
 	"${SOURCE_DIR}/graphics/memory"
 	"${SOURCE_DIR}/graphics/passes"

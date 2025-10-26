@@ -53,7 +53,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(GLFW vma GLM stb assimp)
 
 # Link libraries to the project
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(${PROJECT_NAME} PUBLIC
     Vulkan::Vulkan
     glfw
     glm::glm
