@@ -1,19 +1,4 @@
 #--------------------------------------------------
-#    COPY SOURCE TO OUTPUT
-#--------------------------------------------------
-function(copy_folder_to_exe COPY_SRC_DIR COPY_CMD)
-
-    # Set up COPY_DST_DIR
-    get_filename_component(DIR_NAME ${COPY_SRC_DIR} NAME)
-    set(COPY_DST_DIR "${CMAKE_BINARY_DIR}/${DIR_NAME}")
-    message(STATUS ${COPY_DST_DIR})
-    # Copy
-    copy_folder(${COPY_SRC_DIR} ${COPY_DST_DIR} ${COPY_CMD})
-
-endfunction()
-
-
-#--------------------------------------------------
 #    COPY SOURCE TO DESTINATION
 #--------------------------------------------------
 function(copy_folder COPY_SRC_DIR COPY_DST_DIR COPY_CMD)
@@ -41,7 +26,7 @@ endfunction()
 #    COPY REPO TO DESTINATION
 #--------------------------------------------------
 include(FetchContent)
-function(copy_repo_to_exe REPO_URL)
+function(copy_repo_to_folder REPO_URL OUTPUT_DIR)
 
     FetchContent_Declare(
         repo
@@ -50,6 +35,6 @@ function(copy_repo_to_exe REPO_URL)
     )
     FetchContent_Populate(repo)
 
-    copy_folder_to_exe(${repo_SOURCE_DIR}/ copy_directory)
+    copy_folder(${repo_SOURCE_DIR}/ ${OUTPUT_DIR} copy_directory)
 
 endfunction()

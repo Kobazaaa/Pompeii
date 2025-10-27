@@ -87,5 +87,5 @@ include("../cmake/FetchAndIncludeLibraries.cmake")
 #--------------------------------------------------
 include("../cmake/CompileShaders.cmake")
 include("../cmake/CopyFolder.cmake")
-copy_repo_to_exe("https://github.com/Kobazaaa/PompeiiResources.git")
-copy_folder_to_exe(${SHADER_SOURCE_DIR}/ copy_directory)
+copy_folder("${CMAKE_CURRENT_BINARY_DIR}/shaders" "${CMAKE_BINARY_DIR}/project/shaders" copy_directory)
+copy_repo_to_folder("https://github.com/Kobazaaa/PompeiiResources.git" "${CMAKE_BINARY_DIR}/project/")
