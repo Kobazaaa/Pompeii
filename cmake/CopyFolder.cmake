@@ -5,7 +5,7 @@ function(copy_folder_to_exe COPY_SRC_DIR COPY_CMD)
 
     # Set up COPY_DST_DIR
     get_filename_component(DIR_NAME ${COPY_SRC_DIR} NAME)
-    set(COPY_DST_DIR "${CMAKE_CURRENT_BINARY_DIR}/${DIR_NAME}")
+    set(COPY_DST_DIR "${CMAKE_BINARY_DIR}/${DIR_NAME}")
     message(STATUS ${COPY_DST_DIR})
     # Copy
     copy_folder(${COPY_SRC_DIR} ${COPY_DST_DIR} ${COPY_CMD})

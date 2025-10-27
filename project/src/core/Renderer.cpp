@@ -1,3 +1,7 @@
+// -- VMA --
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+
 // -- Standard Library --
 #include <stdexcept>
 #include <array>

@@ -56,9 +56,6 @@ set(SOURCES
 # Create the library
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
-# Tell VMA implementation to compile in this target
-target_compile_definitions(${PROJECT_NAME} PRIVATE VMA_IMPLEMENTATION)
-
 # Set include directories
 target_include_directories(${PROJECT_NAME} PUBLIC
 	"${SOURCE_DIR}"
@@ -75,7 +72,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 )
 
 # Max Warning Level & Warnings as Errors
-target_compile_options(${PROJECT_NAME} PRIVATE
+target_compile_options(${PROJECT_NAME} INTERFACE
   $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
   $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
 )
@@ -91,3 +88,4 @@ include("../cmake/FetchAndIncludeLibraries.cmake")
 include("../cmake/CompileShaders.cmake")
 include("../cmake/CopyFolder.cmake")
 copy_repo_to_exe("https://github.com/Kobazaaa/PompeiiResources.git")
+copy_folder_to_exe(${SHADER_SOURCE_DIR}/ copy_directory)
