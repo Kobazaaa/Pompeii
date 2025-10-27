@@ -44,7 +44,7 @@ namespace pompeii
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit Renderer(Window* pWindow);
+		explicit Renderer();
 		~Renderer();
 		Renderer(const Renderer& other) = delete;
 		Renderer(Renderer&& other) noexcept = delete;
@@ -54,7 +54,7 @@ namespace pompeii
 		//--------------------------------------------------
 		//    Loop
 		//--------------------------------------------------
-		void Render();
+		const Image& Render();
 		void ClearQueue();
 		void SubmitRenderItem(const RenderItem& item);
 		void SubmitLightItem(const LightItem& item);
@@ -85,7 +85,6 @@ namespace pompeii
 
 
 		// -- SwapChain --
-		SwapChain					m_SwapChain				{ };
 		std::vector<Image>			m_vDepthImages			{ };
 		std::vector<Image>			m_vRenderTargets		{ };
 
@@ -109,7 +108,6 @@ namespace pompeii
 		void RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex);
 
 		// -- Other --
-		Window*				m_pWindow			{ };
 		EnvironmentMap		m_EnvMap			{ };
 	};
 }

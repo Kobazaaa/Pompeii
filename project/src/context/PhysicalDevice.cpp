@@ -405,9 +405,9 @@ uint32_t pompeii::PhysicalDeviceSelector::RateDeviceSuitability(PhysicalDevice& 
 		return 0;
 
 	// Check if the SwapChain is adequate
-	SwapChainSupportDetails swapChainSupport = device.QuerySwapChainSupport(surface);
-	bool swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
-	if (!swapChainAdequate) return 0;
+	//SwapChainSupportDetails swapChainSupport = device.QuerySwapChainSupport(surface);
+	//bool swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+	//if (!swapChainAdequate) return 0;
 
 	// Check Queue Families Support
 	QueueFamilyIndices indices = device.FindQueueFamilies(surface);
