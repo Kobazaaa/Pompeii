@@ -60,7 +60,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     assimp
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE
+target_include_directories(${PROJECT_NAME} PUBLIC
     ${vma_SOURCE_DIR}/include
     ${stb_SOURCE_DIR}
     ${assimp_SOURCE_DIR}/include
