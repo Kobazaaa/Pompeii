@@ -8,7 +8,6 @@
 #include "Renderer.h"
 #include "Debugger.h"
 #include "CommandBuffer.h"
-#include "Window.h"
 #include "RenderingItems.h"
 
 //--------------------------------------------------

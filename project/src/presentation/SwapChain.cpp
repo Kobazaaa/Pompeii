@@ -5,7 +5,7 @@
 // -- Pompeii Includes --
 #include "SwapChain.h"
 #include "Context.h"
-#include "Window.h"
+//#include "Window.h"
 #include "Debugger.h"
 
 
@@ -19,15 +19,15 @@
 pompeii::SwapChainBuilder& pompeii::SwapChainBuilder::SetDesiredImageCount(uint32_t count) { m_DesiredImageCount = count; return *this; }
 pompeii::SwapChainBuilder& pompeii::SwapChainBuilder::SetImageUsage(VkImageUsageFlags usage) { m_CreateInfo.imageUsage = usage; return *this; }
 pompeii::SwapChainBuilder& pompeii::SwapChainBuilder::SetImageArrayLayers(uint32_t layerCount) { m_CreateInfo.imageArrayLayers = layerCount; return *this; }
-void pompeii::SwapChainBuilder::Build(Context& context, const Window& window, SwapChain& swapChain)
+void pompeii::SwapChainBuilder::Build(Context& context, VkSurfaceKHR surface, VkExtent2D windowExtent, SwapChain& swapChain)
 {
 	// -- Get Support Details --
-	const SwapChainSupportDetails swapChainSupport = context.physicalDevice.GetSwapChainSupportDetails(window.GetVulkanSurface());
+	const SwapChainSupportDetails swapChainSupport = context.physicalDevice.GetSwapChainSupportDetails(surface);
 
 	// -- Choose --
 	const VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
 	const VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
-	const VkExtent2D extent = ChooseSwapExtent(swapChainSupport.capabilities, window);
+	const VkExtent2D extent = ChooseSwapExtent(swapChainSupport.capabilities, windowExtent);
 
 	// -- Set Image Count --
 	uint32_t imageCount = std::max(m_DesiredImageCount, swapChainSupport.capabilities.minImageCount);
@@ -36,7 +36,7 @@ void pompeii::SwapChainBuilder::Build(Context& context, const Window& window, Sw
 
 	// -- Setup remainders of CreateInfo --
 	m_CreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	m_CreateInfo.surface = window.GetVulkanSurface();
+	m_CreateInfo.surface = surface;
 
 	m_CreateInfo.minImageCount = imageCount;
 	m_CreateInfo.imageFormat = surfaceFormat.format;
@@ -100,18 +100,13 @@ void pompeii::SwapChainBuilder::Build(Context& context, const Window& window, Sw
 //--------------------------------------------------
 //    Helpers
 //--------------------------------------------------
-VkExtent2D pompeii::SwapChainBuilder::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, const Window& window)
+VkExtent2D pompeii::SwapChainBuilder::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, VkExtent2D windowExtent)
 {
 	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
 		return capabilities.currentExtent;
 	else
 	{
-		const auto size = window.GetSize();
-
-		VkExtent2D actualExtent = {
-			static_cast<uint32_t>(size.x),
-			static_cast<uint32_t>(size.y)
-		};
+		VkExtent2D actualExtent = windowExtent;
 
 		actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
 		actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
@@ -158,9 +153,9 @@ void pompeii::SwapChain::Destroy(const Context& context)
 
 	vkDestroySwapchainKHR(context.device.GetHandle(), m_SwapChain, nullptr);
 }
-void pompeii::SwapChain::Recreate(Context& context, const Window& window)
+void pompeii::SwapChain::Recreate(Context& context, VkSurfaceKHR surface, VkExtent2D windowExtent)
 {
-	m_OriginalBuilder.Build(context, window, *this);
+	m_OriginalBuilder.Build(context, surface, windowExtent, *this);
 }
 
 

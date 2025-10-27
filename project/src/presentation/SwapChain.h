@@ -14,7 +14,6 @@
 namespace pompeii
 {
 	class CommandPool;
-	class Window;
 	class SwapChain;
 	struct Context;
 }
@@ -39,13 +38,13 @@ namespace pompeii
 		SwapChainBuilder& SetDesiredImageCount(uint32_t count);
 		SwapChainBuilder& SetImageUsage(VkImageUsageFlags usage);
 		SwapChainBuilder& SetImageArrayLayers(uint32_t layerCount);
-		void Build(Context& context, const Window& window, SwapChain& swapChain);
+		void Build(Context& context, VkSurfaceKHR surface, VkExtent2D windowExtent, SwapChain& swapChain);
 
 	private:
 		//--------------------------------------------------
 		//    Helpers
 		//--------------------------------------------------
-		static VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, const Window& window);
+		static VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, VkExtent2D windowExtent);
 		static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		static VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 
@@ -72,7 +71,7 @@ namespace pompeii
 		SwapChain& operator=(SwapChain&& other) noexcept = delete;
 
 		void Destroy(const Context& context);
-		void Recreate(Context& context, const Window& window);
+		void Recreate(Context& context, VkSurfaceKHR surface, VkExtent2D windowExtent);
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
