@@ -43,21 +43,9 @@ void pompeii::SwapChainBuilder::Build(Context& context, VkSurfaceKHR surface, Vk
 	m_CreateInfo.imageColorSpace = surfaceFormat.colorSpace;
 	m_CreateInfo.imageExtent = extent;
 
-
-	pompeii::QueueFamilyIndices indices = context.physicalDevice.GetQueueFamilies();
-	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
-	if (indices.graphicsFamily != indices.presentFamily)
-	{
-		m_CreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-		m_CreateInfo.queueFamilyIndexCount = 2;
-		m_CreateInfo.pQueueFamilyIndices = queueFamilyIndices;
-	}
-	else
-	{
-		m_CreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		m_CreateInfo.queueFamilyIndexCount = 0;
-		m_CreateInfo.pQueueFamilyIndices = nullptr;
-	}
+	m_CreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	m_CreateInfo.queueFamilyIndexCount = 0;
+	m_CreateInfo.pQueueFamilyIndices = nullptr;
 
 	m_CreateInfo.preTransform = swapChainSupport.capabilities.currentTransform;
 	m_CreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;

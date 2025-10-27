@@ -80,7 +80,6 @@ namespace pompeii
 		Context m_Context { };
 		std::vector<RenderItem> m_vRenderItems;
 		std::vector<LightItem> m_vLightItems;
-		uint32_t padding[2]{};
 		CameraData m_Camera{};
 
 

@@ -177,7 +177,7 @@ void pompeii::Renderer::InitializeVulkan()
 		selector
 			.AddExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
 			.CheckForFeatures(features2)
-			.PickPhysicalDevice(m_Context, nullptr);
+			.PickPhysicalDevice(m_Context);
 	}
 
 	// -- Create Device - Requirements - [Physical Device - Instance]
@@ -329,8 +329,8 @@ void pompeii::Renderer::InitializeVulkan()
 //--------------------------------------------------
 //    Helpers
 //--------------------------------------------------
-//void pompeii::Renderer::RecreateSwapChain()
-//{
+void pompeii::Renderer::RecreateSwapChain()
+{
 //	auto size = m_pWindow->GetSize();
 //	while (size.x == 0 || size.y == 0)
 //	{
@@ -370,7 +370,7 @@ void pompeii::Renderer::InitializeVulkan()
 //	//	.farPlane		= oldSettings.farPlane
 //	//};
 //	//camera->ChangeSettings(settings);
-//}
+}
 
 void pompeii::Renderer::CreateDepthResources(const Context& context, VkExtent2D extent)
 {

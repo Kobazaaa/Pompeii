@@ -56,9 +56,10 @@ set(SOURCES
 # Create the library
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
+# Tell VMA implementation to compile in this target
+target_compile_definitions(${PROJECT_NAME} PRIVATE VMA_IMPLEMENTATION)
+
 # Set include directories
-target_include_directories(${PROJECT_NAME} PUBLIC
-)
 target_include_directories(${PROJECT_NAME} PUBLIC
 	"${SOURCE_DIR}"
 	"${SOURCE_DIR}/commands"
@@ -78,11 +79,6 @@ target_compile_options(${PROJECT_NAME} PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
   $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
 )
-
-if(WIN32)
-  set_target_properties(${PROJECT_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
-endif()
-
 
 #--------------------------------------------------
 #    LIBRARIES

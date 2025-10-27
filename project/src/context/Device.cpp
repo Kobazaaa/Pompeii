@@ -53,7 +53,7 @@ void pompeii::DeviceBuilder::Build(Context& context) const
 	pompeii::QueueFamilyIndices indices = context.physicalDevice.GetQueueFamilies();
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value(), indices.computeFamily.value() };
+	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.computeFamily.value() };
 	// The above line is done because Graphics, Present, or Compute queue can be the same, doing this only passes the index once
 
 	float queuePriority = 1.0f;
@@ -90,6 +90,5 @@ void pompeii::DeviceBuilder::Build(Context& context) const
 		throw std::runtime_error("Failed to create Logical Device!");
 
 	vkGetDeviceQueue(context.device.GetHandle(), indices.graphicsFamily.value(), 0, &context.device.m_GraphicsQueue);
-	vkGetDeviceQueue(context.device.GetHandle(), indices.presentFamily.value(), 0, &context.device.m_PresentQueue);
 	vkGetDeviceQueue(context.device.GetHandle(), indices.computeFamily.value(), 0, &context.device.m_ComputeQueue);
 }
