@@ -14,7 +14,6 @@ set(SOURCES
 
 	# core
 	"${SOURCE_DIR}/core/Renderer.cpp"
-	"${SOURCE_DIR}/core/Window.cpp"
 
 	# datatypes
 	"${SOURCE_DIR}/datatypes/EnvironmentMap.cpp"
