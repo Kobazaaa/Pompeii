@@ -17,17 +17,19 @@
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pompeii::Renderer::Renderer()
+pompeii::Renderer::Renderer()	{ }
+pompeii::Renderer::~Renderer()	{ }
+
+void pompeii::Renderer::Initialize()
 {
 	InitializeVulkan();
 }
-pompeii::Renderer::~Renderer()
+void pompeii::Renderer::Deinitialize()
 {
 	// -- Release Resources --
 	m_Context.device.WaitIdle();
 	m_Context.deletionQueue.Flush();
 }
-
 
 //--------------------------------------------------
 //    Loop
