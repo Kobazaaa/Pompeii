@@ -47,16 +47,10 @@ const pompeii::Image& pompeii::Renderer::Render()
 	RecordCommandBuffer(cmdBuffer, m_Context.currentFrame);
 
 	// -- Submit Commands with Semaphores --
-	const SemaphoreInfo semaphoreInfo
-	{
-		.vWaitSemaphores = { },
-		.vWaitStages = { },
-		.vSignalSemaphores = { frameSync.renderFinished }
-	};
-	cmdBuffer.Submit(m_Context.device.GetGraphicQueue(), false, semaphoreInfo, frameSync.inFlight);
+	cmdBuffer.Submit(m_Context.device.GetGraphicQueue(), false, {}, frameSync.inFlight);
 
 	// -- Go to next frame --
-	int currentFrame = m_Context.currentFrame;
+	uint32_t currentFrame = m_Context.currentFrame;
 	m_Context.currentFrame = (m_Context.currentFrame + 1) % m_Context.maxFramesInFlight;
 	ClearQueue();
 
@@ -244,13 +238,13 @@ void pompeii::Renderer::InitializeVulkan()
 
 	// -- Depth Resources --
 	{
-		CreateDepthResources(m_Context, VkExtent2D{ 600,800 });
+		CreateDepthResources(m_Context, VkExtent2D{ 800,600 });
 		m_Context.deletionQueue.Push([&] { for (Image& image : m_vDepthImages) image.Destroy(m_Context); });
 	}
 
 	// -- Target Resources --
 	{
-		CreateRenderTargetResources(m_Context, VkExtent2D{600,800});
+		CreateRenderTargetResources(m_Context, VkExtent2D{800,600});
 		m_Context.deletionQueue.Push([&] { for (Image& image : m_vRenderTargets) image.Destroy(m_Context); });
 	}
 
@@ -494,17 +488,17 @@ void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32
 
 			// Transition the current Present Image to be written to
 			renderImage.TransitionLayout(commandBuffer,
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
-				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+				VK_IMAGE_LAYOUT_GENERAL,
+				VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+				VK_ACCESS_2_SHADER_SAMPLED_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
 				0, 1, 0, 1);
 
 			m_BlitPass.RecordGraphic(m_Context, commandBuffer, imageIndex, renderImage, m_Camera);
 
 			// transition the image to be written to for UI
-			renderImage.InsertBarrier(commandBuffer,
-				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
+			//renderImage.InsertBarrier(commandBuffer,
+			//	VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+			//	VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
 		}
 
 		// -- UI Pass --

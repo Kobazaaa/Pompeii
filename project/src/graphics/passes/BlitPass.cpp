@@ -201,7 +201,7 @@ void pompeii::BlitPass::Initialize(const Context& context, const BlitPassCreateI
 			uint32_t prevI = (i + context.maxFramesInFlight - 1) % context.maxFramesInFlight;
 			// Fragment
 			writer // HDR Image
-				.AddImageInfo((*createInfo.renderImages)[i].GetView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_Sampler)
+				.AddImageInfo((*createInfo.renderImages)[i].GetView(), VK_IMAGE_LAYOUT_GENERAL, m_Sampler)
 				.WriteImages(m_vFragmentDS[i], 0)
 				.Execute(context);
 			writer // Camera Settings
