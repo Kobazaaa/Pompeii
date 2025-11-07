@@ -9,6 +9,7 @@
 #include <numeric>
 
 // -- Pompeii Includes --
+#include "IWindow.h"
 #include "Renderer.h"
 #include "Debugger.h"
 #include "CommandBuffer.h"
@@ -20,8 +21,9 @@
 pompeii::Renderer::Renderer()	{ }
 pompeii::Renderer::~Renderer()	{ }
 
-void pompeii::Renderer::Initialize()
+void pompeii::Renderer::Initialize(IWindow* pWindow)
 {
+	m_pWindow = pWindow;
 	InitializeVulkan();
 }
 void pompeii::Renderer::Deinitialize()
@@ -34,11 +36,24 @@ void pompeii::Renderer::Deinitialize()
 //--------------------------------------------------
 //    Loop
 //--------------------------------------------------
-const pompeii::Image& pompeii::Renderer::Render()
+void pompeii::Renderer::Render()
 {
 	// -- Wait for the current frame to be done --
 	const auto& frameSync = m_SyncManager.GetFrameSync(m_Context.currentFrame);
 	vkWaitForFences(m_Context.device.GetHandle(), 1, &frameSync.inFlight, VK_TRUE, UINT64_MAX);
+
+	// -- Acquire new Image from SwapChain --
+	uint32_t imageIndex;
+	VkResult result = vkAcquireNextImageKHR(m_Context.device.GetHandle(), m_SwapChain.GetHandle(), UINT64_MAX, frameSync.imageAvailable, VK_NULL_HANDLE, &imageIndex);
+
+	// -- If SwapChain Image not good, recreate Swap Chain --
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+	{
+		RecreateSwapChain();
+		return;
+	}
+	if (result != VK_SUCCESS)
+		throw std::runtime_error("Failed to acquire Swap Chain Image");
 
 	// -- Reset Fence to be un-signaled (not done) --
 	vkResetFences(m_Context.device.GetHandle(), 1, &frameSync.inFlight);
@@ -46,17 +61,44 @@ const pompeii::Image& pompeii::Renderer::Render()
 	// -- Record Command Buffer --
 	CommandBuffer& cmdBuffer = m_Context.commandPool->GetBuffer(m_Context.currentFrame);
 	cmdBuffer.Reset();
-	RecordCommandBuffer(cmdBuffer, m_Context.currentFrame);
+	RecordCommandBuffer(cmdBuffer, imageIndex);
 
 	// -- Submit Commands with Semaphores --
-	cmdBuffer.Submit(m_Context.device.GetGraphicQueue(), false, {}, frameSync.inFlight);
+	const SemaphoreInfo semaphoreInfo
+	{
+		.vWaitSemaphores	=	{ frameSync.imageAvailable },
+		.vWaitStages		=	{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT },
+		.vSignalSemaphores	=	{ frameSync.renderFinished }
+	};
+	cmdBuffer.Submit(m_Context.device.GetGraphicQueue(), false, semaphoreInfo, frameSync.inFlight);
+
+	// -- Create Present Info --
+	VkPresentInfoKHR presentInfo{};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = static_cast<uint32_t>(semaphoreInfo.vSignalSemaphores.size());
+	presentInfo.pWaitSemaphores = semaphoreInfo.vSignalSemaphores.data();
+
+	VkSwapchainKHR swapChains[] = { m_SwapChain.GetHandle() };
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = swapChains;
+	presentInfo.pImageIndices = &imageIndex;
+	presentInfo.pResults = nullptr;
+
+	// -- Present --
+	result = vkQueuePresentKHR(m_Context.device.GetPresentQueue(), &presentInfo);
+
+	// -- If Present failed or out of date, recreate SwapChain --
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_pWindow->IsOutdated())
+	{
+		m_pWindow->ResetOutdated();
+		RecreateSwapChain();
+	}
+	else if (result != VK_SUCCESS)
+		throw std::runtime_error("Failed to present Swap Chain Image!");
 
 	// -- Go to next frame --
-	uint32_t currentFrame = m_Context.currentFrame;
 	m_Context.currentFrame = (m_Context.currentFrame + 1) % m_Context.maxFramesInFlight;
 	ClearQueue();
-
-	return m_vRenderTargets[currentFrame];
 }
 
 void pompeii::Renderer::ClearQueue()
@@ -135,6 +177,12 @@ void pompeii::Renderer::InitializeVulkan()
 		m_Context.deletionQueue.Push([&] { m_Context.instance.Destroy(); });
 	}
 
+	// -- Create Surface - Requirements - [Window - Instance]
+	{
+		m_pWindow->CreateVulkanSurface(m_Context.instance);
+		m_Context.deletionQueue.Push([&] { vkDestroySurfaceKHR(m_Context.instance.GetHandle(), m_pWindow->GetVulkanSurface(), nullptr); });
+	}
+
 	// -- Features --
 	// -- Vulkan API Core Features --
 	VkPhysicalDeviceFeatures vulkanCoreFeatures{};
@@ -177,7 +225,7 @@ void pompeii::Renderer::InitializeVulkan()
 		selector
 			.AddExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
 			.CheckForFeatures(features2)
-			.PickPhysicalDevice(m_Context);
+			.PickPhysicalDevice(m_Context, m_pWindow->GetVulkanSurface());
 	}
 
 	// -- Create Device - Requirements - [Physical Device - Instance]
@@ -223,6 +271,18 @@ void pompeii::Renderer::InitializeVulkan()
 		m_Context.deletionQueue.Push([&] { m_Context.commandPool->Destroy(); delete m_Context.commandPool; m_Context.commandPool = nullptr; });
 	}
 
+	// -- Create SwapChain - Requirements - [Device - Allocator - Physical Device, Window, Command Pool]
+	{
+		VkExtent2D windowExtent = { m_pWindow->GetFramebufferSize().x, m_pWindow->GetFramebufferSize().y };
+		SwapChainBuilder builder;
+		builder
+			.SetDesiredImageCount(m_Context.maxFramesInFlight)
+			.SetImageArrayLayers(1)
+			.SetImageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+			.Build(m_Context, m_pWindow->GetVulkanSurface(), windowExtent, m_SwapChain);
+		m_Context.deletionQueue.Push([&] { m_SwapChain.Destroy(m_Context); });
+	}
+
 	// -- Create Descriptor Pool - Requirements - [Device]
 	{
 		m_Context.descriptorPool = new DescriptorPool();
@@ -240,20 +300,20 @@ void pompeii::Renderer::InitializeVulkan()
 
 	// -- Depth Resources --
 	{
-		CreateDepthResources(m_Context, VkExtent2D{ 800,600 });
+		CreateDepthResources(m_Context, m_SwapChain.GetExtent());
 		m_Context.deletionQueue.Push([&] { for (Image& image : m_vDepthImages) image.Destroy(m_Context); });
 	}
 
 	// -- Target Resources --
 	{
-		CreateRenderTargetResources(m_Context, VkExtent2D{800,600});
+		CreateRenderTargetResources(m_Context, m_SwapChain.GetExtent());
 		m_Context.deletionQueue.Push([&] { for (Image& image : m_vRenderTargets) image.Destroy(m_Context); });
 	}
 
 	// -- Geometry Pass --
 	{
 		GeometryPassCreateInfo createInfo{};
-		createInfo.extent = m_vRenderTargets.front().GetExtent2D();
+		createInfo.extent = m_SwapChain.GetExtent();
 		createInfo.depthFormat = m_vDepthImages[0].GetFormat();
 
 		m_GeometryPass.Initialize(m_Context, createInfo);
@@ -301,7 +361,7 @@ void pompeii::Renderer::InitializeVulkan()
 	{
 		BlitPassCreateInfo createInfo{};
 		createInfo.renderImages = &m_vRenderTargets;
-		createInfo.format = m_vRenderTargets.front().GetFormat();
+		createInfo.format = m_SwapChain.GetFormat();
 
 		m_BlitPass.Initialize(m_Context, createInfo);
 		m_Context.deletionQueue.Push([&] { m_BlitPass.Destroy(); });
@@ -309,13 +369,13 @@ void pompeii::Renderer::InitializeVulkan()
 
 	// -- UI Pass --
 	{
-		//UIPassCreateInfo createInfo{};
-		//createInfo.swapchainImageCount = m_SwapChain.GetImageCount();
-		//createInfo.swapchainImageFormat = m_SwapChain.GetFormat();
-		//createInfo.pWindow = m_pWindow;
+		UIPassCreateInfo createInfo{};
+		createInfo.swapchainImageCount = m_SwapChain.GetImageCount();
+		createInfo.swapchainImageFormat = m_SwapChain.GetFormat();
+		createInfo.pWindow = m_pWindow;
 
-		//m_UIPass.Initialize(m_Context, createInfo);
-		//m_Context.deletionQueue.Push([&] { m_UIPass.Destroy(); });
+		m_UIPass.Initialize(m_Context, createInfo);
+		m_Context.deletionQueue.Push([&] { m_UIPass.Destroy(); });
 	}
 
 	// -- Create Sync Objects - Requirements - [Device]
@@ -331,45 +391,46 @@ void pompeii::Renderer::InitializeVulkan()
 //--------------------------------------------------
 void pompeii::Renderer::RecreateSwapChain()
 {
-//	auto size = m_pWindow->GetSize();
-//	while (size.x == 0 || size.y == 0)
-//	{
-//		size = m_pWindow->GetSize();
-//		Window::WaitEvents();
-//	}
-//
-//	m_Context.device.WaitIdle();
-//
-//	// -- Recreate the SwapChain --
-//	m_SwapChain.Destroy(m_Context);
-//	m_SwapChain.Recreate(m_Context, *m_pWindow);
-//
-//	// -- Recreate the Depth Resource --
-//	for (Image& image : m_vDepthImages)
-//		image.Destroy(m_Context);
-//	CreateDepthResources(m_Context, m_SwapChain.GetExtent());
-//
-//	// -- Recreate the Render Targets --
-//	for (Image& image : m_vRenderTargets)
-//		image.Destroy(m_Context);
-//	CreateRenderTargetResources(m_Context, m_SwapChain.GetExtent());
-//
-//	// -- Resize Passes if needed --
-//	m_GeometryPass.Resize(m_Context, m_SwapChain.GetExtent());
-//	m_LightingPass.UpdateGBufferDescriptors(m_Context, m_GeometryPass, m_vDepthImages);
-//	m_BlitPass.UpdateDescriptors(m_Context, m_vRenderTargets);
-//
-//	// -- Update Camera Settings --
-//	//todo add event to be able to hook into on resize, and update camera settings here!
-//	//const CameraSettings& oldSettings = camera->GetSettings();
-//	//const CameraSettings settings
-//	//{
-//	//	.fov			= oldSettings.fov,
-//	//	.aspectRatio	= m_pWindow->GetAspectRatio(),
-//	//	.nearPlane		= oldSettings.nearPlane,
-//	//	.farPlane		= oldSettings.farPlane
-//	//};
-//	//camera->ChangeSettings(settings);
+	auto size = m_pWindow->GetFramebufferSize();
+	while (size.x == 0 || size.y == 0)
+	{
+		size = m_pWindow->GetFramebufferSize();
+		m_pWindow->PollEvents();
+	}
+
+	m_Context.device.WaitIdle();
+
+	// -- Recreate the SwapChain --
+	VkExtent2D windowExtent = { m_pWindow->GetFramebufferSize().x, m_pWindow->GetFramebufferSize().y };
+	m_SwapChain.Destroy(m_Context);
+	m_SwapChain.Recreate(m_Context, m_pWindow->GetVulkanSurface(), windowExtent);
+
+	// -- Recreate the Depth Resource --
+	for (Image& image : m_vDepthImages)
+		image.Destroy(m_Context);
+	CreateDepthResources(m_Context, m_SwapChain.GetExtent());
+
+	// -- Recreate the Render Targets --
+	for (Image& image : m_vRenderTargets)
+		image.Destroy(m_Context);
+	CreateRenderTargetResources(m_Context, m_SwapChain.GetExtent());
+
+	// -- Resize Passes if needed --
+	m_GeometryPass.Resize(m_Context, m_SwapChain.GetExtent());
+	m_LightingPass.UpdateGBufferDescriptors(m_Context, m_GeometryPass, m_vDepthImages);
+	m_BlitPass.UpdateDescriptors(m_Context, m_vRenderTargets);
+
+	// -- Update Camera Settings --
+	//todo add event to be able to hook into on resize, and update camera settings here!
+	//const CameraSettings& oldSettings = camera->GetSettings();
+	//const CameraSettings settings
+	//{
+	//	.fov			= oldSettings.fov,
+	//	.aspectRatio	= m_pWindow->GetAspectRatio(),
+	//	.nearPlane		= oldSettings.nearPlane,
+	//	.farPlane		= oldSettings.farPlane
+	//};
+	//camera->ChangeSettings(settings);
 }
 
 void pompeii::Renderer::CreateDepthResources(const Context& context, VkExtent2D extent)
@@ -416,6 +477,7 @@ void pompeii::Renderer::CreateRenderTargetResources(const Context& context, VkEx
 
 void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex)
 {
+	Image& presentImage = m_SwapChain.GetImages()[imageIndex];
 	Image& renderImage = m_vRenderTargets[imageIndex];
 	Image& depthImage = m_vDepthImages[imageIndex];
 
@@ -488,30 +550,37 @@ void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32
 			// The blit pass will blit the rendered image to the swapchain and potentially do post-processing.
 			m_BlitPass.RecordCompute(commandBuffer, imageIndex, renderImage, m_Camera);
 
-			// Transition the current Present Image to be written to
+			// Insert a barrier for the Render Image to be used in fragment
 			renderImage.TransitionLayout(commandBuffer,
-				VK_IMAGE_LAYOUT_GENERAL,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-				VK_ACCESS_2_SHADER_SAMPLED_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+				VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
 				0, 1, 0, 1);
 
-			m_BlitPass.RecordGraphic(m_Context, commandBuffer, imageIndex, renderImage, m_Camera);
+			// Transition the current Present Image to be written to
+			presentImage.TransitionLayout(commandBuffer,
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
+				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+				0, 1, 0, 1);
+
+			m_BlitPass.RecordGraphic(m_Context, commandBuffer, imageIndex, presentImage, m_Camera);
 
 			// transition the image to be written to for UI
-			//renderImage.InsertBarrier(commandBuffer,
-			//	VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-			//	VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
+			presentImage.InsertBarrier(commandBuffer,
+				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
 		}
 
 		// -- UI Pass --
 		{
-			//m_UIPass.Record(commandBuffer, renderImage);
+			//m_UIPass.Record(commandBuffer, presentImage);
 
 			//// At last, transition the current Present Image to be presented
-			//renderImage.TransitionLayout(commandBuffer,
-			//	VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-			//	VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-			//	VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE, 0, 1, 0, 1);
+			presentImage.TransitionLayout(commandBuffer,
+				VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+				VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE, 0, 1, 0, 1);
 		}
 	}
 	commandBuffer.End();

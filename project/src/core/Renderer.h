@@ -30,7 +30,7 @@
 namespace pompeii
 {
 	struct GPULight;
-	class Window;
+	class IWindow;
 }
 
 namespace pompeii
@@ -51,13 +51,13 @@ namespace pompeii
 		Renderer& operator=(const Renderer& other) = delete;
 		Renderer& operator=(Renderer&& other) noexcept = delete;
 
-		void Initialize();
+		void Initialize(IWindow* pWindow);
 		void Deinitialize();
 
 		//--------------------------------------------------
 		//    Loop
 		//--------------------------------------------------
-		const Image& Render();
+		void Render();
 		void ClearQueue();
 		void SubmitRenderItem(const RenderItem& item);
 		void SubmitLightItem(const LightItem& item);
@@ -83,10 +83,12 @@ namespace pompeii
 		Context m_Context { };
 		std::vector<RenderItem> m_vRenderItems;
 		std::vector<LightItem> m_vLightItems;
+		uint32_t padding[2]{};
 		CameraData m_Camera{};
 
 
 		// -- SwapChain --
+		SwapChain					m_SwapChain{ };
 		std::vector<Image>			m_vDepthImages			{ };
 		std::vector<Image>			m_vRenderTargets		{ };
 
@@ -110,6 +112,8 @@ namespace pompeii
 		void RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex);
 
 		// -- Other --
+		IWindow*			m_pWindow			{ };
+		VkSurfaceKHR		m_Surface			{ };
 		EnvironmentMap		m_EnvMap			{ };
 	};
 }

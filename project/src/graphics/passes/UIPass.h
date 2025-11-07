@@ -10,7 +10,7 @@ namespace pompeii
 {
 	class Image;
 	class CommandBuffer;
-	class Window;
+	class IWindow;
 }
 
 namespace pompeii
@@ -22,7 +22,7 @@ namespace pompeii
 	{
 		uint32_t swapchainImageCount{};
 		VkFormat swapchainImageFormat{};
-		Window* pWindow{};
+		IWindow* pWindow{};
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

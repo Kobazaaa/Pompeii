@@ -290,7 +290,7 @@ pompeii::SwapChainSupportDetails pompeii::PhysicalDevice::QuerySwapChainSupport(
 
 	return m_SwapChainSupportDetails;
 }
-pompeii::QueueFamilyIndices pompeii::PhysicalDevice::FindQueueFamilies()
+pompeii::QueueFamilyIndices pompeii::PhysicalDevice::FindQueueFamilies(const VkSurfaceKHR surface)
 {
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, nullptr);
@@ -316,6 +316,12 @@ pompeii::QueueFamilyIndices pompeii::PhysicalDevice::FindQueueFamilies()
 			m_QueueFamilyIndices.graphicsFamily = index;
 			m_QueueFamilyIndices.computeFamily = index;
 		}
+
+		// Look for Present Queue
+		VkBool32 presentSupport = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalDevice, index, surface, &presentSupport);
+		if (presentSupport)
+			m_QueueFamilyIndices.presentFamily = index;
 
 		if (m_QueueFamilyIndices.IsComplete())
 			break;
@@ -345,7 +351,7 @@ pompeii::PhysicalDeviceSelector& pompeii::PhysicalDeviceSelector::CheckForFeatur
 	m_RequestedFeatures = features;
 	return *this;
 }
-void pompeii::PhysicalDeviceSelector::PickPhysicalDevice(Context& context) const
+void pompeii::PhysicalDeviceSelector::PickPhysicalDevice(Context& context, VkSurfaceKHR surface) const
 {
 	uint32_t deviceCount = 0;
 	vkEnumeratePhysicalDevices(context.instance.GetHandle(), &deviceCount, nullptr);
@@ -361,7 +367,7 @@ void pompeii::PhysicalDeviceSelector::PickPhysicalDevice(Context& context) const
 	{
 		PhysicalDevice physicalDev;
 		physicalDev.Initialize(device, m_vDesiredExtensions);
-		uint32_t score = RateDeviceSuitability(physicalDev);
+		uint32_t score = RateDeviceSuitability(physicalDev, surface);
 		candidates.insert(std::make_pair(score, physicalDev));
 	}
 
@@ -385,7 +391,7 @@ void pompeii::PhysicalDeviceSelector::PickPhysicalDevice(Context& context) const
 	}
 }
 
-uint32_t pompeii::PhysicalDeviceSelector::RateDeviceSuitability(PhysicalDevice& device) const
+uint32_t pompeii::PhysicalDeviceSelector::RateDeviceSuitability(PhysicalDevice& device, VkSurfaceKHR surface) const
 {
 	// Query Properties and Features
 	const VkPhysicalDeviceProperties deviceProperties = device.GetProperties();
@@ -400,12 +406,12 @@ uint32_t pompeii::PhysicalDeviceSelector::RateDeviceSuitability(PhysicalDevice& 
 		return 0;
 
 	// Check if the SwapChain is adequate
-	//SwapChainSupportDetails swapChainSupport = device.QuerySwapChainSupport(surface);
-	//bool swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
-	//if (!swapChainAdequate) return 0;
+	SwapChainSupportDetails swapChainSupport = device.QuerySwapChainSupport(surface);
+	bool swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+	if (!swapChainAdequate) return 0;
 
 	// Check Queue Families Support
-	QueueFamilyIndices indices = device.FindQueueFamilies();
+	QueueFamilyIndices indices = device.FindQueueFamilies(surface);
 	if (!indices.IsComplete()) return 0;
 
 	// Check if Anisotropy Sampling is available

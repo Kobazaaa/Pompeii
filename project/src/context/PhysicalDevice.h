@@ -27,11 +27,13 @@ namespace pompeii
 	struct QueueFamilyIndices
 	{
 		std::optional<uint32_t> graphicsFamily;
+		std::optional<uint32_t> presentFamily;
 		std::optional<uint32_t> computeFamily;
 
 		bool IsComplete() const
 		{
 			return graphicsFamily.has_value()
+				&& presentFamily.has_value()
 				&& computeFamily.has_value();
 		}
 	};
@@ -77,7 +79,7 @@ namespace pompeii
 		friend class PhysicalDeviceSelector;
 
 		SwapChainSupportDetails QuerySwapChainSupport(VkSurfaceKHR surface);
-		QueueFamilyIndices FindQueueFamilies();
+		QueueFamilyIndices FindQueueFamilies(const VkSurfaceKHR surface);
 
 
 		VkPhysicalDevice				 m_PhysicalDevice			{ VK_NULL_HANDLE };
@@ -112,10 +114,10 @@ namespace pompeii
 		//--------------------------------------------------
 		PhysicalDeviceSelector& AddExtension(const char* ext);
 		PhysicalDeviceSelector& CheckForFeatures(const VkPhysicalDeviceFeatures2& features);
-		void PickPhysicalDevice(Context& context) const;
+		void PickPhysicalDevice(Context& context, VkSurfaceKHR surface) const;
 
 	private:
-		uint32_t RateDeviceSuitability(PhysicalDevice& device) const;
+		uint32_t RateDeviceSuitability(PhysicalDevice& device, VkSurfaceKHR surface) const;
 
 		VkPhysicalDeviceFeatures2 m_RequestedFeatures;
 		std::vector<const char*> m_vDesiredExtensions	{};
