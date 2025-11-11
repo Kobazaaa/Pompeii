@@ -5,15 +5,6 @@ endif()
 
 include(FetchContent)
 
-# Fetch GLFW
-FetchContent_Declare(
-   GLFW
-   GIT_REPOSITORY https://github.com/glfw/glfw.git
-   GIT_TAG 3.4
-   GIT_SHALLOW TRUE
-   GIT_PROGRESS TRUE
-)
-
 # Fetch GLM
 FetchContent_Declare(
    GLM
@@ -50,12 +41,11 @@ FetchContent_Declare(
    GIT_PROGRESS TRUE
 )
 
-FetchContent_MakeAvailable(GLFW vma GLM stb assimp)
+FetchContent_MakeAvailable(vma GLM stb assimp)
 
 # Link libraries to the project
 target_link_libraries(${PROJECT_NAME} PUBLIC
     Vulkan::Vulkan
-    glfw
     glm::glm
     assimp
 )

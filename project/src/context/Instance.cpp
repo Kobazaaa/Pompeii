@@ -7,10 +7,7 @@
 #include "Debugger.h"
 #include "Context.h"
 #include "ConsoleTextSettings.h"
-
-// -- GLFW Includes --
-#include "GLFW/glfw3.h"
-
+#include "IWindow.h"
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //? ~~	  INSTANCE	
@@ -53,7 +50,7 @@ pompeii::InstanceBuilder& pompeii::InstanceBuilder::SetEngineName(const std::str
 pompeii::InstanceBuilder& pompeii::InstanceBuilder::SetAPIVersion(uint32_t apiVersion)			{ m_AppInfo.apiVersion = apiVersion; return *this; }
 pompeii::InstanceBuilder& pompeii::InstanceBuilder::AddInstanceExtension(const char* extName)	{ m_vInstanceExtensions.push_back(extName); return *this; }
 
-void pompeii::InstanceBuilder::Build(Context& context)
+void pompeii::InstanceBuilder::Build(Context& context, const IWindow* pWindow)
 {
 	if (Debugger::IsEnabled() && !Debugger::CheckValidationLayerSupport())
 		throw std::runtime_error("Validation Layers requested, but not available!");
@@ -62,7 +59,7 @@ void pompeii::InstanceBuilder::Build(Context& context)
 	m_CreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	m_CreateInfo.pApplicationInfo = &m_AppInfo;
 
-	GetRequiredExtensions();
+	GetRequiredExtensions(pWindow);
 	m_CreateInfo.enabledExtensionCount = static_cast<uint32_t>(m_vInstanceExtensions.size());
 	m_CreateInfo.ppEnabledExtensionNames = m_vInstanceExtensions.data();
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
@@ -100,13 +97,11 @@ void pompeii::InstanceBuilder::Build(Context& context)
 	}
 }
 
-void pompeii::InstanceBuilder::GetRequiredExtensions()
+void pompeii::InstanceBuilder::GetRequiredExtensions(const IWindow* pWindow)
 {
-	uint32_t glfwExtensionCount = 0;
-	const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-	for (uint32_t index{}; index < glfwExtensionCount; ++index)
-		m_vInstanceExtensions.push_back(glfwExtensions[index]);
+	auto ext = pWindow->GetRequiredVulkanExtensions();
+	for (auto value : ext)
+		m_vInstanceExtensions.push_back(value);
 
 	if (Debugger::IsEnabled())
 		m_vInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);

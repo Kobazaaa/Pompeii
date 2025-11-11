@@ -3,6 +3,7 @@
 
 // -- Standard Library --
 #include <string>
+#include <vector>
 
 // -- Math Includes --
 #include "glm/vec2.hpp"
@@ -58,6 +59,7 @@ namespace pompeii
 		virtual void ResetOutdated()										= 0;
 
 		virtual VkSurfaceKHR CreateVulkanSurface(const Instance& instance)	= 0;
+		virtual std::vector<const char*> GetRequiredVulkanExtensions()const = 0;
 		VkSurfaceKHR GetVulkanSurface()	const { return m_VulkanSurface; }
 
 		//--------------------------------------------------

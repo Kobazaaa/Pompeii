@@ -172,7 +172,7 @@ void pompeii::Renderer::InitializeVulkan()
 			.SetApplicationName("Pompeii")
 			.SetEngineName("PompeiiEngine")
 			.SetAPIVersion(VK_API_VERSION_1_3)
-			.Build(m_Context);
+			.Build(m_Context, m_pWindow);
 
 		m_Context.deletionQueue.Push([&] { m_Context.instance.Destroy(); });
 	}

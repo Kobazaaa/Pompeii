@@ -9,7 +9,11 @@
 #include <vector>
 
 // -- Forward Declarations --
-namespace pompeii { struct Context; }
+namespace pompeii
+{
+	struct Context;
+	class IWindow;
+}
 
 
 namespace pompeii
@@ -61,10 +65,10 @@ namespace pompeii
 		InstanceBuilder& SetEngineName(const std::string& name);
 		InstanceBuilder& SetAPIVersion(uint32_t apiVersion);
 		InstanceBuilder& AddInstanceExtension(const char* extName);
-		void Build(Context& context);
+		void Build(Context& context, const IWindow* pWindow);
 
 	private:
-		void GetRequiredExtensions();
+		void GetRequiredExtensions(const IWindow* pWindow);
 
 		VkApplicationInfo			m_AppInfo{};
 		VkInstanceCreateInfo		m_CreateInfo{};
