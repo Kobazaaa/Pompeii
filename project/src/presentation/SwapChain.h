@@ -74,12 +74,17 @@ namespace pompeii
 		void Recreate(Context& context, VkSurfaceKHR surface, VkExtent2D windowExtent);
 
 		//--------------------------------------------------
+		//    Images
+		//--------------------------------------------------
+		VkResult AcquireNextImage(const Context& context, VkSemaphore semaphore);
+		uint32_t GetCurrentImageIndex() const;
+		Image& GetCurrentImage();
+		uint32_t GetImageCount() const;
+
+		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
 		const VkSwapchainKHR& GetHandle() const;
-		std::vector<Image>& GetImages();
-		uint32_t GetImageCount() const;
-
 		VkFormat GetFormat() const;
 		VkExtent2D GetExtent() const;
 
@@ -87,6 +92,7 @@ namespace pompeii
 		VkSwapchainKHR				m_SwapChain{ VK_NULL_HANDLE };
 
 		std::vector<Image>			m_vSwapChainImages{};
+		uint32_t					m_CurrentImageIndex{ };
 		VkFormat					m_SwapChainImageFormat{};
 		VkExtent2D					m_SwapChainExtent{};
 

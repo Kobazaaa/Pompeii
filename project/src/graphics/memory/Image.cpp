@@ -171,6 +171,48 @@ bool pompeii::Image::HasDepthComponent()			const
 //--------------------------------------------------
 //    Commands
 //--------------------------------------------------
+void pompeii::Image::BlitImage(const CommandBuffer& cmd, const Image& destination) const
+{
+	// -- Setup Blit --
+	VkImageBlit2 blit{};
+	blit.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2;
+
+	// src
+	auto outExtent = GetExtent2D();
+	blit.srcOffsets[0] = { .x = 0, .y = 0, .z = 0 };
+	blit.srcOffsets[1] = { .x = static_cast<int32_t>(outExtent.width), .y = static_cast<int32_t>(outExtent.height), .z = 1 };
+	blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	blit.srcSubresource.mipLevel = 0;
+	blit.srcSubresource.baseArrayLayer = 0;
+	blit.srcSubresource.layerCount = GetLayerCount();
+
+	// dst
+	auto dstExtent = destination.GetExtent2D();
+	blit.dstOffsets[0] = { .x = 0, .y = 0, .z = 0 };
+	blit.dstOffsets[1] = { .x = static_cast<int32_t>(dstExtent.width), .y = static_cast<int32_t>(dstExtent.height), .z = 1 };
+	blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	blit.dstSubresource.mipLevel = 0;
+	blit.dstSubresource.baseArrayLayer = 0;
+	blit.dstSubresource.layerCount = destination.GetLayerCount();
+
+	VkBlitImageInfo2 blitInfo{};
+	blitInfo.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2;
+	blitInfo.pNext = nullptr;
+
+	blitInfo.srcImage = GetHandle();
+	blitInfo.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+	blitInfo.dstImage = destination.GetHandle();
+	blitInfo.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+	blitInfo.regionCount = 1;
+	blitInfo.pRegions = &blit;
+
+	blitInfo.filter = VK_FILTER_LINEAR;
+
+	vkCmdBlitImage2(cmd.GetHandle(), &blitInfo);
+}
+
 void pompeii::Image::TransitionLayout(const CommandBuffer& cmd, VkImageLayout newLayout,
 								  VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
 								  VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage,

@@ -95,6 +95,7 @@ namespace pompeii
 		//--------------------------------------------------
 		//    Commands
 		//--------------------------------------------------
+		void BlitImage(const CommandBuffer& cmd, const Image& destination) const;
 		void TransitionLayout(const CommandBuffer& cmd, VkImageLayout newLayout,
 							  VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
 							  VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage,

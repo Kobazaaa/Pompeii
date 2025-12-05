@@ -6,7 +6,6 @@
 
 // -- Standard Library --
 #include <vector>
-#include <memory>
 
 // -- Pompeii Includes --
 #include "Context.h"
@@ -18,7 +17,6 @@
 #include "GeometryPass.h"
 #include "LightingPass.h"
 #include "BlitPass.h"
-#include "UIPass.h"
 
 #include "EnvironmentMap.h"
 #include "Light.h"
@@ -57,18 +55,25 @@ namespace pompeii
 		//--------------------------------------------------
 		//    Loop
 		//--------------------------------------------------
-		void Render();
+		bool StartFrame();
+		void RecordFrame();
+		void SubmitFrame();
+		void EndFrame();
+
 		void ClearQueue();
 		void SubmitRenderItem(const RenderItem& item);
 		void SubmitLightItem(const LightItem& item);
 
-		void InsertUI(const std::function<void()>& func);
 		void SetCamera(const CameraData& camera);
 
 		//--------------------------------------------------
 		//    Accessors
 		//--------------------------------------------------
 		Context& GetContext();
+		Image& GetCurrentSwapChainImage();
+		Image& GetCurrentOutputImage();
+		std::vector<Image>& GetOutputImages();
+
 		void UpdateLights(const std::vector<Light*>& lights);
 		void UpdateTextures(const std::vector<Image*>& textures);
 		void UpdateEnvironmentMap() const;
@@ -88,9 +93,10 @@ namespace pompeii
 
 
 		// -- SwapChain --
-		SwapChain					m_SwapChain{ };
+		SwapChain					m_SwapChain				{ };
 		std::vector<Image>			m_vDepthImages			{ };
 		std::vector<Image>			m_vRenderTargets		{ };
+		std::vector<Image>			m_vOutputImages			{ };
 
 		// -- Sync --
 		SyncManager					m_SyncManager			{ };
@@ -101,7 +107,6 @@ namespace pompeii
 		GeometryPass				m_GeometryPass			{ };
 		LightingPass				m_LightingPass			{ };
 		BlitPass					m_BlitPass				{ };
-		UIPass						m_UIPass				{ };
 
 		//--------------------------------------------------
 		//    Helpers
@@ -109,11 +114,10 @@ namespace pompeii
 		void RecreateSwapChain();
 		void CreateDepthResources(const Context& context, VkExtent2D extent);
 		void CreateRenderTargetResources(const Context& context, VkExtent2D extent);
-		void RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex);
+		void CreateOutputResources(const Context& context, VkExtent2D extent);
 
 		// -- Other --
 		IWindow*			m_pWindow			{ };
-		VkSurfaceKHR		m_Surface			{ };
 		EnvironmentMap		m_EnvMap			{ };
 	};
 }

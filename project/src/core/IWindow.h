@@ -24,8 +24,9 @@ namespace pompeii
 	struct WindowSettings
 	{
 		std::string title = "Default Window";
-		int width = 600;
-		int height = 800;
+		bool maximized = false;
+		int width = 800;
+		int height = 600;
 	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

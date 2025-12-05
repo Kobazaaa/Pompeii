@@ -6,7 +6,6 @@
 #include <stdexcept>
 #include <array>
 #include <ranges>
-#include <numeric>
 
 // -- Pompeii Includes --
 #include "IWindow.h"
@@ -36,21 +35,20 @@ void pompeii::Renderer::Deinitialize()
 //--------------------------------------------------
 //    Loop
 //--------------------------------------------------
-void pompeii::Renderer::Render()
+bool pompeii::Renderer::StartFrame()
 {
 	// -- Wait for the current frame to be done --
 	const auto& frameSync = m_SyncManager.GetFrameSync(m_Context.currentFrame);
 	vkWaitForFences(m_Context.device.GetHandle(), 1, &frameSync.inFlight, VK_TRUE, UINT64_MAX);
 
 	// -- Acquire new Image from SwapChain --
-	uint32_t imageIndex;
-	VkResult result = vkAcquireNextImageKHR(m_Context.device.GetHandle(), m_SwapChain.GetHandle(), UINT64_MAX, frameSync.imageAvailable, VK_NULL_HANDLE, &imageIndex);
+	VkResult result = m_SwapChain.AcquireNextImage(m_Context, frameSync.imageAvailable);
 
 	// -- If SwapChain Image not good, recreate Swap Chain --
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 	{
 		RecreateSwapChain();
-		return;
+		return false;
 	}
 	if (result != VK_SUCCESS)
 		throw std::runtime_error("Failed to acquire Swap Chain Image");
@@ -58,17 +56,130 @@ void pompeii::Renderer::Render()
 	// -- Reset Fence to be un-signaled (not done) --
 	vkResetFences(m_Context.device.GetHandle(), 1, &frameSync.inFlight);
 
-	// -- Record Command Buffer --
 	CommandBuffer& cmdBuffer = m_Context.commandPool->GetBuffer(m_Context.currentFrame);
 	cmdBuffer.Reset();
-	RecordCommandBuffer(cmdBuffer, imageIndex);
+	cmdBuffer.Begin();
+
+	return true;
+}
+void pompeii::Renderer::RecordFrame()
+{
+	auto imageIndex = m_Context.currentFrame;
+	CommandBuffer& commandBuffer = m_Context.commandPool->GetBuffer(imageIndex);
+	Image& outputImage = m_vOutputImages[imageIndex];
+	Image& renderImage = m_vRenderTargets[imageIndex];
+	Image& depthImage = m_vDepthImages[imageIndex];
+
+	// -- Shadow Pass --
+	{
+		m_ShadowPass.Record(m_Context, commandBuffer, m_vRenderItems, m_vLightItems);
+	}
+
+	// -- Depth Pre-Pass --
+	{
+		// Transition the current Depth Image to be written to
+		depthImage.TransitionLayout(commandBuffer,
+			VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+			VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
+			VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+			0, depthImage.GetMipLevels(), 0, depthImage.GetLayerCount());
+
+		// The Depth Pre-Pass renders the entire scene to the provided depth buffer.
+		m_DepthPrePass.UpdateCamera(m_Context, imageIndex, m_Camera);
+		m_DepthPrePass.Record(commandBuffer, m_GeometryPass, imageIndex, depthImage, m_vRenderItems);
+
+		// Transition the current Depth Image to be read from
+		depthImage.TransitionLayout(commandBuffer,
+			VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+			VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+			VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+			0, depthImage.GetMipLevels(), 0, depthImage.GetLayerCount());
+	}
+
+	// -- Geometry Pass --
+	{
+		// The Geometry Pass renders the entire scene to a GBuffer.
+		m_GeometryPass.UpdateCamera(m_Context, imageIndex, m_Camera);
+		m_GeometryPass.Record(commandBuffer, imageIndex, depthImage, m_vRenderItems);
+		// After it is done, the GBuffers are transitioned to a layout ready for being sampled from.
+	}
+
+	// -- Lighting Pass --
+	{
+		// Transition the current Depth Image to be sampled from
+		depthImage.TransitionLayout(commandBuffer,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+			VK_ACCESS_2_SHADER_SAMPLED_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+			0, depthImage.GetMipLevels(), 0, depthImage.GetLayerCount());
+
+		// Transition the current Render Image to be written to
+		renderImage.TransitionLayout(commandBuffer,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
+			VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+			0, renderImage.GetMipLevels(), 0, renderImage.GetLayerCount());
+
+		// The Lighting Pass calculates all the heavy lighting calculations using the data from the Geometry Pass
+		m_LightingPass.UpdateShadowMaps(m_Context, m_vLightItems);
+		m_LightingPass.Record(m_Context, commandBuffer, imageIndex, renderImage, m_Camera);
+
+		// Transition the current Render Image to be used in the compute shader
+		renderImage.TransitionLayout(commandBuffer,
+			VK_IMAGE_LAYOUT_GENERAL,
+			VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+			VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+			0, renderImage.GetMipLevels(), 0, renderImage.GetLayerCount());
+	}
+
+	// -- Blit Pass --
+	{
+		// The blit pass will blit the rendered image to the swapchain and potentially do post-processing.
+		m_BlitPass.RecordCompute(commandBuffer, imageIndex, renderImage, m_Camera);
+
+		// Insert a barrier for the Render Image to be used in fragment
+		renderImage.TransitionLayout(commandBuffer,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+			VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+			0, renderImage.GetMipLevels(), 0, renderImage.GetLayerCount());
+
+		// Transition the current Present Image to be written to
+		outputImage.TransitionLayout(commandBuffer,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
+			VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+			0, outputImage.GetMipLevels(), 0, outputImage.GetLayerCount());
+
+		m_BlitPass.RecordGraphic(m_Context, commandBuffer, imageIndex, outputImage, m_Camera);
+	}
+}
+void pompeii::Renderer::SubmitFrame()
+{
+	CommandBuffer& commandBuffer = m_Context.commandPool->GetBuffer(m_Context.currentFrame);
+	Image& presentImage = m_SwapChain.GetCurrentImage();
+
+	// -- Transition to Present Mode --
+	presentImage.TransitionLayout(commandBuffer,
+		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
+		VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
+		0, presentImage.GetMipLevels(), 0, presentImage.GetLayerCount());
+
+
+	// -- End Command Buffer --
+	CommandBuffer& cmdBuffer = m_Context.commandPool->GetBuffer(m_Context.currentFrame);
+	cmdBuffer.End();
+
+	// -- Get Current Info --
+	const auto& frameSync = m_SyncManager.GetFrameSync(m_Context.currentFrame);
 
 	// -- Submit Commands with Semaphores --
 	const SemaphoreInfo semaphoreInfo
 	{
-		.vWaitSemaphores	=	{ frameSync.imageAvailable },
-		.vWaitStages		=	{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT },
-		.vSignalSemaphores	=	{ frameSync.renderFinished }
+		.vWaitSemaphores = { frameSync.imageAvailable },
+		.vWaitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT },
+		.vSignalSemaphores = { frameSync.renderFinished }
 	};
 	cmdBuffer.Submit(m_Context.device.GetGraphicQueue(), false, semaphoreInfo, frameSync.inFlight);
 
@@ -79,13 +190,14 @@ void pompeii::Renderer::Render()
 	presentInfo.pWaitSemaphores = semaphoreInfo.vSignalSemaphores.data();
 
 	VkSwapchainKHR swapChains[] = { m_SwapChain.GetHandle() };
+	uint32_t currentSwapchainIdx = m_SwapChain.GetCurrentImageIndex();
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
-	presentInfo.pImageIndices = &imageIndex;
+	presentInfo.pImageIndices = &currentSwapchainIdx;
 	presentInfo.pResults = nullptr;
 
 	// -- Present --
-	result = vkQueuePresentKHR(m_Context.device.GetPresentQueue(), &presentInfo);
+	auto result = vkQueuePresentKHR(m_Context.device.GetPresentQueue(), &presentInfo);
 
 	// -- If Present failed or out of date, recreate SwapChain --
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_pWindow->IsOutdated())
@@ -95,10 +207,11 @@ void pompeii::Renderer::Render()
 	}
 	else if (result != VK_SUCCESS)
 		throw std::runtime_error("Failed to present Swap Chain Image!");
-
-	// -- Go to next frame --
-	m_Context.currentFrame = (m_Context.currentFrame + 1) % m_Context.maxFramesInFlight;
+}
+void pompeii::Renderer::EndFrame()
+{
 	ClearQueue();
+	m_Context.currentFrame = (m_Context.currentFrame + 1) % m_Context.maxFramesInFlight;
 }
 
 void pompeii::Renderer::ClearQueue()
@@ -115,10 +228,6 @@ void pompeii::Renderer::SubmitLightItem(const LightItem& item)
 	m_vLightItems.emplace_back(item);
 }
 
-void pompeii::Renderer::InsertUI(const std::function<void()>& func)
-{
-	m_UIPass.InsertUI(func);
-}
 void pompeii::Renderer::SetCamera(const CameraData& camera)
 {
 	m_Camera = camera;
@@ -127,10 +236,10 @@ void pompeii::Renderer::SetCamera(const CameraData& camera)
 //--------------------------------------------------
 //    Accessors
 //--------------------------------------------------
-pompeii::Context& pompeii::Renderer::GetContext()
-{
-	return m_Context;
-}
+pompeii::Context& pompeii::Renderer::GetContext()					{ return m_Context; }
+pompeii::Image& pompeii::Renderer::GetCurrentSwapChainImage()		{ return m_SwapChain.GetCurrentImage(); }
+pompeii::Image& pompeii::Renderer::GetCurrentOutputImage()			{ return m_vOutputImages[m_Context.currentFrame]; }
+std::vector<pompeii::Image>& pompeii::Renderer::GetOutputImages()	{ return m_vOutputImages; }
 
 void pompeii::Renderer::UpdateLights(const std::vector<Light*>& lights)
 {
@@ -278,7 +387,7 @@ void pompeii::Renderer::InitializeVulkan()
 		builder
 			.SetDesiredImageCount(m_Context.maxFramesInFlight)
 			.SetImageArrayLayers(1)
-			.SetImageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+			.SetImageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
 			.Build(m_Context, m_pWindow->GetVulkanSurface(), windowExtent, m_SwapChain);
 		m_Context.deletionQueue.Push([&] { m_SwapChain.Destroy(m_Context); });
 	}
@@ -308,6 +417,12 @@ void pompeii::Renderer::InitializeVulkan()
 	{
 		CreateRenderTargetResources(m_Context, m_SwapChain.GetExtent());
 		m_Context.deletionQueue.Push([&] { for (Image& image : m_vRenderTargets) image.Destroy(m_Context); });
+	}
+
+	// -- Output Resources --
+	{
+		CreateOutputResources(m_Context, m_SwapChain.GetExtent());
+		m_Context.deletionQueue.Push([&] { for (Image& image : m_vOutputImages) image.Destroy(m_Context); });
 	}
 
 	// -- Geometry Pass --
@@ -367,24 +482,12 @@ void pompeii::Renderer::InitializeVulkan()
 		m_Context.deletionQueue.Push([&] { m_BlitPass.Destroy(); });
 	}
 
-	// -- UI Pass --
-	{
-		UIPassCreateInfo createInfo{};
-		createInfo.swapchainImageCount = m_SwapChain.GetImageCount();
-		createInfo.swapchainImageFormat = m_SwapChain.GetFormat();
-		createInfo.pWindow = m_pWindow;
-
-		m_UIPass.Initialize(m_Context, createInfo);
-		m_Context.deletionQueue.Push([&] { m_UIPass.Destroy(); });
-	}
-
 	// -- Create Sync Objects - Requirements - [Device]
 	{
 		m_SyncManager.Create(m_Context, m_Context.maxFramesInFlight);
 		m_Context.deletionQueue.Push([&] {m_SyncManager.Cleanup(m_Context); });
 	}
 }
-
 
 //--------------------------------------------------
 //    Helpers
@@ -406,19 +509,24 @@ void pompeii::Renderer::RecreateSwapChain()
 	m_SwapChain.Recreate(m_Context, m_pWindow->GetVulkanSurface(), windowExtent);
 
 	// -- Recreate the Depth Resource --
-	for (Image& image : m_vDepthImages)
-		image.Destroy(m_Context);
-	CreateDepthResources(m_Context, m_SwapChain.GetExtent());
+	//for (Image& image : m_vDepthImages)
+	//	image.Destroy(m_Context);
+	//CreateDepthResources(m_Context, m_SwapChain.GetExtent());
 
 	// -- Recreate the Render Targets --
-	for (Image& image : m_vRenderTargets)
-		image.Destroy(m_Context);
-	CreateRenderTargetResources(m_Context, m_SwapChain.GetExtent());
+	//for (Image& image : m_vRenderTargets)
+	//	image.Destroy(m_Context);
+	//CreateRenderTargetResources(m_Context, m_SwapChain.GetExtent());
+
+	// -- Recreate the Output Targets --
+	//for (Image& image : m_vOutputImages)
+	//	image.Destroy(m_Context);
+	//CreateOutputResources(m_Context, m_SwapChain.GetExtent());
 
 	// -- Resize Passes if needed --
-	m_GeometryPass.Resize(m_Context, m_SwapChain.GetExtent());
-	m_LightingPass.UpdateGBufferDescriptors(m_Context, m_GeometryPass, m_vDepthImages);
-	m_BlitPass.UpdateDescriptors(m_Context, m_vRenderTargets);
+	//m_GeometryPass.Resize(m_Context, m_SwapChain.GetExtent());
+	//m_LightingPass.UpdateGBufferDescriptors(m_Context, m_GeometryPass, m_vDepthImages);
+	//m_BlitPass.UpdateDescriptors(m_Context, m_vRenderTargets);
 
 	// -- Update Camera Settings --
 	//todo add event to be able to hook into on resize, and update camera settings here!
@@ -474,114 +582,21 @@ void pompeii::Renderer::CreateRenderTargetResources(const Context& context, VkEx
 		image.CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
 	}
 }
-
-void pompeii::Renderer::RecordCommandBuffer(CommandBuffer& commandBuffer, uint32_t imageIndex)
+void pompeii::Renderer::CreateOutputResources(const Context& context, VkExtent2D extent)
 {
-	Image& presentImage = m_SwapChain.GetImages()[imageIndex];
-	Image& renderImage = m_vRenderTargets[imageIndex];
-	Image& depthImage = m_vDepthImages[imageIndex];
-
-	commandBuffer.Begin();
+	m_vOutputImages.resize(context.maxFramesInFlight);
+	for (Image& image : m_vOutputImages)
 	{
-		// -- Shadow Pass --
-		{
-			m_ShadowPass.Record(m_Context, commandBuffer, m_vRenderItems, m_vLightItems);
-		}
-
-		// -- Depth Pre-Pass --
-		{
-			// Transition the current Depth Image to be written to
-			depthImage.TransitionLayout(commandBuffer,
-				VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-				VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
-				VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
-				0, 1, 0, 1);
-
-			// The Depth Pre-Pass renders the entire scene to the provided depth buffer.
-			m_DepthPrePass.UpdateCamera(m_Context, imageIndex, m_Camera);
-			m_DepthPrePass.Record(commandBuffer, m_GeometryPass, imageIndex, depthImage, m_vRenderItems);
-
-			// Transition the current Depth Image to be read from
-			depthImage.TransitionLayout(commandBuffer,
-				VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-				VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
-				VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
-				0, 1, 0, 1);
-		}
-
-		// -- Geometry Pass --
-		{
-			// The Geometry Pass renders the entire scene to a GBuffer.
-			m_GeometryPass.UpdateCamera(m_Context, imageIndex, m_Camera);
-			m_GeometryPass.Record(commandBuffer, imageIndex, depthImage, m_vRenderItems);
-			// After it is done, the GBuffers are transitioned to a layout ready for being sampled from.
-		}
-
-		// -- Lighting Pass --
-		{
-			// Transition the current Depth Image to be sampled from
-			depthImage.TransitionLayout(commandBuffer,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
-				VK_ACCESS_2_SHADER_SAMPLED_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-				0, 1, 0, 1);
-
-			// Transition the current Render Image to be written to
-			renderImage.TransitionLayout(commandBuffer,
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
-				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-				0, 1, 0, 1);
-
-			// The Lighting Pass calculates all the heavy lighting calculations using the data from the Geometry Pass
-			m_LightingPass.UpdateShadowMaps(m_Context, m_vLightItems);
-			m_LightingPass.Record(m_Context, commandBuffer, imageIndex, renderImage, m_Camera);
-
-			// Transition the current Render Image to be used in the compute shader
-			renderImage.TransitionLayout(commandBuffer,
-				VK_IMAGE_LAYOUT_GENERAL,
-				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-				VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-				0, 1, 0, 1);
-		}
-
-		// -- Blit Pass --
-		{
-			// The blit pass will blit the rendered image to the swapchain and potentially do post-processing.
-			m_BlitPass.RecordCompute(commandBuffer, imageIndex, renderImage, m_Camera);
-
-			// Insert a barrier for the Render Image to be used in fragment
-			renderImage.TransitionLayout(commandBuffer,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-				VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-				0, 1, 0, 1);
-
-			// Transition the current Present Image to be written to
-			presentImage.TransitionLayout(commandBuffer,
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE,
-				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-				0, 1, 0, 1);
-
-			m_BlitPass.RecordGraphic(m_Context, commandBuffer, imageIndex, presentImage, m_Camera);
-
-			// transition the image to be written to for UI
-			presentImage.InsertBarrier(commandBuffer,
-				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
-		}
-
-		// -- UI Pass --
-		{
-			//m_UIPass.Record(commandBuffer, presentImage);
-
-			//// At last, transition the current Present Image to be presented
-			presentImage.TransitionLayout(commandBuffer,
-				VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-				VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_NONE, 0, 1, 0, 1);
-		}
+		ImageBuilder imageBuilder{};
+		imageBuilder
+			.SetDebugName("Output Image")
+			.SetWidth(extent.width)
+			.SetHeight(extent.height)
+			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
+			.SetFormat(VK_FORMAT_B8G8R8A8_SRGB)
+			.SetUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+			.Build(context, image);
+		image.CreateView(context, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 0, 1, 0, 1);
 	}
-	commandBuffer.End();
 }

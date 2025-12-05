@@ -158,12 +158,20 @@ void pompeii::SwapChain::Recreate(Context& context, VkSurfaceKHR surface, VkExte
 
 
 //--------------------------------------------------
+//    Images
+//--------------------------------------------------
+VkResult pompeii::SwapChain::AcquireNextImage(const Context& context, VkSemaphore semaphore)
+{
+	return vkAcquireNextImageKHR(context.device.GetHandle(), m_SwapChain, UINT64_MAX, semaphore, VK_NULL_HANDLE, &m_CurrentImageIndex);
+}
+uint32_t pompeii::SwapChain::GetCurrentImageIndex()		const	{ return m_CurrentImageIndex; }
+pompeii::Image& pompeii::SwapChain::GetCurrentImage()			{ return m_vSwapChainImages[m_CurrentImageIndex]; }
+uint32_t pompeii::SwapChain::GetImageCount()			const	{ return static_cast<uint32_t>(m_vSwapChainImages.size()); }
+
+
+//--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
 const VkSwapchainKHR& pompeii::SwapChain::GetHandle()	const		{ return m_SwapChain; }
-std::vector<pompeii::Image>& pompeii::SwapChain::GetImages()			{ return m_vSwapChainImages; }
-
-uint32_t pompeii::SwapChain::GetImageCount()			const		{ return static_cast<uint32_t>(m_vSwapChainImages.size()); }
-
 VkFormat pompeii::SwapChain::GetFormat()				const		{ return m_SwapChainImageFormat; }
 VkExtent2D pompeii::SwapChain::GetExtent()				const		{ return m_SwapChainExtent; }

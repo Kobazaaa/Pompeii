@@ -36,7 +36,6 @@ set(SOURCES
 	"${SOURCE_DIR}/graphics/passes/GeometryPass.cpp"
 	"${SOURCE_DIR}/graphics/passes/LightingPass.cpp"
 	"${SOURCE_DIR}/graphics/passes/ShadowPass.cpp"
-	"${SOURCE_DIR}/graphics/passes/UIPass.cpp"
 	 # graphics/pipeline
 	"${SOURCE_DIR}/graphics/pipeline/DescriptorPool.cpp"
 	"${SOURCE_DIR}/graphics/pipeline/DescriptorSet.cpp"
