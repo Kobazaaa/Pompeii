@@ -2,7 +2,7 @@
 #include "BlitPass.h"
 #include "Buffer.h"
 #include "Context.h"
-#include "Debugger.h"
+#include "RenderDebugger.h"
 #include "DescriptorPool.h"
 #include "GeometryPass.h"
 #include "GPUCamera.h"
@@ -300,7 +300,7 @@ void pompeii::BlitPass::RecordGraphic(const Context& context, CommandBuffer& com
 	const VkCommandBuffer& vCmdBuffer = commandBuffer.GetHandle();
 
 	// -- Render --
-	Debugger::BeginDebugLabel(commandBuffer, "Tone Mapping | Exposure Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
+	RenderDebugger::BeginDebugLabel(commandBuffer, "Tone Mapping | Exposure Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
 	vkCmdBeginRendering(vCmdBuffer, &renderingInfo);
 	{
 		// -- Set Dynamic Viewport --
@@ -311,38 +311,38 @@ void pompeii::BlitPass::RecordGraphic(const Context& context, CommandBuffer& com
 		viewport.height = static_cast<float>(renderImage.GetExtent2D().height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Viewport", glm::vec4(0.2f, 1.f, 0.2f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Viewport", glm::vec4(0.2f, 1.f, 0.2f, 1.f));
 		vkCmdSetViewport(vCmdBuffer, 0, 1, &viewport);
 
 		// -- Set Dynamic Scissors --
 		VkRect2D scissor;
 		scissor.offset = { .x = 0, .y = 0 };
 		scissor.extent = renderImage.GetExtent2D();
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Scissor", glm::vec4(1.f, 1.f, 0.2f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Scissor", glm::vec4(1.f, 1.f, 0.2f, 1.f));
 		vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
 
 		// -- Bind Descriptor Sets --
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Rendered Image | Camera Settings", glm::vec4(0.f, 1.f, 1.f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Rendered Image | Camera Settings", glm::vec4(0.f, 1.f, 1.f, 1.f));
 		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vFragmentDS[imageIndex].GetHandle(), 0, nullptr);
 
 		// -- Draw Triangle --
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Blitting)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Blitting)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
-		Debugger::InsertDebugLabel(commandBuffer, "Draw Full Screen Triangle", glm::vec4(0.4f, 0.8f, 1.f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Draw Full Screen Triangle", glm::vec4(0.4f, 0.8f, 1.f, 1.f));
 		vkCmdDraw(commandBuffer.GetHandle(), 3, 1, 0, 0);
 	}
 	vkCmdEndRendering(vCmdBuffer);
-	Debugger::EndDebugLabel(commandBuffer);
+	RenderDebugger::EndDebugLabel(commandBuffer);
 }
 void pompeii::BlitPass::RecordCompute(CommandBuffer& commandBuffer, uint32_t imageIndex, const Image& renderImage, const CameraData& camera)
 {
 	// -- Compute --
-	Debugger::BeginDebugLabel(commandBuffer, "Compute Luminance | Exposure Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
+	RenderDebugger::BeginDebugLabel(commandBuffer, "Compute Luminance | Exposure Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
 	{
 		// -- Bind First Pipeline --
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Compute | Luminance Histogram)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Compute | Luminance Histogram)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 		vkCmdBindPipeline(commandBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, m_CompPipeHistogram.GetHandle());
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Luminance Histogram Descriptor", glm::vec4(0.f, 1.f, 1.f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Luminance Histogram Descriptor", glm::vec4(0.f, 1.f, 1.f, 1.f));
 		vkCmdBindDescriptorSets(commandBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout.GetHandle(), 0, 1, &m_vComputeLumDS[imageIndex].GetHandle(), 0, nullptr);
 
 		// -- Bind Push Constants --
@@ -376,13 +376,13 @@ void pompeii::BlitPass::RecordCompute(CommandBuffer& commandBuffer, uint32_t ima
 			VK_ACCESS_2_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT);
 
 		// -- Bind Second Pipeline --
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Compute | Average Luminance)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Compute | Average Luminance)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 		vkCmdBindPipeline(commandBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, m_CompPipeAverageLuminance.GetHandle());
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Average Luminance Histogram Descriptor", glm::vec4(0.f, 1.f, 1.f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Average Luminance Histogram Descriptor", glm::vec4(0.f, 1.f, 1.f, 1.f));
 		vkCmdBindDescriptorSets(commandBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout.GetHandle(), 0, 1, &m_vComputeAveDS[imageIndex].GetHandle(), 0, nullptr);
 
 		// -- Compute 2 --
 		vkCmdDispatch(commandBuffer.GetHandle(), 1, 1, 1);
 	}
-	Debugger::EndDebugLabel(commandBuffer);
+	RenderDebugger::EndDebugLabel(commandBuffer);
 }

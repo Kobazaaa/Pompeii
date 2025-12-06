@@ -4,7 +4,7 @@
 // -- Pompeii Includes --
 #include "DescriptorPool.h"
 #include "Context.h"
-#include "Debugger.h"
+#include "RenderDebugger.h"
 #include "DescriptorSet.h"
 
 
@@ -50,7 +50,7 @@ void pompeii::DescriptorPool::Create(const Context& context)
 
 	if (m_pName)
 	{
-		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(m_Pool), VK_OBJECT_TYPE_DESCRIPTOR_POOL, m_pName);
+		RenderDebugger::SetDebugObjectName(reinterpret_cast<uint64_t>(m_Pool), VK_OBJECT_TYPE_DESCRIPTOR_POOL, m_pName);
 	}
 
 	m_pName = nullptr;
@@ -92,7 +92,7 @@ std::vector<pompeii::DescriptorSet> pompeii::DescriptorPool::AllocateSets(const 
 		{
 			std::string str{ name };
 			str += std::to_string(index);
-			Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(sets[index]), VK_OBJECT_TYPE_DESCRIPTOR_SET, str);
+			RenderDebugger::SetDebugObjectName(reinterpret_cast<uint64_t>(sets[index]), VK_OBJECT_TYPE_DESCRIPTOR_SET, str);
 		}
 	}
 

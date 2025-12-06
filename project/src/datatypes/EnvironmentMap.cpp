@@ -7,7 +7,7 @@
 #include "DescriptorSet.h"
 #include "Pipeline.h"
 #include "Shader.h"
-#include "Debugger.h"
+#include "RenderDebugger.h"
 #include "Material.h"
 
 // -- Math Includes --
@@ -235,7 +235,7 @@ pompeii::EnvironmentMap& pompeii::EnvironmentMap::CreateBRDFLut(const Context& c
 	CommandBuffer& cmd = context.commandPool->AllocateCmdBuffers(1);
 	cmd.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 	{
-		Debugger::BeginDebugLabel(cmd, "Render To BRDF LUT", glm::vec4(0.6f, 0.2f, 0.8f, 1));
+		RenderDebugger::BeginDebugLabel(cmd, "Render To BRDF LUT", glm::vec4(0.6f, 0.2f, 0.8f, 1));
 		const VkCommandBuffer& vCmd = cmd.GetHandle();
 
 		// -- Ready outImage to be rendered to --
@@ -298,7 +298,7 @@ pompeii::EnvironmentMap& pompeii::EnvironmentMap::CreateBRDFLut(const Context& c
 			VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
 			0, m_BRDFLut.GetMipLevels(), 0, m_BRDFLut.GetLayerCount());
 
-		Debugger::EndDebugLabel(cmd);
+		RenderDebugger::EndDebugLabel(cmd);
 	}
 	cmd.End();
 	cmd.Submit(context.device.GetGraphicQueue(), true);
@@ -417,7 +417,7 @@ void pompeii::EnvironmentMap::RenderToCubeMap(const Context& context, const std:
 	CommandBuffer& cmd = context.commandPool->AllocateCmdBuffers(1);
 	cmd.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 	{
-		Debugger::BeginDebugLabel(cmd, "Render To CubeMap", glm::vec4(0.6f, 0.2f, 0.8f, 1));
+		RenderDebugger::BeginDebugLabel(cmd, "Render To CubeMap", glm::vec4(0.6f, 0.2f, 0.8f, 1));
 		const VkCommandBuffer& vCmd = cmd.GetHandle();
 
 		// -- Ready outImage to be rendered to --
@@ -500,7 +500,7 @@ void pompeii::EnvironmentMap::RenderToCubeMap(const Context& context, const std:
 			VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
 			0, outImage.GetMipLevels(), 0, outImage.GetLayerCount());
 
-		Debugger::EndDebugLabel(cmd);
+		RenderDebugger::EndDebugLabel(cmd);
 	}
 	cmd.End();
 	cmd.Submit(context.device.GetGraphicQueue(), true);

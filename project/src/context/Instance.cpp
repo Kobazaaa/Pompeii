@@ -4,7 +4,7 @@
 
 // -- Pompeii Includes --
 #include "Instance.h"
-#include "Debugger.h"
+#include "RenderDebugger.h"
 #include "Context.h"
 #include "ConsoleTextSettings.h"
 #include "IWindow.h"
@@ -52,7 +52,7 @@ pompeii::InstanceBuilder& pompeii::InstanceBuilder::AddInstanceExtension(const c
 
 void pompeii::InstanceBuilder::Build(Context& context, const IWindow* pWindow)
 {
-	if (Debugger::IsEnabled() && !Debugger::CheckValidationLayerSupport())
+	if (RenderDebugger::IsEnabled() && !RenderDebugger::CheckValidationLayerSupport())
 		throw std::runtime_error("Validation Layers requested, but not available!");
 
 	// Setup CreateInfo
@@ -63,12 +63,12 @@ void pompeii::InstanceBuilder::Build(Context& context, const IWindow* pWindow)
 	m_CreateInfo.enabledExtensionCount = static_cast<uint32_t>(m_vInstanceExtensions.size());
 	m_CreateInfo.ppEnabledExtensionNames = m_vInstanceExtensions.data();
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-	if (Debugger::IsEnabled())
+	if (RenderDebugger::IsEnabled())
 	{
-		m_CreateInfo.enabledLayerCount = Debugger::GetNumberOfLayers();
-		m_CreateInfo.ppEnabledLayerNames = Debugger::GetValidationLayers().data();
+		m_CreateInfo.enabledLayerCount = RenderDebugger::GetNumberOfLayers();
+		m_CreateInfo.ppEnabledLayerNames = RenderDebugger::GetValidationLayers().data();
 
-		Debugger::PopulateDebugMessengerCreateInfo(debugCreateInfo);
+		RenderDebugger::PopulateDebugMessengerCreateInfo(debugCreateInfo);
 		m_CreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 	}
 	else
@@ -80,7 +80,7 @@ void pompeii::InstanceBuilder::Build(Context& context, const IWindow* pWindow)
 	if (vkCreateInstance(&m_CreateInfo, nullptr, &context.instance.m_Instance) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create instance!");
 
-	if (Debugger::IsEnabled())
+	if (RenderDebugger::IsEnabled())
 	{
 		// List all available extensions
 		uint32_t extensionCount = 0;
@@ -103,6 +103,6 @@ void pompeii::InstanceBuilder::GetRequiredExtensions(const IWindow* pWindow)
 	for (auto value : ext)
 		m_vInstanceExtensions.push_back(value);
 
-	if (Debugger::IsEnabled())
+	if (RenderDebugger::IsEnabled())
 		m_vInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 }

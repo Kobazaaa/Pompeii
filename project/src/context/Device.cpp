@@ -4,7 +4,7 @@
 
 // -- Pompeii Includes --
 #include "Device.h"
-#include "Debugger.h"
+#include "RenderDebugger.h"
 #include "Context.h"
 
 
@@ -76,10 +76,10 @@ void pompeii::DeviceBuilder::Build(Context& context) const
 	createInfo.enabledExtensionCount = context.physicalDevice.GetExtensionsCount();
 	createInfo.ppEnabledExtensionNames = context.physicalDevice.GetExtensions().data();
 
-	if (pompeii::Debugger::IsEnabled())
+	if (pompeii::RenderDebugger::IsEnabled())
 	{
-		createInfo.enabledLayerCount = pompeii::Debugger::GetNumberOfLayers();
-		createInfo.ppEnabledLayerNames = pompeii::Debugger::GetValidationLayers().data();
+		createInfo.enabledLayerCount = pompeii::RenderDebugger::GetNumberOfLayers();
+		createInfo.ppEnabledLayerNames = pompeii::RenderDebugger::GetValidationLayers().data();
 	}
 	else
 	{

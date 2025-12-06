@@ -6,7 +6,7 @@
 
 // -- Pompeii Includes --
 #include "PhysicalDevice.h"
-#include "Debugger.h"
+#include "RenderDebugger.h"
 #include "Context.h"
 #include "ConsoleTextSettings.h"
 
@@ -379,7 +379,7 @@ void pompeii::PhysicalDeviceSelector::PickPhysicalDevice(Context& context, VkSur
 	else
 		throw std::runtime_error("Failed to find a suitable GPU!");
 
-	if (Debugger::IsEnabled())
+	if (RenderDebugger::IsEnabled())
 	{
 		// Print selected GPU
 		VkPhysicalDeviceProperties deviceProperties = context.physicalDevice.GetProperties();

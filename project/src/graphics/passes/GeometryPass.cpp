@@ -2,7 +2,7 @@
 #include "GeometryPass.h"
 #include "Shader.h"
 #include "Context.h"
-#include "Debugger.h"
+#include "RenderDebugger.h"
 #include "DescriptorPool.h"
 #include "RenderingItems.h"
 #include "GPUCamera.h"
@@ -223,7 +223,7 @@ void pompeii::GeometryPass::Record(CommandBuffer& commandBuffer, uint32_t imageI
 
 	// Render
 	const VkCommandBuffer& vCmdBuffer = commandBuffer.GetHandle();
-	Debugger::BeginDebugLabel(commandBuffer, "Geometry Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
+	RenderDebugger::BeginDebugLabel(commandBuffer, "Geometry Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
 	vkCmdBeginRendering(vCmdBuffer, &renderingInfo);
 	{
 		// -- Set Dynamic Viewport --
@@ -234,25 +234,25 @@ void pompeii::GeometryPass::Record(CommandBuffer& commandBuffer, uint32_t imageI
 		viewport.height = static_cast<float>(extent.height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Viewport", glm::vec4(0.2f, 1.f, 0.2f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Viewport", glm::vec4(0.2f, 1.f, 0.2f, 1.f));
 		vkCmdSetViewport(vCmdBuffer, 0, 1, &viewport);
 
 		// -- Set Dynamic Scissors --
 		VkRect2D scissor;
 		scissor.offset = { .x = 0, .y = 0 };
 		scissor.extent = extent;
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Scissor", glm::vec4(1.f, 1.f, 0.2f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Scissor", glm::vec4(1.f, 1.f, 0.2f, 1.f));
 		vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
 
 		// -- Bind Descriptor Sets --
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Uniform Buffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Uniform Buffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
 		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vUniformDS[imageIndex].GetHandle(), 0, nullptr);
 
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Textures", glm::vec4(0.f, 1.f, 1.f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Textures", glm::vec4(0.f, 1.f, 1.f, 1.f));
 		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 1, 1, &m_TextureDS.GetHandle(), 0, nullptr);
 
 		// -- Bind Pipeline --
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (GBuffer)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (GBuffer)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
 
 		// -- Draw Models --
@@ -268,7 +268,7 @@ void pompeii::GeometryPass::Record(CommandBuffer& commandBuffer, uint32_t imageI
 			for (const SubMesh& subMesh : pMesh->vSubMeshes)
 			{
 				// -- Bind Push Constants --
-				Debugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
+				RenderDebugger::InsertDebugLabel(commandBuffer, "Push Constants", glm::vec4(1.f, 0.6f, 0.f, 1.f));
 				PCModelDataVS pcvs
 				{
 					.model = item.transform * subMesh.matrix
@@ -293,12 +293,12 @@ void pompeii::GeometryPass::Record(CommandBuffer& commandBuffer, uint32_t imageI
 
 				// -- Drawing Time! --
 				vkCmdDrawIndexed(vCmdBuffer, subMesh.indexCount, 1, subMesh.indexOffset, subMesh.vertexOffset, 0);
-				Debugger::InsertDebugLabel(commandBuffer, "Draw Mesh - " + subMesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
+				RenderDebugger::InsertDebugLabel(commandBuffer, "Draw Mesh - " + subMesh.name, glm::vec4(0.4f, 0.8f, 1.f, 1.f));
 			}
 		}
 	}
 	vkCmdEndRendering(vCmdBuffer);
-	Debugger::EndDebugLabel(commandBuffer);
+	RenderDebugger::EndDebugLabel(commandBuffer);
 
 	m_vGBuffers[imageIndex].TransitionBufferSampling(commandBuffer);
 }

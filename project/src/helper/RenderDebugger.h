@@ -1,5 +1,5 @@
-#ifndef DEBUGGER_H
-#define DEBUGGER_H
+#ifndef POMPEII_RENDER_DEBUGGER_H
+#define POMPEII_RENDER_DEBUGGER_H
 
 // -- Vulkan Includes --
 #include <vulkan/vulkan.h>
@@ -39,7 +39,7 @@ namespace pompeii
 		PFN_vkCmdInsertDebugUtilsLabelEXT	cmdInsertDebugUtilsLabelEXT		{ nullptr };
 	};
 
-	class Debugger final
+	class RenderDebugger final
 	{
 	public:
 		//--------------------------------------------------
@@ -83,4 +83,4 @@ namespace pompeii
 	};
 }
 
-#endif // DEBUGGER_H
+#endif // POMPEII_RENDER_DEBUGGER_H

@@ -1,7 +1,7 @@
 // -- Pompeii Includes --
 #include "Mesh.h"
 #include "CommandBuffer.h"
-#include "Debugger.h"
+#include "RenderDebugger.h"
 
 // -- Model Loading --
 #include <assimp/postprocess.h>
@@ -107,11 +107,11 @@ void pompeii::Mesh::Bind(CommandBuffer& cmdBuffer) const
 	VkBuffer vertexBuffers[] = { vertexBuffer.GetHandle() };
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(vCmdBuffer, 0, 1, vertexBuffers, offsets);
-	Debugger::InsertDebugLabel(cmdBuffer, "Bind Vertex Buffer", glm::vec4(0.6f, 1.f, 0.6f, 1.f));
+	RenderDebugger::InsertDebugLabel(cmdBuffer, "Bind Vertex Buffer", glm::vec4(0.6f, 1.f, 0.6f, 1.f));
 
 	// -- Bind Index Buffer --
 	vkCmdBindIndexBuffer(vCmdBuffer, indexBuffer.GetHandle(), 0, VK_INDEX_TYPE_UINT32);
-	Debugger::InsertDebugLabel(cmdBuffer, "Bind Index Buffer", glm::vec4(1.f, 0.4f, 1.f, 1.f));
+	RenderDebugger::InsertDebugLabel(cmdBuffer, "Bind Index Buffer", glm::vec4(1.f, 0.4f, 1.f, 1.f));
 }
 void pompeii::Mesh::AllocateResources(const Context& context)
 {

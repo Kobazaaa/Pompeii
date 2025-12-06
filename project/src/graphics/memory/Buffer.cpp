@@ -3,7 +3,7 @@
 #include "CommandPool.h"
 #include "Context.h"
 #include "Image.h"
-#include "Debugger.h"
+#include "RenderDebugger.h"
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -217,6 +217,6 @@ void pompeii::BufferAllocator::Allocate(const Context& context, Buffer& buffer) 
 	}
 	if (m_pName)
 	{
-		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(buffer.GetHandle()), VK_OBJECT_TYPE_BUFFER, m_pName);
+		RenderDebugger::SetDebugObjectName(reinterpret_cast<uint64_t>(buffer.GetHandle()), VK_OBJECT_TYPE_BUFFER, m_pName);
 	}
 }

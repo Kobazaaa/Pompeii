@@ -1,6 +1,6 @@
 // -- Pompeii Includes --
 #include "ShadowPass.h"
-#include "Debugger.h"
+#include "RenderDebugger.h"
 #include "Shader.h"
 #include "Context.h"
 #include "Light.h"
@@ -64,7 +64,7 @@ void pompeii::ShadowPass::Destroy()
 
 void pompeii::ShadowPass::Record(const Context& context, CommandBuffer& commandBuffer, const std::vector<RenderItem>& renderItems, const std::vector<LightItem>& lightItems) const
 {
-	Debugger::BeginDebugLabel(commandBuffer, "Shadow Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
+	RenderDebugger::BeginDebugLabel(commandBuffer, "Shadow Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
 	for (const LightItem& lightItem : lightItems)
 	{
 		auto& map = lightItem.light->vShadowMaps[context.currentFrame];
@@ -155,5 +155,5 @@ void pompeii::ShadowPass::Record(const Context& context, CommandBuffer& commandB
 			VK_ACCESS_2_SHADER_SAMPLED_READ_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
 			0, map.GetMipLevels(), 0, map.GetLayerCount());
 	}
-	Debugger::EndDebugLabel(commandBuffer);
+	RenderDebugger::EndDebugLabel(commandBuffer);
 }

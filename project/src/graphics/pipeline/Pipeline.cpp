@@ -4,7 +4,7 @@
 // -- Pompeii Includes --
 #include "Pipeline.h"
 #include "Context.h"
-#include "Debugger.h"
+#include "RenderDebugger.h"
 #include "Shader.h"
 #include "DescriptorSet.h"
 #include "RenderPass.h"
@@ -413,7 +413,7 @@ void pompeii::GraphicsPipelineBuilder::Build(const Context& context, Pipeline& p
 
 	if (m_pName)
 	{
-		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(pipeline.GetHandle()), VK_OBJECT_TYPE_PIPELINE, m_pName);
+		RenderDebugger::SetDebugObjectName(reinterpret_cast<uint64_t>(pipeline.GetHandle()), VK_OBJECT_TYPE_PIPELINE, m_pName);
 	}
 }
 
@@ -499,6 +499,6 @@ void pompeii::ComputePipelineBuilder::Build(const Context& context, Pipeline& pi
 
 	if (m_pName)
 	{
-		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(pipeline.GetHandle()), VK_OBJECT_TYPE_PIPELINE, m_pName);
+		RenderDebugger::SetDebugObjectName(reinterpret_cast<uint64_t>(pipeline.GetHandle()), VK_OBJECT_TYPE_PIPELINE, m_pName);
 	}
 }

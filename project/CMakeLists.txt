@@ -45,7 +45,7 @@ set(SOURCES
 	"${SOURCE_DIR}/graphics/pipeline/Shader.cpp"
 
 	# helper
-	"${SOURCE_DIR}/helper/Debugger.cpp"
+	"${SOURCE_DIR}/helper/RenderDebugger.cpp"
 	"${SOURCE_DIR}/helper/DeletionQueue.cpp"
 
 	# presentation

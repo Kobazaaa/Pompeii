@@ -10,7 +10,7 @@
 // -- Pompeii Includes --
 #include "IWindow.h"
 #include "Renderer.h"
-#include "Debugger.h"
+#include "RenderDebugger.h"
 #include "CommandBuffer.h"
 #include "RenderingItems.h"
 
@@ -266,8 +266,8 @@ void pompeii::Renderer::InitializeVulkan()
 // -- Enable Debugger - Requirements - [Debug Mode]
 	{
 #if _DEBUG
-		Debugger::SetEnabled(true);
-		Debugger::AddValidationLayer("VK_LAYER_KHRONOS_validation");
+		RenderDebugger::SetEnabled(true);
+		RenderDebugger::AddValidationLayer("VK_LAYER_KHRONOS_validation");
 #else
 		Debugger::SetEnabled(false);
 #endif
@@ -351,10 +351,10 @@ void pompeii::Renderer::InitializeVulkan()
 	// -- Setup Debugger - Requirements - [Instance]
 	{
 #if _DEBUG
-		Debugger::Setup(m_Context);
-		m_Context.deletionQueue.Push([&] { Debugger::Destroy(); });
+		RenderDebugger::Setup(m_Context);
+		m_Context.deletionQueue.Push([&] { RenderDebugger::Destroy(); });
 
-		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(m_Context.physicalDevice.GetHandle()),
+		RenderDebugger::SetDebugObjectName(reinterpret_cast<uint64_t>(m_Context.physicalDevice.GetHandle()),
 			VK_OBJECT_TYPE_PHYSICAL_DEVICE, m_Context.physicalDevice.GetProperties().deviceName);
 #endif
 	}

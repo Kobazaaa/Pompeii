@@ -7,7 +7,7 @@
 #include "Context.h"
 #include "CommandPool.h"
 #include "Buffer.h"
-#include "Debugger.h"
+#include "RenderDebugger.h"
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -581,6 +581,6 @@ void pompeii::ImageBuilder::Build(const Context& context, Image& image) const
 
 	if (m_pName)
 	{
-		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(image.GetHandle()), VK_OBJECT_TYPE_IMAGE, m_pName);
+		RenderDebugger::SetDebugObjectName(reinterpret_cast<uint64_t>(image.GetHandle()), VK_OBJECT_TYPE_IMAGE, m_pName);
 	}
 }

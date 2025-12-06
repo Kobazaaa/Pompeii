@@ -2,7 +2,7 @@
 #include "LightingPass.h"
 #include "EnvironmentMap.h"
 #include "Context.h"
-#include "Debugger.h"
+#include "RenderDebugger.h"
 #include "GBuffer.h"
 #include "GeometryPass.h"
 #include "Shader.h"
@@ -458,7 +458,7 @@ void pompeii::LightingPass::Record(const Context& context, CommandBuffer& comman
 
 	// -- Render --
 	const VkCommandBuffer& vCmdBuffer = commandBuffer.GetHandle();
-	Debugger::BeginDebugLabel(commandBuffer, "Lighting Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
+	RenderDebugger::BeginDebugLabel(commandBuffer, "Lighting Pass", glm::vec4(0.6f, 0.2f, 0.8f, 1));
 	vkCmdBeginRendering(vCmdBuffer, &renderingInfo);
 	{
 		// -- Set Dynamic Viewport --
@@ -469,32 +469,32 @@ void pompeii::LightingPass::Record(const Context& context, CommandBuffer& comman
 		viewport.height = static_cast<float>(renderImage.GetExtent2D().height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Viewport", glm::vec4(0.2f, 1.f, 0.2f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Viewport", glm::vec4(0.2f, 1.f, 0.2f, 1.f));
 		vkCmdSetViewport(vCmdBuffer, 0, 1, &viewport);
 
 		// -- Set Dynamic Scissors --
 		VkRect2D scissor{};
 		scissor.offset = { .x = 0, .y = 0 };
 		scissor.extent = renderImage.GetExtent2D();
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Scissor", glm::vec4(1.f, 1.f, 0.2f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Scissor", glm::vec4(1.f, 1.f, 0.2f, 1.f));
 		vkCmdSetScissor(vCmdBuffer, 0, 1, &scissor);
 
 		// -- Bind Descriptor Sets --
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Cam Data", glm::vec4(0.f, 1.f, 1.f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Cam Data", glm::vec4(0.f, 1.f, 1.f, 1.f));
 		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 0, 1, &m_vCameraMatricesDS[imageIndex].GetHandle(), 0, nullptr);
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Light Data", glm::vec4(0.f, 1.f, 1.f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Light Data", glm::vec4(0.f, 1.f, 1.f, 1.f));
 		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 1, 1, &m_SSBOLightDS.GetHandle(), 0, nullptr);
 		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 2, 1, &m_vUBODirLightMapDS[imageIndex].GetHandle(), 0, nullptr);
 		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 3, 1, &m_vUBOPointLightMapDS[imageIndex].GetHandle(), 0, nullptr);
-		Debugger::InsertDebugLabel(commandBuffer, "Bind GBuffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind GBuffer", glm::vec4(0.f, 1.f, 1.f, 1.f));
 		vkCmdBindDescriptorSets(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout.GetHandle(), 4, 1, &m_vGBufferTexturesDS[imageIndex].GetHandle(), 0, nullptr);
 
 		// -- Draw Triangle --
-		Debugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Lighting)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Bind Pipeline (Lighting)", glm::vec4(0.2f, 0.4f, 1.f, 1.f));
 		vkCmdBindPipeline(vCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetHandle());
-		Debugger::InsertDebugLabel(commandBuffer, "Draw Full Screen Triangle", glm::vec4(0.4f, 0.8f, 1.f, 1.f));
+		RenderDebugger::InsertDebugLabel(commandBuffer, "Draw Full Screen Triangle", glm::vec4(0.4f, 0.8f, 1.f, 1.f));
 		vkCmdDraw(commandBuffer.GetHandle(), 3, 1, 0, 0);
 	}
 	vkCmdEndRendering(vCmdBuffer);
-	Debugger::EndDebugLabel(commandBuffer);
+	RenderDebugger::EndDebugLabel(commandBuffer);
 }

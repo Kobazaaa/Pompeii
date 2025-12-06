@@ -5,7 +5,7 @@
 #include "DescriptorSet.h"
 #include "Buffer.h"
 #include "Context.h"
-#include "Debugger.h"
+#include "RenderDebugger.h"
 #include "Image.h"
 #include "Sampler.h"
 
@@ -74,7 +74,7 @@ void pompeii::DescriptorSetLayoutBuilder::Build(const Context& context, Descript
 
 	if (m_pName)
 	{
-		Debugger::SetDebugObjectName(reinterpret_cast<uint64_t>(descriptorSetLayout.GetHandle()), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, m_pName);
+		RenderDebugger::SetDebugObjectName(reinterpret_cast<uint64_t>(descriptorSetLayout.GetHandle()), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, m_pName);
 	}
 
 	m_pName = nullptr;

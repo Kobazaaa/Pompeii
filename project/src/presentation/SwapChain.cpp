@@ -5,7 +5,7 @@
 // -- Pompeii Includes --
 #include "SwapChain.h"
 #include "Context.h"
-#include "Debugger.h"
+#include "RenderDebugger.h"
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
