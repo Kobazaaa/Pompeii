@@ -56,6 +56,10 @@ bool pompeii::Renderer::StartFrame()
 	// -- Reset Fence to be un-signaled (not done) --
 	vkResetFences(m_Context.device.GetHandle(), 1, &frameSync.inFlight);
 
+	for (const auto& earlyFrameExecution : m_BeforeCommandBufferExecutions)
+		earlyFrameExecution();
+	m_BeforeCommandBufferExecutions.clear();
+
 	CommandBuffer& cmdBuffer = m_Context.commandPool->GetBuffer(m_Context.currentFrame);
 	cmdBuffer.Reset();
 	cmdBuffer.Begin();
@@ -207,6 +211,10 @@ void pompeii::Renderer::SubmitFrame()
 	}
 	else if (result != VK_SUCCESS)
 		throw std::runtime_error("Failed to present Swap Chain Image!");
+
+	for (const auto& lateFrameExecution : m_AfterCommandBufferExecutions)
+		lateFrameExecution();
+	m_AfterCommandBufferExecutions.clear();
 }
 void pompeii::Renderer::EndFrame()
 {
@@ -236,6 +244,42 @@ void pompeii::Renderer::SetCamera(const CameraData& camera)
 //--------------------------------------------------
 //    Accessors
 //--------------------------------------------------
+void pompeii::Renderer::ExecuteBeforeCommandBuffer(const std::function<void()>& func)
+{
+	m_BeforeCommandBufferExecutions.push_back(func);
+}
+void pompeii::Renderer::ExecuteAfterCommandBuffer(const std::function<void()>& func)
+{
+	m_AfterCommandBufferExecutions.push_back(func);
+}
+
+void pompeii::Renderer::ResizeOutput(uint32_t w, uint32_t h)
+{
+	if (w <= 0 || h <= 0) return;
+
+	m_Context.device.WaitIdle();
+	VkExtent2D extent = { .width = w, .height = h };
+
+	// -- Recreate the Depth Resource --
+	for (Image& image : m_vDepthImages)
+		image.Destroy(m_Context);
+	CreateDepthResources(m_Context, extent);
+
+	// -- Recreate the Render Targets --
+	for (Image& image : m_vRenderTargets)
+		image.Destroy(m_Context);
+	CreateRenderTargetResources(m_Context, extent);
+
+	// -- Recreate the Output Targets --
+	for (Image& image : m_vOutputImages)
+		image.Destroy(m_Context);
+	CreateOutputResources(m_Context, extent);
+
+	// -- Resize Passes if needed --
+	m_GeometryPass.Resize(m_Context, extent);
+	m_LightingPass.UpdateGBufferDescriptors(m_Context, m_GeometryPass, m_vDepthImages);
+	m_BlitPass.UpdateDescriptors(m_Context, m_vRenderTargets);
+}
 pompeii::Context& pompeii::Renderer::GetContext()					{ return m_Context; }
 pompeii::Image& pompeii::Renderer::GetCurrentSwapChainImage()		{ return m_SwapChain.GetCurrentImage(); }
 pompeii::Image& pompeii::Renderer::GetCurrentOutputImage()			{ return m_vOutputImages[m_Context.currentFrame]; }

@@ -69,6 +69,10 @@ namespace pompeii
 		//--------------------------------------------------
 		//    Accessors
 		//--------------------------------------------------
+		void ExecuteBeforeCommandBuffer(const std::function<void()>& func);
+		void ExecuteAfterCommandBuffer(const std::function<void()>& func);
+		void ResizeOutput(uint32_t w, uint32_t h);
+
 		Context& GetContext();
 		Image& GetCurrentSwapChainImage();
 		Image& GetCurrentOutputImage();
@@ -100,6 +104,10 @@ namespace pompeii
 
 		// -- Sync --
 		SyncManager					m_SyncManager			{ };
+
+		using FuncVector = std::vector<std::function<void()>>;
+		FuncVector m_BeforeCommandBufferExecutions			{ };
+		FuncVector m_AfterCommandBufferExecutions			{ };
 
 		// -- Passes --
 		ShadowPass					m_ShadowPass			{ };
