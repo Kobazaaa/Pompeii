@@ -520,7 +520,7 @@ void pompeii::Renderer::InitializeVulkan()
 	{
 		BlitPassCreateInfo createInfo{};
 		createInfo.renderImages = &m_vRenderTargets;
-		createInfo.format = m_SwapChain.GetFormat();
+		createInfo.format = m_vOutputImages.front().GetFormat();
 
 		m_BlitPass.Initialize(m_Context, createInfo);
 		m_Context.deletionQueue.Push([&] { m_BlitPass.Destroy(); });
@@ -637,7 +637,7 @@ void pompeii::Renderer::CreateOutputResources(const Context& context, VkExtent2D
 			.SetWidth(extent.width)
 			.SetHeight(extent.height)
 			.SetTiling(VK_IMAGE_TILING_OPTIMAL)
-			.SetFormat(VK_FORMAT_B8G8R8A8_SRGB)
+			.SetFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
 			.SetUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
 			.SetMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 			.Build(context, image);
