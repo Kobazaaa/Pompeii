@@ -17,3 +17,4 @@ bld/
 
 # Visual Studio
 .vs/
+.vshistory/
