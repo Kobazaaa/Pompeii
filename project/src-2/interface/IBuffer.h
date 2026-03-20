@@ -1,5 +1,5 @@
-﻿#ifndef POMPEII_IBUFFER_INTERFACE_H
-#define POMPEII_IBUFFER_INTERFACE_H
+﻿#ifndef POMPEII_BUFFER_INTERFACE_H
+#define POMPEII_BUFFER_INTERFACE_H
 
 // -- Pompeii Includes --
 #include "Common.h"
@@ -71,4 +71,4 @@ namespace pompeii
 	};
 }
 
-#endif // POMPEII_IBUFFER_INTERFACE_H
+#endif // POMPEII_BUFFER_INTERFACE_H
