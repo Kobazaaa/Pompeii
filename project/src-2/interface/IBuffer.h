@@ -3,6 +3,7 @@
 
 // -- Pompeii Includes --
 #include "Common.h"
+#include "MemoryEnums.h"
 
 namespace pompeii
 {
@@ -18,15 +19,6 @@ namespace pompeii
 		Staging = BIT(4)
 	};
 	ENUM_AS_FLAGS(BufferUsage);
-
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~    Memory
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	enum class MemoryType
-	{
-		DeviceLocal,
-		HostVisible,
-	};
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~    Buffer Description
