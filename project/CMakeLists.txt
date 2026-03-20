@@ -51,6 +51,8 @@ set(SOURCES
 	# presentation
 	"${SOURCE_DIR}/presentation/SwapChain.cpp"
 
+	#src-2
+	"${SOURCE_DIR_2}/interface/IBuffer.cpp"
 )
 
 # Create the library
