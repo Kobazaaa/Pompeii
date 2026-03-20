@@ -50,6 +50,7 @@ set(SOURCES
 
 	# presentation
 	"${SOURCE_DIR}/presentation/SwapChain.cpp"
+
 )
 
 # Create the library
@@ -69,6 +70,15 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	"${SOURCE_DIR}/core"
 	"${SOURCE_DIR}/datatypes"
 	"${SOURCE_DIR}/helper"
+
+	"${SOURCE_DIR_2}/"
+	"${SOURCE_DIR_2}/core"
+	"${SOURCE_DIR_2}/interface"
+	"${SOURCE_DIR_2}/platform"
+	"${SOURCE_DIR_2}/platform/vulkan"
+	"${SOURCE_DIR_2}/platform/open_gl"
+	"${SOURCE_DIR_2}/scene"
+	"${SOURCE_DIR_2}/utils"
 )
 
 # Max Warning Level & Warnings as Errors
