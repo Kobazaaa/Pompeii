@@ -53,6 +53,16 @@ set(SOURCES
 
 	#src-2
 	"${SOURCE_DIR_2}/interface/IBuffer.cpp"
+
+	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanImage.cpp"
+	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanBuffer.cpp"
+	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanCommandBuffer.cpp"
+	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanRenderer.cpp"
+	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanCommandPool.cpp"
+	"${SOURCE_DIR_2}/platform/vulkan/context/VulkanDevice.cpp"
+	"${SOURCE_DIR_2}/platform/vulkan/context/VulkanPhysicalDevice.cpp"
+	"${SOURCE_DIR_2}/platform/vulkan/context/VulkanInstance.cpp"
+	"${SOURCE_DIR_2}/platform/vulkan/context/VulkanSwapChain.cpp"
 )
 
 # Create the library
@@ -78,6 +88,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	"${SOURCE_DIR_2}/interface"
 	"${SOURCE_DIR_2}/platform"
 	"${SOURCE_DIR_2}/platform/vulkan"
+	"${SOURCE_DIR_2}/platform/vulkan/context"
+	"${SOURCE_DIR_2}/platform/vulkan/implementation"
 	"${SOURCE_DIR_2}/platform/open_gl"
 	"${SOURCE_DIR_2}/scene"
 	"${SOURCE_DIR_2}/utils"

@@ -46,15 +46,13 @@ namespace pompeii
 		//    Functionality
 		//--------------------------------------------------
 		virtual void SetData(const void* data, size_t size, size_t offset = 0) = 0;
-		virtual void* Map() = 0;
-		virtual void  Unmap() = 0;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
-		virtual size_t GetSize() const = 0;
-		virtual BufferUsage GetUsage() const = 0;
-		virtual MemoryType GetMemoryType() const = 0;
+		[[nodiscard]] virtual size_t GetSize() const = 0;
+		[[nodiscard]] virtual BufferUsage GetUsage() const = 0;
+		[[nodiscard]] virtual MemoryType GetMemoryType() const = 0;
 
 		//--------------------------------------------------
 		//    Debug

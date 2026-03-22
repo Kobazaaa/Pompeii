@@ -15,7 +15,7 @@ namespace pompeii { struct Context; }
 namespace pompeii
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  Helper Structs	
+	//? ~~	  Helper Structs
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	struct SwapChainSupportDetails
 	{
@@ -40,7 +40,7 @@ namespace pompeii
 
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  Physical Device	
+	//? ~~	  Physical Device
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	class PhysicalDeviceSelector;
 	class PhysicalDevice
@@ -99,7 +99,7 @@ namespace pompeii
 
 
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~	  Physical Device Selector	
+	//? ~~	  Physical Device Selector
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	class PhysicalDeviceSelector
 	{
@@ -119,7 +119,7 @@ namespace pompeii
 	private:
 		uint32_t RateDeviceSuitability(PhysicalDevice& device, VkSurfaceKHR surface) const;
 
-		VkPhysicalDeviceFeatures2 m_RequestedFeatures;
+		VkPhysicalDeviceFeatures2 m_RequestedFeatures	{};
 		std::vector<const char*> m_vDesiredExtensions	{};
 	};
 }

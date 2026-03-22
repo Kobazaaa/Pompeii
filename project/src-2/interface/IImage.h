@@ -60,17 +60,15 @@ namespace pompeii
         //    Functionality
         //--------------------------------------------------
         virtual void SetData(const void* data, size_t size, uint32_t mipLevel = 0, uint32_t arrayLayer = 0) = 0;
-        virtual void* Map() = 0;
-        virtual void  Unmap() = 0;
 
         //--------------------------------------------------
         //    Accessors & Mutators
         //--------------------------------------------------
-        virtual uint32_t GetWidth() const = 0;
-        virtual uint32_t GetHeight() const = 0;
-        virtual ImageFormat GetFormat() const = 0;
-        virtual ImageUsage GetUsage() const = 0;
-        virtual MemoryType GetMemoryType() const = 0;
+        [[nodiscard]] virtual uint32_t GetWidth() const = 0;
+        [[nodiscard]] virtual uint32_t GetHeight() const = 0;
+        [[nodiscard]] virtual ImageFormat GetFormat() const = 0;
+        [[nodiscard]] virtual ImageUsage GetUsage() const = 0;
+        [[nodiscard]] virtual MemoryType GetMemoryType() const = 0;
 
         //--------------------------------------------------
         //    Debug

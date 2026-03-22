@@ -9,7 +9,7 @@
 
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//? ~~	  SwapChainBuilder	
+//? ~~	  SwapChainBuilder
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //--------------------------------------------------
@@ -132,7 +132,7 @@ VkPresentModeKHR pompeii::SwapChainBuilder::ChooseSwapPresentMode(const std::vec
 			return availablePresentMode;
 	}
 
-	// Only VK_PRESENT_MODE_FIFO_KHR is GUARANTEED to be present! 
+	// Only VK_PRESENT_MODE_FIFO_KHR is GUARANTEED to be present!
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 

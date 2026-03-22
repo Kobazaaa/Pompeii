@@ -10,7 +10,7 @@
 #include "IWindow.h"
 
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//? ~~	  INSTANCE	
+//? ~~	  INSTANCE
 //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //--------------------------------------------------
@@ -31,7 +31,7 @@ const VkInstance& pompeii::Instance::GetHandle() const { return m_Instance; }
 
 //--------------------------------------------------
 //    Constructor & Destructor
-//--------------------------------------------------	
+//--------------------------------------------------
 pompeii::InstanceBuilder::InstanceBuilder()
 {
 	m_AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;			// CAN'T CHANGE
