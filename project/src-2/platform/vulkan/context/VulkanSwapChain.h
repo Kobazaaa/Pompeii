@@ -10,6 +10,7 @@
 // -- Forward Declarations --
 namespace pompeii::vulkan
 {
+	struct FrameContext;
 	struct VulkanContext;
 }
 
@@ -46,9 +47,9 @@ namespace pompeii::vulkan
 		//--------------------------------------------------
 		//    Functionality
 		//--------------------------------------------------
-		bool AcquireNextImage();
+		bool AcquireNextImage(const FrameContext& frame);
 		IImage* GetCurrentBackBuffer();
-		bool Present();
+		bool Present(const FrameContext& frame);
 		void Resize(uint32_t width, uint32_t height);
 
 		//--------------------------------------------------
@@ -61,7 +62,6 @@ namespace pompeii::vulkan
 		void CreateSwapChain(uint32_t width, uint32_t height, uint32_t buffers);
 		void CreateImageViews();
 		void CreateBackBuffers();
-		void CreateSyncObjects();
 		void CleanUp();
 
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, VkExtent2D windowExtent);
@@ -79,10 +79,6 @@ namespace pompeii::vulkan
 		VkExtent2D m_Extent;
 
 		uint32_t m_CurrentImageIndex			{0};
-
-		VkSemaphore m_ImageAvailableSemaphore	{ VK_NULL_HANDLE };
-		VkSemaphore m_RenderFinishedSemaphore	{ VK_NULL_HANDLE };
-		VkFence m_InFlightFence					{ VK_NULL_HANDLE };
 
 		VulkanContext* m_pContext				{ nullptr };
 	};

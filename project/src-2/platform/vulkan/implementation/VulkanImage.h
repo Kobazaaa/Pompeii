@@ -50,11 +50,6 @@ namespace pompeii::vulkan
 
 		[[nodiscard]] VkImage GetHandle() const;
 
-		//--------------------------------------------------
-		//    Debug
-		//--------------------------------------------------
-		void SetDebugName(const char* name) override;
-
 	private:
 		// Context
 		VulkanContext* m_pContext;

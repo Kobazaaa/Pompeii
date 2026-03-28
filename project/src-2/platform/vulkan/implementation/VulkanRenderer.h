@@ -5,10 +5,17 @@
 #include <vector>
 
 // -- Pompeii Includes --
+#include "FrameContext.h"
 #include "IRenderPass.h"
 #include "IRenderer.h"
 #include "VulkanCommandPool.h"
 #include "VulkanContext.h"
+
+// -- Forward Declarations --
+namespace pompeii
+{
+	class IWindow;
+}
 
 namespace pompeii::vulkan
 {
@@ -21,8 +28,8 @@ namespace pompeii::vulkan
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit VulkanRenderer();
-		~VulkanRenderer() override = default;
+		explicit VulkanRenderer(IWindow* pWindow);
+		~VulkanRenderer() override;
 
 		VulkanRenderer(const VulkanRenderer& other) = default;
 		VulkanRenderer(VulkanRenderer&& other) noexcept = default;
@@ -39,25 +46,33 @@ namespace pompeii::vulkan
 		void Execute() override;
 		void EndFrame() override;
 
+		void Shutdown() override;
+
 	private:
 		//--------------------------------------------------
 		//    Helpers
 		//--------------------------------------------------
 		void InitializeVulkan();
 		void CreateInstance();
+		void CreateSurface();
 		void CreateDevice(VkPhysicalDeviceFeatures2 features);
 		void ChoosePhysicalDevice(VkPhysicalDeviceFeatures2 features);
 		void CreateAllocator();
+		void CreateFrameContext();
 		void CreateSwapChain();
 		void CreateCommandPool();
 
+		void Submit();
+	private:
+		std::vector<std::unique_ptr<IRenderPass>> m_vRenderPasses{};
+
+		IWindow* m_pWindow{ nullptr };
+
 		VulkanContext m_Context{};
 		VulkanCommandPool m_CommandPool{};
-		std::vector<std::unique_ptr<ICommandBuffer>> m_vCommandBuffers{};
+		std::vector<FrameContext> m_vFrames{};
 
 		std::uint32_t m_CurrentFrame = 0;
-
-		std::vector<std::unique_ptr<IRenderPass>> m_vRenderPasses{};
 	};
 }
 

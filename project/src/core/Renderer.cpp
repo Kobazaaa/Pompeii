@@ -332,8 +332,8 @@ void pompeii::Renderer::InitializeVulkan()
 
 	// -- Create Surface - Requirements - [Window - Instance]
 	{
-		m_pWindow->CreateVulkanSurface(m_Context.instance);
-		m_Context.deletionQueue.Push([&] { vkDestroySurfaceKHR(m_Context.instance.GetHandle(), m_pWindow->GetVulkanSurface(), nullptr); });
+		//m_pWindow->CreateVulkanSurface(m_Context.instance);
+		//m_Context.deletionQueue.Push([&] { vkDestroySurfaceKHR(m_Context.instance.GetHandle(), m_pWindow->GetVulkanSurface(), nullptr); });
 	}
 
 	// -- Features --
@@ -374,11 +374,11 @@ void pompeii::Renderer::InitializeVulkan()
 
 	// -- Select GPU - Requirements - [Window - Instance]
 	{
-		PhysicalDeviceSelector selector;
-		selector
-			.AddExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
-			.CheckForFeatures(features2)
-			.PickPhysicalDevice(m_Context, m_pWindow->GetVulkanSurface());
+		//PhysicalDeviceSelector selector;
+		//selector
+		//	.AddExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+		//	.CheckForFeatures(features2)
+		//	.PickPhysicalDevice(m_Context, m_pWindow->GetVulkanSurface());
 	}
 
 	// -- Create Device - Requirements - [Physical Device - Instance]
@@ -426,14 +426,14 @@ void pompeii::Renderer::InitializeVulkan()
 
 	// -- Create SwapChain - Requirements - [Device - Allocator - Physical Device, Window, Command Pool]
 	{
-		VkExtent2D windowExtent = { m_pWindow->GetFramebufferSize().x, m_pWindow->GetFramebufferSize().y };
-		SwapChainBuilder builder;
-		builder
-			.SetDesiredImageCount(m_Context.maxFramesInFlight)
-			.SetImageArrayLayers(1)
-			.SetImageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-			.Build(m_Context, m_pWindow->GetVulkanSurface(), windowExtent, m_SwapChain);
-		m_Context.deletionQueue.Push([&] { m_SwapChain.Destroy(m_Context); });
+		//VkExtent2D windowExtent = { m_pWindow->GetFramebufferSize().x, m_pWindow->GetFramebufferSize().y };
+		//SwapChainBuilder builder;
+		//builder
+		//	.SetDesiredImageCount(m_Context.maxFramesInFlight)
+		//	.SetImageArrayLayers(1)
+		//	.SetImageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+		//	.Build(m_Context, m_pWindow->GetVulkanSurface(), windowExtent, m_SwapChain);
+		//m_Context.deletionQueue.Push([&] { m_SwapChain.Destroy(m_Context); });
 	}
 
 	// -- Create Descriptor Pool - Requirements - [Device]
@@ -550,7 +550,7 @@ void pompeii::Renderer::RecreateSwapChain()
 	// -- Recreate the SwapChain --
 	VkExtent2D windowExtent = { m_pWindow->GetFramebufferSize().x, m_pWindow->GetFramebufferSize().y };
 	m_SwapChain.Destroy(m_Context);
-	m_SwapChain.Recreate(m_Context, m_pWindow->GetVulkanSurface(), windowExtent);
+	//m_SwapChain.Recreate(m_Context, m_pWindow->GetVulkanSurface(), windowExtent);
 
 	// -- Recreate the Depth Resource --
 	//for (Image& image : m_vDepthImages)

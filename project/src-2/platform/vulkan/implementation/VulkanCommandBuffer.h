@@ -33,6 +33,8 @@ namespace pompeii::vulkan
 		void End() override;
 		void Clear() override;
 
+		operator VkCommandBuffer() const;
+
 		//--------------------------------------------------
 		//    Commands
 		//--------------------------------------------------

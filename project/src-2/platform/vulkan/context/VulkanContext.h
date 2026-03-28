@@ -15,12 +15,12 @@ namespace pompeii::vulkan
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	struct VulkanContext
 	{
-		Device device{};
 		Instance instance{};
-		PhysicalDevice physicalDevice{};
-		VulkanSwapChain swapchain{};
 		VkSurfaceKHR surface{};
+		PhysicalDevice physicalDevice{};
+		Device device{};
 		VmaAllocator allocator{};
+		VulkanSwapChain* swapchain{};
 	};
 }
 

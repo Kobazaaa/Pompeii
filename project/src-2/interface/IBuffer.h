@@ -53,11 +53,6 @@ namespace pompeii
 		[[nodiscard]] virtual size_t GetSize() const = 0;
 		[[nodiscard]] virtual BufferUsage GetUsage() const = 0;
 		[[nodiscard]] virtual MemoryType GetMemoryType() const = 0;
-
-		//--------------------------------------------------
-		//    Debug
-		//--------------------------------------------------
-		virtual void SetDebugName(const char* name) = 0;
 	};
 }
 

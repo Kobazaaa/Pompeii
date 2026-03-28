@@ -57,11 +57,3 @@ MemoryType VulkanBuffer::GetMemoryType()	const { return m_BufferDesc.memory; }
 
 VkBuffer VulkanBuffer::GetHandle()			const { return m_Buffer; }
 
-
-//--------------------------------------------------
-//    Debug
-//--------------------------------------------------
-void VulkanBuffer::SetDebugName(const char* name)
-{
-	throw std::logic_error("Not implemented");
-}

@@ -99,9 +99,9 @@ void pompeii::InstanceBuilder::Build(Context& context, const IWindow* pWindow)
 
 void pompeii::InstanceBuilder::GetRequiredExtensions(const IWindow* pWindow)
 {
-	auto ext = pWindow->GetRequiredVulkanExtensions();
-	for (auto value : ext)
-		m_vInstanceExtensions.push_back(value);
+	//auto ext = pWindow->GetRequiredVulkanExtensions();
+	//for (auto value : ext)
+	//	m_vInstanceExtensions.push_back(value);
 
 	if (RenderDebugger::IsEnabled())
 		m_vInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);

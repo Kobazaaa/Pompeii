@@ -38,6 +38,14 @@ VulkanImage::VulkanImage(const ImageDesc& imageDesc, VulkanContext& context)
 		nullptr
 	);
 }
+VulkanImage::VulkanImage(VulkanContext& context, VkImage image, VkImageView view, VkFormat format)
+{
+	m_pContext = &context;
+	m_Image = image;
+	m_Format = format;
+	m_Extent = { 0, 0, 0 };
+}
+
 VulkanImage::~VulkanImage()
 {
 }

@@ -1,6 +1,7 @@
 ﻿// -- Pompeii Includes --
 #include "VulkanSwapChain.h"
 #include "VulkanContext.h"
+#include "FrameContext.h"
 
 // -- Standard Library --
 #include <algorithm>
@@ -18,7 +19,6 @@ VulkanSwapChain::VulkanSwapChain(VulkanContext& context, uint32_t width, uint32_
 	CreateSwapChain(width, height, buffers);
 	CreateImageViews();
 	CreateBackBuffers();
-	CreateSyncObjects();
 }
 VulkanSwapChain::~VulkanSwapChain()
 {
@@ -29,15 +29,15 @@ VulkanSwapChain::~VulkanSwapChain()
 //--------------------------------------------------
 //    Functionality
 //--------------------------------------------------
-bool VulkanSwapChain::AcquireNextImage()
+bool VulkanSwapChain::AcquireNextImage(const FrameContext& frame)
 {
-	vkWaitForFences(m_pContext->device, 1, &m_InFlightFence, VK_TRUE, UINT64_MAX);
+	vkWaitForFences(m_pContext->device, 1, &frame.InFlightFences, VK_TRUE, UINT64_MAX);
 
 	VkResult result = vkAcquireNextImageKHR(
 		m_pContext->device,
 		m_SwapChain,
 		UINT64_MAX,
-		m_ImageAvailableSemaphore,
+		frame.ImageAvailableSemaphore,
 		VK_NULL_HANDLE,
 		&m_CurrentImageIndex
 	);
@@ -51,7 +51,7 @@ bool VulkanSwapChain::AcquireNextImage()
 		throw std::runtime_error("Failed to acquire Swap Chain Image");
 
 	// -- Reset Fence to be un-signaled (not done) --
-	vkResetFences(m_pContext->device, 1, &m_InFlightFence);
+	vkResetFences(m_pContext->device, 1, &frame.InFlightFences);
 
 	return true;
 }
@@ -59,13 +59,13 @@ IImage* VulkanSwapChain::GetCurrentBackBuffer()
 {
 	return &m_vBackBuffers[m_CurrentImageIndex];
 }
-bool VulkanSwapChain::Present()
+bool VulkanSwapChain::Present(const FrameContext& frame)
 {
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
 	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = &m_RenderFinishedSemaphore;
+	presentInfo.pWaitSemaphores = &frame.RenderFinishedSemaphore;
 
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = &m_SwapChain;
@@ -171,8 +171,12 @@ void VulkanSwapChain::CreateSwapChain(uint32_t width, uint32_t height, uint32_t 
 	createInfo.presentMode = presentMode;
 	createInfo.clipped = VK_TRUE;
 	createInfo.oldSwapchain = VK_NULL_HANDLE;
+	createInfo.imageArrayLayers = 1;
+	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	vkCreateSwapchainKHR(m_pContext->device, &createInfo, nullptr, &m_SwapChain);
+	VkResult result = vkCreateSwapchainKHR(m_pContext->device, &createInfo, nullptr, &m_SwapChain);
+	if (result != VK_SUCCESS)
+		throw std::runtime_error("Failed to create Swap Chain!");
 
 	vkGetSwapchainImagesKHR(m_pContext->device, m_SwapChain, &imageCount, nullptr);
 	m_vImages.resize(imageCount);
@@ -211,25 +215,6 @@ void VulkanSwapChain::CreateBackBuffers()
 			m_Format
 		);
 	}
-}
-void VulkanSwapChain::CreateSyncObjects()
-{
-	VkSemaphoreCreateInfo semInfo
-	{
-		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-		.pNext = nullptr,
-		.flags = 0
-	};
-	VkFenceCreateInfo fenceInfo
-	{
-		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		.pNext = nullptr,
-		.flags = VK_FENCE_CREATE_SIGNALED_BIT
-	};
-
-	vkCreateSemaphore(m_pContext->device, &semInfo, nullptr, &m_ImageAvailableSemaphore);
-	vkCreateSemaphore(m_pContext->device, &semInfo, nullptr, &m_RenderFinishedSemaphore);
-	vkCreateFence(m_pContext->device, &fenceInfo, nullptr, &m_InFlightFence);
 }
 void VulkanSwapChain::CleanUp()
 {

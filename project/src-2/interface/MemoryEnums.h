@@ -12,6 +12,17 @@ namespace pompeii
 		HostVisible,
 	};
 
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//? ~~    Shader Stage
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	enum class ShaderStage
+	{
+		Vertex,
+		Fragment,
+		Geometry,
+		Compute
+	};
+	ENUM_AS_FLAGS(ShaderStage);
 }
 
 #endif // POMPEII_MEMORY_ENUMS_H

@@ -59,6 +59,7 @@ set(SOURCES
 	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanCommandBuffer.cpp"
 	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanRenderer.cpp"
 	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanCommandPool.cpp"
+	"${SOURCE_DIR_2}/platform/vulkan/implementation/FrameContext.cpp"
 	"${SOURCE_DIR_2}/platform/vulkan/context/VulkanDevice.cpp"
 	"${SOURCE_DIR_2}/platform/vulkan/context/VulkanPhysicalDevice.cpp"
 	"${SOURCE_DIR_2}/platform/vulkan/context/VulkanInstance.cpp"

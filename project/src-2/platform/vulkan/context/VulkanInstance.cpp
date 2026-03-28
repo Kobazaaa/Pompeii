@@ -59,6 +59,8 @@ void InstanceBuilder::Build(VulkanContext& context)
 {
 	if (RenderDebugger::IsEnabled() && !RenderDebugger::CheckValidationLayerSupport())
 		throw std::runtime_error("Validation Layers requested, but not available!");
+	if (RenderDebugger::IsEnabled())
+		m_vInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
 	// Setup CreateInfo
 	m_CreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;

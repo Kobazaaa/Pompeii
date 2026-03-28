@@ -59,17 +59,10 @@ namespace pompeii
 		virtual bool IsOutdated()								const		= 0;
 		virtual void ResetOutdated()										= 0;
 
-		virtual VkSurfaceKHR CreateVulkanSurface(const Instance& instance)	= 0;
-		virtual std::vector<const char*> GetRequiredVulkanExtensions()const = 0;
-		VkSurfaceKHR GetVulkanSurface()	const { return m_VulkanSurface; }
-
 		//--------------------------------------------------
 		//    Handle
 		//--------------------------------------------------
 		virtual void* GetNativeHandle()							const		= 0;
-
-	protected:
-		VkSurfaceKHR m_VulkanSurface{};
 	};
 }
 

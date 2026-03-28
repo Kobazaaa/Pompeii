@@ -50,6 +50,11 @@ void VulkanCommandBuffer::Clear()
 	vkResetCommandBuffer(m_CmdBuffer, 0);
 }
 
+VulkanCommandBuffer::operator VkCommandBuffer() const
+{
+	return m_CmdBuffer;
+}
+
 
 //--------------------------------------------------
 //    Commands

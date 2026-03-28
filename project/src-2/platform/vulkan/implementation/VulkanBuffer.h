@@ -42,11 +42,6 @@ namespace pompeii::vulkan
 
 		[[nodiscard]] VkBuffer GetHandle() const;
 
-		//--------------------------------------------------
-		//    Debug
-		//--------------------------------------------------
-		void SetDebugName(const char* name) override;
-
 	private:
 		// Context
 		VulkanContext* m_pContext;

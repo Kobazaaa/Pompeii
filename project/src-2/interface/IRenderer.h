@@ -32,6 +32,7 @@ namespace pompeii
         //    Constructor & Destructor
         //--------------------------------------------------
         virtual ~IRenderer() = default;
+        virtual void Shutdown() = 0;
 
         //--------------------------------------------------
         //    Functionality
