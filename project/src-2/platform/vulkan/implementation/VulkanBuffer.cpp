@@ -35,7 +35,8 @@ VulkanBuffer::VulkanBuffer(const BufferDesc& bufferDesc, VulkanContext& context)
 
 VulkanBuffer::~VulkanBuffer()
 {
-	throw std::logic_error("Not implemented");
+	if (m_Buffer && m_Memory)
+		vmaDestroyBuffer(m_pContext->allocator, m_Buffer, m_Memory);
 }
 
 
@@ -55,5 +56,9 @@ size_t VulkanBuffer::GetSize()				const { return m_BufferDesc.size; }
 BufferUsage VulkanBuffer::GetUsage()		const { return m_BufferDesc.usage; }
 MemoryType VulkanBuffer::GetMemoryType()	const { return m_BufferDesc.memory; }
 
-VkBuffer VulkanBuffer::GetHandle()			const { return m_Buffer; }
+
+//--------------------------------------------------
+//    Operator Overloads
+//--------------------------------------------------
+VulkanBuffer::operator VkBuffer()			const { return m_Buffer; }
 

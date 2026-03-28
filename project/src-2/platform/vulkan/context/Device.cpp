@@ -3,7 +3,7 @@
 #include <stdexcept>
 
 // -- Pompeii Includes --
-#include "VulkanDevice.h"
+#include "Device.h"
 #include "VulkanContext.h"
 #include "RenderDebugger.h"
 

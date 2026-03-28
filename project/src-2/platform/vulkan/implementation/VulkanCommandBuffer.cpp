@@ -50,6 +50,10 @@ void VulkanCommandBuffer::Clear()
 	vkResetCommandBuffer(m_CmdBuffer, 0);
 }
 
+
+//--------------------------------------------------
+//    Operation Overloads
+//--------------------------------------------------
 VulkanCommandBuffer::operator VkCommandBuffer() const
 {
 	return m_CmdBuffer;
@@ -69,8 +73,8 @@ void VulkanCommandBuffer::CopyBuffer(IBuffer* src, IBuffer* dst, size_t size, ui
 
 	vkCmdCopyBuffer(
 		m_CmdBuffer,
-		static_cast<VulkanBuffer*>(src)->GetHandle(),
-		static_cast<VulkanBuffer*>(dst)->GetHandle(),
+		*static_cast<VulkanBuffer*>(src),
+		*static_cast<VulkanBuffer*>(dst),
 		1,
 		&copyRegion
 	);
@@ -96,8 +100,8 @@ void VulkanCommandBuffer::CopyBufferToImage(IBuffer* src, IImage* dst)
 
 	vkCmdCopyBufferToImage(
 		m_CmdBuffer,
-		static_cast<VulkanBuffer*>(src)->GetHandle(),
-		static_cast<VulkanImage*>(dst)->GetHandle(),
+		*static_cast<VulkanBuffer*>(src),
+		*static_cast<VulkanImage*>(dst),
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		1,
 		&region
@@ -130,10 +134,10 @@ void VulkanCommandBuffer::Blit(IImage* src, IImage* dst)
 	blitInfo.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2;
 	blitInfo.pNext = nullptr;
 
-	blitInfo.srcImage = static_cast<VulkanImage*>(src)->GetHandle();
+	blitInfo.srcImage = *static_cast<VulkanImage*>(src);
 	blitInfo.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
-	blitInfo.dstImage = static_cast<VulkanImage*>(dst)->GetHandle();
+	blitInfo.dstImage = *static_cast<VulkanImage*>(dst);
 	blitInfo.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
 	blitInfo.regionCount = 1;

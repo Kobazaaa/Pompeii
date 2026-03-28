@@ -31,6 +31,11 @@ namespace pompeii::vulkan
 		explicit VulkanCommandPool(VulkanContext& context);
 		~VulkanCommandPool() override = default;
 
+		VulkanCommandPool(const VulkanCommandPool& other) = delete;
+		VulkanCommandPool(VulkanCommandPool&& other) noexcept = default;
+		VulkanCommandPool& operator=(const VulkanCommandPool& other) = delete;
+		VulkanCommandPool& operator=(VulkanCommandPool&& other) noexcept = default;
+
 		//--------------------------------------------------
 		//    Functionality
 		//--------------------------------------------------

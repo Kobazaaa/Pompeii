@@ -1,11 +1,11 @@
 ﻿// -- Pompeii::vulkan Includes --
-#include "FrameContext.h"
+#include "VulkanFrameContext.h"
 #include "VulkanContext.h"
 
 //--------------------------------------------------
 //    Constructor & Destructor
 //--------------------------------------------------
-pompeii::vulkan::FrameContext::FrameContext(VulkanContext& context)
+pompeii::vulkan::VulkanFrameContext::VulkanFrameContext(VulkanContext& context)
 	: m_pContext(&context)
 {
 	VkSemaphoreCreateInfo semInfo
@@ -26,7 +26,7 @@ pompeii::vulkan::FrameContext::FrameContext(VulkanContext& context)
 	vkCreateFence(m_pContext->device, &fenceInfo, nullptr, &InFlightFences);
 }
 
-pompeii::vulkan::FrameContext::~FrameContext()
+pompeii::vulkan::VulkanFrameContext::~VulkanFrameContext()
 {
 	if (InFlightFences) vkDestroyFence(m_pContext->device, InFlightFences, nullptr);
 	if (ImageAvailableSemaphore) vkDestroySemaphore(m_pContext->device, ImageAvailableSemaphore, nullptr);

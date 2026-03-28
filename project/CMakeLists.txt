@@ -59,11 +59,12 @@ set(SOURCES
 	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanCommandBuffer.cpp"
 	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanRenderer.cpp"
 	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanCommandPool.cpp"
-	"${SOURCE_DIR_2}/platform/vulkan/implementation/FrameContext.cpp"
-	"${SOURCE_DIR_2}/platform/vulkan/context/VulkanDevice.cpp"
-	"${SOURCE_DIR_2}/platform/vulkan/context/VulkanPhysicalDevice.cpp"
-	"${SOURCE_DIR_2}/platform/vulkan/context/VulkanInstance.cpp"
-	"${SOURCE_DIR_2}/platform/vulkan/context/VulkanSwapChain.cpp"
+	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanFrameContext.cpp"
+
+	"${SOURCE_DIR_2}/platform/vulkan/context/Device.cpp"
+	"${SOURCE_DIR_2}/platform/vulkan/context/PhysicalDevice.cpp"
+	"${SOURCE_DIR_2}/platform/vulkan/context/Instance.cpp"
+	"${SOURCE_DIR_2}/platform/vulkan/context/SwapChain.cpp"
 )
 
 # Create the library

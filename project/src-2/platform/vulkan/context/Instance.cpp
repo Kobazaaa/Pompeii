@@ -3,7 +3,7 @@
 #include <stdexcept>
 
 // -- Pompeii Includes --
-#include "VulkanInstance.h"
+#include "Instance.h"
 #include "VulkanContext.h"
 #include "RenderDebugger.h"
 #include "ConsoleTextSettings.h"

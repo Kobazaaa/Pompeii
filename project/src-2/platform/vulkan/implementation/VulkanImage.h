@@ -29,9 +29,9 @@ namespace pompeii::vulkan
 		explicit VulkanImage(VulkanContext& context, VkImage image, VkImageView view, VkFormat format);
 		~VulkanImage() override;
 
-		VulkanImage(const VulkanImage& other) = default;
+		VulkanImage(const VulkanImage& other) = delete;
 		VulkanImage(VulkanImage&& other) noexcept = default;
-		VulkanImage& operator=(const VulkanImage& other) = default;
+		VulkanImage& operator=(const VulkanImage& other) = delete;
 		VulkanImage& operator=(VulkanImage&& other) noexcept = default;
 
 		//--------------------------------------------------
@@ -48,7 +48,10 @@ namespace pompeii::vulkan
 		[[nodiscard]] ImageUsage GetUsage() const override;
 		[[nodiscard]] MemoryType GetMemoryType() const override;
 
-		[[nodiscard]] VkImage GetHandle() const;
+		//--------------------------------------------------
+		//    Operator Overloads
+		//--------------------------------------------------
+		operator VkImage() const;
 
 	private:
 		// Context

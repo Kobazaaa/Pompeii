@@ -10,7 +10,7 @@
 // -- Forward Declarations --
 namespace pompeii::vulkan
 {
-	struct FrameContext;
+	struct VulkanFrameContext;
 	struct VulkanContext;
 }
 
@@ -47,9 +47,9 @@ namespace pompeii::vulkan
 		//--------------------------------------------------
 		//    Functionality
 		//--------------------------------------------------
-		bool AcquireNextImage(const FrameContext& frame);
+		bool AcquireNextImage(const VulkanFrameContext& frame);
 		IImage* GetCurrentBackBuffer();
-		bool Present(const FrameContext& frame);
+		bool Present(const VulkanFrameContext& frame);
 		void Resize(uint32_t width, uint32_t height);
 
 		//--------------------------------------------------

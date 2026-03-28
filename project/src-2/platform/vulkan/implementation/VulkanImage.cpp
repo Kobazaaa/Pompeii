@@ -48,6 +48,8 @@ VulkanImage::VulkanImage(VulkanContext& context, VkImage image, VkImageView view
 
 VulkanImage::~VulkanImage()
 {
+	if (m_Image && m_Memory)
+		vmaDestroyImage(m_pContext->allocator, m_Image, m_Memory);
 }
 
 //--------------------------------------------------
@@ -74,4 +76,8 @@ ImageFormat VulkanImage::GetFormat()		const { return m_ImageDesc.format; }
 ImageUsage VulkanImage::GetUsage()			const { return m_ImageDesc.usage; }
 MemoryType VulkanImage::GetMemoryType()		const { return m_ImageDesc.memory; }
 
-VkImage VulkanImage::GetHandle()			const { return m_Image; }
+
+//--------------------------------------------------
+//    Operator Overloads
+//--------------------------------------------------
+VulkanImage::operator VkImage()				const { return m_Image; }

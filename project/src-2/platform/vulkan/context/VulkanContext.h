@@ -3,10 +3,10 @@
 
 // -- Vulkan Includes --
 #include <vma/vk_mem_alloc.h>
-#include "VulkanInstance.h"
-#include "VulkanSwapChain.h"
-#include "VulkanDevice.h"
-#include "VulkanPhysicalDevice.h"
+#include "Instance.h"
+#include "SwapChain.h"
+#include "Device.h"
+#include "PhysicalDevice.h"
 
 namespace pompeii::vulkan
 {

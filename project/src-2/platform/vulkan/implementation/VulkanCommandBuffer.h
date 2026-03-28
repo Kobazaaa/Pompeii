@@ -21,6 +21,11 @@ namespace pompeii::vulkan
 		explicit VulkanCommandBuffer(ICommandPool& commandPool);
 		~VulkanCommandBuffer() override = default;
 
+		VulkanCommandBuffer(const VulkanCommandBuffer& other) = delete;
+		VulkanCommandBuffer(VulkanCommandBuffer&& other) noexcept = default;
+		VulkanCommandBuffer& operator=(const VulkanCommandBuffer& other) = delete;
+		VulkanCommandBuffer& operator=(VulkanCommandBuffer&& other) noexcept = default;
+
 		//--------------------------------------------------
 		//    Accessors
 		//--------------------------------------------------
@@ -33,6 +38,9 @@ namespace pompeii::vulkan
 		void End() override;
 		void Clear() override;
 
+		//--------------------------------------------------
+		//    Operation Overloads
+		//--------------------------------------------------
 		operator VkCommandBuffer() const;
 
 		//--------------------------------------------------

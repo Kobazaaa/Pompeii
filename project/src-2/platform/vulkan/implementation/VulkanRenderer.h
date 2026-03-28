@@ -5,7 +5,7 @@
 #include <vector>
 
 // -- Pompeii Includes --
-#include "FrameContext.h"
+#include "VulkanFrameContext.h"
 #include "IRenderPass.h"
 #include "IRenderer.h"
 #include "VulkanCommandPool.h"
@@ -31,10 +31,10 @@ namespace pompeii::vulkan
 		explicit VulkanRenderer(IWindow* pWindow);
 		~VulkanRenderer() override;
 
-		VulkanRenderer(const VulkanRenderer& other) = default;
-		VulkanRenderer(VulkanRenderer&& other) noexcept = default;
-		VulkanRenderer& operator=(const VulkanRenderer& other) = default;
-		VulkanRenderer& operator=(VulkanRenderer&& other) noexcept = default;
+		VulkanRenderer(const VulkanRenderer& other) = delete;
+		VulkanRenderer(VulkanRenderer&& other) noexcept = delete;
+		VulkanRenderer& operator=(const VulkanRenderer& other) = delete;
+		VulkanRenderer& operator=(VulkanRenderer&& other) noexcept = delete;
 
 
 		//--------------------------------------------------
@@ -70,7 +70,7 @@ namespace pompeii::vulkan
 
 		VulkanContext m_Context{};
 		VulkanCommandPool m_CommandPool{};
-		std::vector<FrameContext> m_vFrames{};
+		std::vector<VulkanFrameContext> m_vFrames{};
 
 		std::uint32_t m_CurrentFrame = 0;
 	};

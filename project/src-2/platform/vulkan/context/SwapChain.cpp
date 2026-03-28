@@ -1,7 +1,7 @@
 ﻿// -- Pompeii Includes --
-#include "VulkanSwapChain.h"
+#include "SwapChain.h"
 #include "VulkanContext.h"
-#include "FrameContext.h"
+#include "VulkanFrameContext.h"
 
 // -- Standard Library --
 #include <algorithm>
@@ -29,7 +29,7 @@ VulkanSwapChain::~VulkanSwapChain()
 //--------------------------------------------------
 //    Functionality
 //--------------------------------------------------
-bool VulkanSwapChain::AcquireNextImage(const FrameContext& frame)
+bool VulkanSwapChain::AcquireNextImage(const VulkanFrameContext& frame)
 {
 	vkWaitForFences(m_pContext->device, 1, &frame.InFlightFences, VK_TRUE, UINT64_MAX);
 
@@ -59,7 +59,7 @@ IImage* VulkanSwapChain::GetCurrentBackBuffer()
 {
 	return &m_vBackBuffers[m_CurrentImageIndex];
 }
-bool VulkanSwapChain::Present(const FrameContext& frame)
+bool VulkanSwapChain::Present(const VulkanFrameContext& frame)
 {
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

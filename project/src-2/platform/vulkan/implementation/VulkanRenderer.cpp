@@ -2,7 +2,7 @@
 #include "VulkanRenderer.h"
 #include "IWindow.h"
 #include "RenderDebugger.h"
-#include "FrameContext.h"
+#include "VulkanFrameContext.h"
 
 // -- Standard Library --
 #include <stdexcept>
@@ -39,7 +39,7 @@ void VulkanRenderer::AddRenderPass(std::unique_ptr<IRenderPass> pass)
 
 void VulkanRenderer::BeginFrame()
 {
-	FrameContext& frame = m_vFrames[m_CurrentFrame];
+	VulkanFrameContext& frame = m_vFrames[m_CurrentFrame];
 	if (!m_Context.swapchain->AcquireNextImage(frame))
 		return;
 }
@@ -47,7 +47,7 @@ void VulkanRenderer::BeginFrame()
 void VulkanRenderer::Execute()
 {
 	// Record frame
-	FrameContext& frame = m_vFrames[m_CurrentFrame];
+	VulkanFrameContext& frame = m_vFrames[m_CurrentFrame];
 	const auto& cmd = frame.CommandBuffer.get();
 	cmd->Begin();
 	for (const auto& pass : m_vRenderPasses)
@@ -58,7 +58,7 @@ void VulkanRenderer::Execute()
 
 void VulkanRenderer::EndFrame()
 {
-	FrameContext& frame = m_vFrames[m_CurrentFrame];
+	VulkanFrameContext& frame = m_vFrames[m_CurrentFrame];
 	const auto& cmd = frame.CommandBuffer.get();
 	cmd->End();
 	Submit();
@@ -190,7 +190,7 @@ void VulkanRenderer::CreateCommandPool()
 
 void VulkanRenderer::Submit()
 {
-	FrameContext& frame = m_vFrames[m_CurrentFrame];
+	VulkanFrameContext& frame = m_vFrames[m_CurrentFrame];
 
 	// -- Submit Info --
 	VkSubmitInfo2 submitInfo{};

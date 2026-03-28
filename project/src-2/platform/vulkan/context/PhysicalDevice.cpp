@@ -5,7 +5,7 @@
 #include <vector>
 
 // -- Pompeii Includes --
-#include "VulkanPhysicalDevice.h"
+#include "PhysicalDevice.h"
 #include "VulkanContext.h"
 #include "RenderDebugger.h"
 #include "ConsoleTextSettings.h"

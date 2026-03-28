@@ -28,6 +28,11 @@ namespace pompeii::vulkan
 		explicit VulkanBuffer(const BufferDesc& bufferDesc, VulkanContext& context);
 		~VulkanBuffer() override;
 
+		VulkanBuffer(const VulkanBuffer& other) = delete;
+		VulkanBuffer(VulkanBuffer&& other) noexcept = default;
+		VulkanBuffer& operator=(const VulkanBuffer& other) = delete;
+		VulkanBuffer& operator=(VulkanBuffer&& other) noexcept = default;
+
 		//--------------------------------------------------
 		//    Functionality
 		//--------------------------------------------------
@@ -40,7 +45,10 @@ namespace pompeii::vulkan
 		[[nodiscard]] BufferUsage GetUsage() const override;
 		[[nodiscard]] MemoryType GetMemoryType() const override;
 
-		[[nodiscard]] VkBuffer GetHandle() const;
+		//--------------------------------------------------
+		//    Operator Overloads
+		//--------------------------------------------------
+		operator VkBuffer() const;
 
 	private:
 		// Context
