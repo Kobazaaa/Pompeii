@@ -7,6 +7,7 @@
 // -- Forward Declarations --
 namespace pompeii
 {
+	class FrameContext;
 	class ICommandPool;
 	class Mesh;
     class IBuffer;
@@ -15,15 +16,6 @@ namespace pompeii
 
 namespace pompeii
 {
-    //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    //? ~~    CommandBufferLevel
-    //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    enum class CommandBufferLevel
-    {
-        Primary,
-        Secondary
-	};
-
     //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     //? ~~    ICommandBuffer
     //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,24 +35,30 @@ namespace pompeii
         //--------------------------------------------------
         //    Functionality
         //--------------------------------------------------
-        virtual void Begin() = 0;
+        virtual void Begin(bool oneTime = false) = 0;
         virtual void End() = 0;
+        virtual void Submit(FrameContext& frameCtx) = 0;
+        virtual void Submit() = 0;
         virtual void Clear() = 0;
 
         //--------------------------------------------------
         //    Commands
         //--------------------------------------------------
+        // Data Commands
+        virtual void UploadDataToBuffer(IBuffer& buffer, const void* data, size_t size, size_t offset) = 0;
+        virtual void UploadDataToImage(IImage& image, const void* data, size_t size) = 0;
+
         // Copy Commands
-        virtual void CopyBuffer(IBuffer* src, IBuffer* dst, size_t size, uint32_t srcOffset = 0, uint32_t dstOffset = 0) = 0;
-        virtual void CopyImage(IImage* src, IImage* dst) = 0;
-        virtual void CopyBufferToImage(IBuffer* src, IImage* dst) = 0;
-        virtual void Blit(IImage* src, IImage* dst) = 0;
+        virtual void CopyBuffer(IBuffer& src, IBuffer& dst, size_t size, uint32_t srcOffset = 0, uint32_t dstOffset = 0) = 0;
+        virtual void CopyImage(IImage& src, IImage& dst) = 0;
+        virtual void CopyBufferToImage(IBuffer& src, IImage& dst) = 0;
+        virtual void Blit(IImage& src, IImage& dst) = 0;
 
         // Image Commands
-        virtual void GenerateMips(IImage* src) = 0;
+        virtual void GenerateMips(IImage& src) = 0;
 
         // Drawing
-        virtual void DrawMesh(Mesh* pMesh) = 0;
+        virtual void DrawMesh(Mesh& pMesh) = 0;
     };
 }
 

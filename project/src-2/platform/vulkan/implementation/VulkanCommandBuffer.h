@@ -7,6 +7,14 @@
 // -- Vulkan Includes --
 #include <vulkan/vulkan.h>
 
+// -- Forward Declarations --
+namespace pompeii::vulkan
+{
+	class VulkanImage;
+	struct VulkanContext;
+	class VulkanCommandPool;
+}
+
 namespace pompeii::vulkan
 {
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -18,7 +26,7 @@ namespace pompeii::vulkan
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
-		explicit VulkanCommandBuffer(ICommandPool& commandPool);
+		explicit VulkanCommandBuffer(VulkanCommandPool& commandPool, VulkanContext& context);
 		~VulkanCommandBuffer() override = default;
 
 		VulkanCommandBuffer(const VulkanCommandBuffer& other) = delete;
@@ -34,8 +42,10 @@ namespace pompeii::vulkan
 		//--------------------------------------------------
 		//    Functionality
 		//--------------------------------------------------
-		void Begin() override;
+		void Begin(bool oneTime = false) override;
 		void End() override;
+		void Submit(FrameContext& frameCtx) override;
+		void Submit() override;
 		void Clear() override;
 
 		//--------------------------------------------------
@@ -46,21 +56,31 @@ namespace pompeii::vulkan
 		//--------------------------------------------------
 		//    Commands
 		//--------------------------------------------------
+		// Data Commands
+		void UploadDataToBuffer(IBuffer& buffer, const void* data, size_t size, size_t offset) override;
+		void UploadDataToImage(IImage& image, const void* data, size_t size) override;
+
 		// Copy Commands
-		void CopyBuffer(IBuffer* src, IBuffer* dst, size_t size, uint32_t srcOffset = 0, uint32_t dstOffset = 0) override;
-		void CopyImage(IImage* src, IImage* dst) override;
-		void CopyBufferToImage(IBuffer* src, IImage* dst) override;
-		void Blit(IImage* src, IImage* dst) override;
+		void CopyBuffer(IBuffer& src, IBuffer& dst, size_t size, uint32_t srcOffset = 0, uint32_t dstOffset = 0) override;
+		void CopyImage(IImage& src, IImage& dst) override;
+		void CopyBufferToImage(IBuffer& src, IImage& dst) override;
+		void Blit(IImage& src, IImage& dst) override;
 
 		// Image Commands
-		void GenerateMips(IImage* src) override;
+		void GenerateMips(IImage& src) override;
 
 		// Drawing
-		void DrawMesh(Mesh* pMesh) override;
+		void DrawMesh(Mesh& pMesh) override;
 
 	private:
-		ICommandPool* m_pCommandPool	{ nullptr };
-		VkCommandBuffer m_CmdBuffer		{ VK_NULL_HANDLE };
+		void TransitionImageLayout(VulkanImage& image, VkImageLayout newLayout,
+			VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
+			VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage) const;
+
+		VulkanContext* m_pContext			{ nullptr };
+		VulkanCommandPool* m_pCommandPool	{ nullptr };
+		VkCommandBuffer m_CmdBuffer			{ VK_NULL_HANDLE };
+		bool m_IsTemporary					{ false };
 		friend class VulkanCommandPool;
 	};
 }

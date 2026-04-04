@@ -35,11 +35,6 @@ namespace pompeii::vulkan
 		VulkanImage& operator=(VulkanImage&& other) noexcept = default;
 
 		//--------------------------------------------------
-		//    Functionality
-		//--------------------------------------------------
-		void SetData(const void* data, size_t size, uint32_t mipLevel, uint32_t arrayLayer) override;
-
-		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
 		[[nodiscard]] uint32_t GetWidth() const override;
@@ -66,6 +61,9 @@ namespace pompeii::vulkan
 		// Vulkan Data
 		VkImage m_Image					{ VK_NULL_HANDLE };
 		VmaAllocation m_Memory			{ nullptr };
+
+		// todo let's not
+		friend class VulkanCommandBuffer;
 	};
 }
 

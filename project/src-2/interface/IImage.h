@@ -2,35 +2,10 @@
 #define POMPEII_IMAGE_INTERFACE_H
 
 // -- Pompeii Includes --
-#include "Common.h"
-#include "MemoryEnums.h"
+#include "PompeiiEnums.h"
 
 namespace pompeii
 {
-    //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    //? ~~    Image Usage
-    //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    enum class ImageUsage
-    {
-        ColorAttachment         = BIT(0),
-        DepthStencilAttachment  = BIT(1),
-        Sampled                 = BIT(2),
-        Storage                 = BIT(3),
-    };
-    ENUM_AS_FLAGS(ImageUsage);
-
-    //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    //? ~~    Image Format
-    //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    enum class ImageFormat
-    {
-        RGBA8,
-        RGBA16F,
-        RGBA32F,
-        Depth24Stencil8,
-        Depth32F,
-    };
-
     //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     //? ~~    Image Description
     //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -55,11 +30,6 @@ namespace pompeii
         //    Constructor & Destructor
         //--------------------------------------------------
         virtual ~IImage() = default;
-
-        //--------------------------------------------------
-        //    Functionality
-        //--------------------------------------------------
-        virtual void SetData(const void* data, size_t size, uint32_t mipLevel = 0, uint32_t arrayLayer = 0) = 0;
 
         //--------------------------------------------------
         //    Accessors & Mutators

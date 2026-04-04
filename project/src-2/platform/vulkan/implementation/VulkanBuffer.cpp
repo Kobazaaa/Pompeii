@@ -41,15 +41,6 @@ VulkanBuffer::~VulkanBuffer()
 
 
 //--------------------------------------------------
-//    Functionality
-//--------------------------------------------------
-void VulkanBuffer::SetData(const void* data, size_t size, size_t offset)
-{
-	throw std::logic_error("Not implemented");
-}
-
-
-//--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
 size_t VulkanBuffer::GetSize()				const { return m_BufferDesc.size; }
@@ -61,4 +52,5 @@ MemoryType VulkanBuffer::GetMemoryType()	const { return m_BufferDesc.memory; }
 //    Operator Overloads
 //--------------------------------------------------
 VulkanBuffer::operator VkBuffer()			const { return m_Buffer; }
+VulkanBuffer::operator VmaAllocation()		const { return m_Memory; }
 

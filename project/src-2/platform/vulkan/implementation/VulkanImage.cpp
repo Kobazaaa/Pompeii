@@ -53,21 +53,6 @@ VulkanImage::~VulkanImage()
 }
 
 //--------------------------------------------------
-//    Functionality
-//--------------------------------------------------
-void VulkanImage::SetData(const void* data, size_t size, uint32_t mipLevel, uint32_t arrayLayer)
-{
-	VkBuffer stagingBuffer;
-	VmaAllocation stagingAlloc;
-
-	void* mapped;
-	vmaMapMemory(m_pContext->allocator, stagingAlloc, &mapped);
-	memcpy(mapped, data, size);
-	vmaUnmapMemory(m_pContext->allocator, stagingAlloc);
-}
-
-
-//--------------------------------------------------
 //    Accessors & Mutators
 //--------------------------------------------------
 uint32_t VulkanImage::GetWidth()			const { return m_ImageDesc.width; }

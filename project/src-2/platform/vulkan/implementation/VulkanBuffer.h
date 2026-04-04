@@ -34,11 +34,6 @@ namespace pompeii::vulkan
 		VulkanBuffer& operator=(VulkanBuffer&& other) noexcept = default;
 
 		//--------------------------------------------------
-		//    Functionality
-		//--------------------------------------------------
-		void SetData(const void* data, size_t size, size_t offset) override;
-
-		//--------------------------------------------------
 		//    Accessors & Mutators
 		//--------------------------------------------------
 		[[nodiscard]] size_t GetSize() const override;
@@ -49,6 +44,7 @@ namespace pompeii::vulkan
 		//    Operator Overloads
 		//--------------------------------------------------
 		operator VkBuffer() const;
+		operator VmaAllocation() const;
 
 	private:
 		// Context

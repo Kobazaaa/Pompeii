@@ -48,7 +48,7 @@ void VulkanRenderer::Execute()
 {
 	// Record frame
 	VulkanFrameContext& frame = m_vFrames[m_CurrentFrame];
-	const auto& cmd = frame.CommandBuffer.get();
+	ICommandBuffer* cmd = frame.GetCommandBuffer();
 	cmd->Begin();
 	for (const auto& pass : m_vRenderPasses)
 	{
@@ -59,9 +59,9 @@ void VulkanRenderer::Execute()
 void VulkanRenderer::EndFrame()
 {
 	VulkanFrameContext& frame = m_vFrames[m_CurrentFrame];
-	const auto& cmd = frame.CommandBuffer.get();
+	ICommandBuffer* cmd = frame.GetCommandBuffer();
 	cmd->End();
-	Submit();
+	cmd->Submit(frame);
 
 	m_Context.swapchain->Present(frame);
 	m_CurrentFrame = (m_CurrentFrame + 1) % m_vFrames.size();
@@ -70,6 +70,28 @@ void VulkanRenderer::EndFrame()
 void VulkanRenderer::Shutdown()
 {
 	m_Context.device.WaitIdle();
+}
+
+
+//--------------------------------------------------
+//    Data Handling
+//--------------------------------------------------
+void VulkanRenderer::UploadImage(IImage& image, void* data, size_t size)
+{
+	const auto cmd = m_CommandPool.Allocate(CommandBufferLevel::Primary);
+	cmd->Begin(true);
+	cmd->UploadDataToImage(image, data, size);
+	cmd->End();
+	cmd->Submit();
+}
+
+void VulkanRenderer::UploadBuffer(IBuffer& buffer, void* data, size_t size, size_t offset)
+{
+	const auto cmd = m_CommandPool.Allocate(CommandBufferLevel::Primary);
+	cmd->Begin(true);
+	cmd->UploadDataToBuffer(buffer, data, size, offset);
+	cmd->End();
+	cmd->Submit();
 }
 
 
@@ -120,8 +142,8 @@ void VulkanRenderer::InitializeVulkan()
 	ChoosePhysicalDevice(features2);
 	CreateDevice(features2);
 	CreateAllocator();
-	CreateFrameContext();
 	CreateCommandPool();
+	CreateFrameContext();
 	CreateSwapChain();
 }
 
@@ -174,8 +196,8 @@ void VulkanRenderer::CreateFrameContext()
 	m_vFrames.clear();
 	m_vFrames.reserve(2);
 
-	m_vFrames.emplace_back(m_Context);
-	m_vFrames.emplace_back(m_Context);
+	for (int i = 0; i < 2; ++i)
+		m_vFrames.emplace_back(m_Context, m_CommandPool.Allocate(CommandBufferLevel::Primary), i);
 }
 void VulkanRenderer::CreateSwapChain()
 {
@@ -184,49 +206,4 @@ void VulkanRenderer::CreateSwapChain()
 void VulkanRenderer::CreateCommandPool()
 {
 	m_CommandPool = VulkanCommandPool(m_Context);
-	for (auto& frame : m_vFrames)
-		frame.CommandBuffer = m_CommandPool.Allocate(CommandBufferLevel::Primary);
-}
-
-void VulkanRenderer::Submit()
-{
-	VulkanFrameContext& frame = m_vFrames[m_CurrentFrame];
-
-	// -- Submit Info --
-	VkSubmitInfo2 submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
-	submitInfo.pNext = nullptr;
-	submitInfo.flags = 0;
-
-	// -- Command Buffer Submit Info --
-	VkCommandBufferSubmitInfo cmdSubmitInfo{};
-	cmdSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
-	cmdSubmitInfo.pNext = nullptr;
-	cmdSubmitInfo.commandBuffer = (*static_cast<VulkanCommandBuffer*>(frame.CommandBuffer.get()));
-	cmdSubmitInfo.deviceMask = 0;
-	submitInfo.commandBufferInfoCount = 1;
-	submitInfo.pCommandBufferInfos = &cmdSubmitInfo;
-
-
-	// -- Wait Semaphores --
-	VkSemaphoreSubmitInfo waitSemaphoreSubmitInfo{};
-	waitSemaphoreSubmitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-	waitSemaphoreSubmitInfo.pNext = nullptr;
-	waitSemaphoreSubmitInfo.value = 0;
-	waitSemaphoreSubmitInfo.semaphore = frame.ImageAvailableSemaphore;
-	waitSemaphoreSubmitInfo.stageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	submitInfo.waitSemaphoreInfoCount = 1;
-	submitInfo.pWaitSemaphoreInfos = &waitSemaphoreSubmitInfo;
-
-	VkSemaphoreSubmitInfo signalSemaphoreSubmitInfo{};
-	signalSemaphoreSubmitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-	signalSemaphoreSubmitInfo.pNext = nullptr;
-	signalSemaphoreSubmitInfo.value = 0;
-	signalSemaphoreSubmitInfo.semaphore = frame.RenderFinishedSemaphore;
-	submitInfo.signalSemaphoreInfoCount = 1;
-	submitInfo.pSignalSemaphoreInfos = &signalSemaphoreSubmitInfo;
-
-	// -- Submit yay --
-	if (vkQueueSubmit2(m_Context.device.GetGraphicQueue(), 1, &submitInfo, frame.InFlightFences) != VK_SUCCESS)
-		throw std::runtime_error("Failed to submit Command Buffer!");
 }

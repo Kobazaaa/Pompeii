@@ -48,6 +48,12 @@ namespace pompeii::vulkan
 
 		void Shutdown() override;
 
+		//--------------------------------------------------
+		//    Data Handling
+		//--------------------------------------------------
+		void UploadImage(IImage& image, void* data, size_t size) override;
+		void UploadBuffer(IBuffer& buffer, void* data, size_t size, size_t offset) override;
+
 	private:
 		//--------------------------------------------------
 		//    Helpers
@@ -62,7 +68,6 @@ namespace pompeii::vulkan
 		void CreateSwapChain();
 		void CreateCommandPool();
 
-		void Submit();
 	private:
 		std::vector<std::unique_ptr<IRenderPass>> m_vRenderPasses{};
 

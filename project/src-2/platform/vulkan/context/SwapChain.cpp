@@ -31,13 +31,14 @@ VulkanSwapChain::~VulkanSwapChain()
 //--------------------------------------------------
 bool VulkanSwapChain::AcquireNextImage(const VulkanFrameContext& frame)
 {
-	vkWaitForFences(m_pContext->device, 1, &frame.InFlightFences, VK_TRUE, UINT64_MAX);
+	VkFence fence = frame.GetInFlightFence();
+	vkWaitForFences(m_pContext->device, 1, &fence, VK_TRUE, UINT64_MAX);
 
 	VkResult result = vkAcquireNextImageKHR(
 		m_pContext->device,
 		m_SwapChain,
 		UINT64_MAX,
-		frame.ImageAvailableSemaphore,
+		frame.GetImageAvailableSemaphore(),
 		VK_NULL_HANDLE,
 		&m_CurrentImageIndex
 	);
@@ -51,7 +52,7 @@ bool VulkanSwapChain::AcquireNextImage(const VulkanFrameContext& frame)
 		throw std::runtime_error("Failed to acquire Swap Chain Image");
 
 	// -- Reset Fence to be un-signaled (not done) --
-	vkResetFences(m_pContext->device, 1, &frame.InFlightFences);
+	vkResetFences(m_pContext->device, 1, &fence);
 
 	return true;
 }
@@ -64,8 +65,9 @@ bool VulkanSwapChain::Present(const VulkanFrameContext& frame)
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
+	VkSemaphore renderFinishedSemaphore = frame.GetRenderFinishedSemaphore();
 	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = &frame.RenderFinishedSemaphore;
+	presentInfo.pWaitSemaphores = &renderFinishedSemaphore;
 
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = &m_SwapChain;

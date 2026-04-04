@@ -2,7 +2,7 @@
 #define POMPEII_FRAME_CONTEXT_VULKAN_IMPLEMENTATION_H
 
 // -- Pompeii Includes --
-#include "IFrameContext.h"
+#include "FrameContext.h"
 
 // -- Vulkan Includes --
 #include <vulkan/vulkan.h>
@@ -18,13 +18,14 @@ namespace pompeii::vulkan
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~    VulkanFrameContext
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	struct VulkanFrameContext final : public IFrameContext
+	class VulkanFrameContext final : public FrameContext
 	{
+	public:
 		//--------------------------------------------------
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		explicit VulkanFrameContext() = default;
-		explicit VulkanFrameContext(VulkanContext& context);
+		explicit VulkanFrameContext(VulkanContext& context, std::unique_ptr<ICommandBuffer> cmdBuffer, uint32_t index);
 		~VulkanFrameContext() override;
 
 		VulkanFrameContext(const VulkanFrameContext& other) = delete;
@@ -35,12 +36,16 @@ namespace pompeii::vulkan
 		//--------------------------------------------------
 		//    Data
 		//--------------------------------------------------
-		VkSemaphore ImageAvailableSemaphore { VK_NULL_HANDLE };
-		VkSemaphore RenderFinishedSemaphore { VK_NULL_HANDLE };
-		VkFence InFlightFences				{ VK_NULL_HANDLE };
+		VkSemaphore GetImageAvailableSemaphore() const;
+		VkSemaphore GetRenderFinishedSemaphore() const;
+		VkFence GetInFlightFence() const;
 
 	private:
-		VulkanContext* m_pContext{ nullptr };
+		VkSemaphore m_ImageAvailableSemaphore	{ VK_NULL_HANDLE };
+		VkSemaphore m_RenderFinishedSemaphore	{ VK_NULL_HANDLE };
+		VkFence m_InFlightFences				{ VK_NULL_HANDLE };
+		VulkanContext* m_pContext				{ nullptr };
+
 	};
 }
 

@@ -40,7 +40,7 @@ std::unique_ptr<ICommandBuffer> VulkanCommandPool::Allocate(CommandBufferLevel l
 	if (vkAllocateCommandBuffers(m_pContext->device, &allocInfo, &cmdBuffer) != VK_SUCCESS)
 		throw std::runtime_error("Failed to allocate command buffer!");
 
-	auto ptr = std::make_unique<VulkanCommandBuffer>(*this);
+	auto ptr = std::make_unique<VulkanCommandBuffer>(*this, *m_pContext);
 	ptr->m_CmdBuffer = cmdBuffer;
 	return std::move(ptr);
 }

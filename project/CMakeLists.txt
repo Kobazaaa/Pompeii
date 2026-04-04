@@ -52,8 +52,6 @@ set(SOURCES
 	"${SOURCE_DIR}/presentation/SwapChain.cpp"
 
 	#src-2
-	"${SOURCE_DIR_2}/interface/IBuffer.cpp"
-
 	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanImage.cpp"
 	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanBuffer.cpp"
 	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanCommandBuffer.cpp"

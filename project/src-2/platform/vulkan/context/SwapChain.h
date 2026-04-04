@@ -10,7 +10,7 @@
 // -- Forward Declarations --
 namespace pompeii::vulkan
 {
-	struct VulkanFrameContext;
+	class VulkanFrameContext;
 	struct VulkanContext;
 }
 

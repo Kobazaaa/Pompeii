@@ -22,7 +22,7 @@ namespace pompeii
         virtual ~IRenderPass() = default;
 
         //--------------------------------------------------
-        //    Functionality
+        //    Rendering Functionality
         //--------------------------------------------------
         virtual void Setup(IRenderer* renderer) = 0;
         virtual void Resize(uint32_t width, uint32_t height) = 0;

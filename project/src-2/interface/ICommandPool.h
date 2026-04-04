@@ -6,6 +6,7 @@
 
 // -- Pompeii Includes --
 #include "ICommandBuffer.h"
+#include "PompeiiEnums.h"
 
 namespace pompeii
 {

@@ -2,24 +2,10 @@
 #define POMPEII_BUFFER_INTERFACE_H
 
 // -- Pompeii Includes --
-#include "Common.h"
-#include "MemoryEnums.h"
+#include "PompeiiEnums.h"
 
 namespace pompeii
 {
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//? ~~    Buffer Usage
-	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	enum class BufferUsage
-	{
-		Vertex	= BIT(0),
-		Index	= BIT(1),
-		Uniform = BIT(2),
-		Storage = BIT(3),
-		Staging = BIT(4)
-	};
-	ENUM_AS_FLAGS(BufferUsage);
-
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//? ~~    Buffer Description
 	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -41,11 +27,6 @@ namespace pompeii
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		virtual ~IBuffer() = default;
-
-		//--------------------------------------------------
-		//    Functionality
-		//--------------------------------------------------
-		virtual void SetData(const void* data, size_t size, size_t offset = 0) = 0;
 
 		//--------------------------------------------------
 		//    Accessors & Mutators
