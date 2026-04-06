@@ -4,14 +4,24 @@
 // -- Standard Library --
 #include <cstdint>
 
+// -- Math Includes --
+#include "glm/vec4.hpp"
+
+// -- Pompeii Includes --
+#include "RenderingInfo.h"
+
 // -- Forward Declarations --
 namespace pompeii
 {
 	class FrameContext;
 	class ICommandPool;
-	class Mesh;
-    class IBuffer;
+
+	class IBuffer;
     class IImage;
+    class IPipeline;
+
+	struct Material;
+	class Mesh;
 }
 
 namespace pompeii
@@ -57,8 +67,16 @@ namespace pompeii
         // Image Commands
         virtual void GenerateMips(IImage& src) = 0;
 
+        // Rendering
+        virtual void SetViewport(float x, float y, float w, float h) = 0;
+        virtual void SetScissors(int32_t x, int32_t y, uint32_t w, uint32_t h) = 0;
+        virtual void BeginRendering(const RenderingInfo& info) = 0;
+        virtual void EndRendering() = 0;
+
         // Drawing
-        virtual void DrawMesh(Mesh& pMesh) = 0;
+        virtual void BindPipeline(IPipeline& pipeline) = 0;
+        virtual void DrawMesh(Mesh& mesh) = 0;
+        virtual void Draw(uint32_t vertexCount) = 0;
     };
 }
 

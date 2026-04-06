@@ -3,11 +3,13 @@
 #include "IWindow.h"
 #include "RenderDebugger.h"
 #include "VulkanFrameContext.h"
+#include "SwapChain.h"
+#include "VulkanCommandBuffer.h"
 
 // -- Standard Library --
 #include <stdexcept>
 
-#include "VulkanCommandBuffer.h"
+#include "RenderContext.h"
 #include "../../../../../../../out/build/x64-Debug/_deps/glfw-src/include/GLFW/glfw3.h"
 
 using namespace pompeii;
@@ -20,6 +22,7 @@ VulkanRenderer::VulkanRenderer(IWindow* pWindow)
 	: m_pWindow(pWindow)
 {
 	InitializeVulkan();
+	InitializeHelpers();
 }
 
 VulkanRenderer::~VulkanRenderer()
@@ -34,7 +37,13 @@ VulkanRenderer::~VulkanRenderer()
 void VulkanRenderer::AddRenderPass(std::unique_ptr<IRenderPass> pass)
 {
 	m_vRenderPasses.push_back(std::move(pass));
-	m_vRenderPasses.back()->Setup(this);
+	auto* currentBackBuffer = m_Context.swapchain->GetCurrentBackBuffer();
+	m_vRenderPasses.back()->Setup(RenderContext
+	{
+		.backBufferImage = *currentBackBuffer,
+		.resourceManager = m_ResourceManager,
+		.pipelineCache = m_PipelineCache
+	});
 }
 
 void VulkanRenderer::BeginFrame()
@@ -47,12 +56,20 @@ void VulkanRenderer::BeginFrame()
 void VulkanRenderer::Execute()
 {
 	// Record frame
+	auto* currentBackBuffer = m_Context.swapchain->GetCurrentBackBuffer();
 	VulkanFrameContext& frame = m_vFrames[m_CurrentFrame];
 	ICommandBuffer* cmd = frame.GetCommandBuffer();
+	cmd->Clear();
 	cmd->Begin();
 	for (const auto& pass : m_vRenderPasses)
 	{
-		pass->Execute(cmd);
+		pass->Execute(RenderContext
+			{
+				.backBufferImage = *currentBackBuffer,
+				.resourceManager = m_ResourceManager,
+				.pipelineCache = m_PipelineCache
+			},
+			*cmd);
 	}
 }
 
@@ -74,33 +91,18 @@ void VulkanRenderer::Shutdown()
 
 
 //--------------------------------------------------
-//    Data Handling
-//--------------------------------------------------
-void VulkanRenderer::UploadImage(IImage& image, void* data, size_t size)
-{
-	const auto cmd = m_CommandPool.Allocate(CommandBufferLevel::Primary);
-	cmd->Begin(true);
-	cmd->UploadDataToImage(image, data, size);
-	cmd->End();
-	cmd->Submit();
-}
-
-void VulkanRenderer::UploadBuffer(IBuffer& buffer, void* data, size_t size, size_t offset)
-{
-	const auto cmd = m_CommandPool.Allocate(CommandBufferLevel::Primary);
-	cmd->Begin(true);
-	cmd->UploadDataToBuffer(buffer, data, size, offset);
-	cmd->End();
-	cmd->Submit();
-}
-
-
-//--------------------------------------------------
 //    Helpers
 //--------------------------------------------------
+void VulkanRenderer::InitializeHelpers()
+{
+	m_PipelineCache = VulkanPipelineCache(m_Context);
+	m_ResourceManager = VulkanResourceManager(m_Context);
+}
 void VulkanRenderer::InitializeVulkan()
 {
 	RenderDebugger::SetEnabled(true);
+	RenderDebugger::AddValidationLayer("VK_LAYER_KHRONOS_validation");
+
 	// -- Features --
 	// -- Vulkan API Core Features --
 	VkPhysicalDeviceFeatures vulkanCoreFeatures{};
@@ -141,6 +143,9 @@ void VulkanRenderer::InitializeVulkan()
 	CreateSurface();
 	ChoosePhysicalDevice(features2);
 	CreateDevice(features2);
+
+	RenderDebugger::Setup(m_Context);
+
 	CreateAllocator();
 	CreateCommandPool();
 	CreateFrameContext();
@@ -201,7 +206,7 @@ void VulkanRenderer::CreateFrameContext()
 }
 void VulkanRenderer::CreateSwapChain()
 {
-	m_Context.swapchain = new VulkanSwapChain(m_Context, 1920u, 1080u, 2);
+	m_Context.swapchain = std::make_unique<VulkanSwapChain>(m_Context, 1920u, 1080u, 2);
 }
 void VulkanRenderer::CreateCommandPool()
 {

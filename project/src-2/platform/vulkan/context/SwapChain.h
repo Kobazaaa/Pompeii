@@ -39,9 +39,9 @@ namespace pompeii::vulkan
 		explicit VulkanSwapChain(VulkanContext& context, uint32_t width, uint32_t height, uint32_t buffers);
 		~VulkanSwapChain();
 
-		VulkanSwapChain(const VulkanSwapChain& other) = default;
+		VulkanSwapChain(const VulkanSwapChain& other) = delete;
 		VulkanSwapChain(VulkanSwapChain&& other) noexcept = default;
-		VulkanSwapChain& operator=(const VulkanSwapChain& other) = default;
+		VulkanSwapChain& operator=(const VulkanSwapChain& other) = delete;
 		VulkanSwapChain& operator=(VulkanSwapChain&& other) noexcept = default;
 
 		//--------------------------------------------------

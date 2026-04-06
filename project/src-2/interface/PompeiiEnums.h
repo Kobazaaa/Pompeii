@@ -71,6 +71,79 @@ namespace pompeii
         Primary,
         Secondary
     };
+
+
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//? ~~    Pipeline
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	enum class CullMode
+	{
+		None,
+		Front,
+		Back,
+		Both
+	};
+
+	enum class FrontFace
+	{
+		Clockwise,
+		CounterClockwise
+	};
+
+	enum class PolygonMode
+	{
+		Fill,
+	};
+
+	enum class PrimitiveTopology
+	{
+		TriangleList,
+	};
+
+	enum class DepthCompareOp
+	{
+		Never,
+		Less,
+		Equal,
+		LessOrEqual,
+		Greater,
+		NotEqual,
+		GreaterOrEqual,
+		Always
+	};
+
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//? ~~    Vertex
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	enum class VertexInputRate
+	{
+		Vertex,
+		Instance
+	};
+
+	enum class VertexFormat
+	{
+		Float,
+		Float2,
+		Float3,
+		Float4
+	};
+
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//? ~~    Load/Store Ops
+	//? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	enum class LoadOp
+	{
+		Load,
+		Clear,
+		DontCare
+	};
+
+	enum class StoreOp
+	{
+		Store,
+		DontCare
+	};
 }
 
 #endif // POMPEII_POMPEII_ENUMS_H

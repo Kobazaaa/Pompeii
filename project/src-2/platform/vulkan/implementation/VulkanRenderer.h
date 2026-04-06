@@ -10,6 +10,8 @@
 #include "IRenderer.h"
 #include "VulkanCommandPool.h"
 #include "VulkanContext.h"
+#include "VulkanPipelineCache.h"
+#include "VulkanResourceManager.h"
 
 // -- Forward Declarations --
 namespace pompeii
@@ -48,16 +50,11 @@ namespace pompeii::vulkan
 
 		void Shutdown() override;
 
-		//--------------------------------------------------
-		//    Data Handling
-		//--------------------------------------------------
-		void UploadImage(IImage& image, void* data, size_t size) override;
-		void UploadBuffer(IBuffer& buffer, void* data, size_t size, size_t offset) override;
-
 	private:
 		//--------------------------------------------------
 		//    Helpers
 		//--------------------------------------------------
+		void InitializeHelpers();
 		void InitializeVulkan();
 		void CreateInstance();
 		void CreateSurface();
@@ -69,14 +66,16 @@ namespace pompeii::vulkan
 		void CreateCommandPool();
 
 	private:
-		std::vector<std::unique_ptr<IRenderPass>> m_vRenderPasses{};
-
-		IWindow* m_pWindow{ nullptr };
-
 		VulkanContext m_Context{};
 		VulkanCommandPool m_CommandPool{};
 		std::vector<VulkanFrameContext> m_vFrames{};
 
+		VulkanResourceManager m_ResourceManager{};
+		VulkanPipelineCache m_PipelineCache{};
+
+		std::vector<std::unique_ptr<IRenderPass>> m_vRenderPasses{};
+
+		IWindow* m_pWindow{ nullptr };
 		std::uint32_t m_CurrentFrame = 0;
 	};
 }

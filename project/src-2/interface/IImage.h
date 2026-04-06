@@ -11,13 +11,17 @@ namespace pompeii
     //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     struct ImageDesc
     {
-        uint32_t width;
-        uint32_t height;
+        uint32_t width = 1920u;
+        uint32_t height = 1080u;
         uint32_t depth = 1;
+
         uint32_t mipLevels = 1;
-        ImageFormat format;
-        ImageUsage usage;
-        MemoryType memory;
+
+        ImageFormat format = ImageFormat::RGBA32F;
+        ImageUsage usage = ImageUsage::ColorAttachment;
+        MemoryType memory = MemoryType::DeviceLocal;
+
+        bool isDepthImage = false;
     };
 
     //? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

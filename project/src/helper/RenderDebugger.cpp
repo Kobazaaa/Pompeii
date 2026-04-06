@@ -19,8 +19,16 @@ void pompeii::RenderDebugger::Setup(const Context& context)
 {
 	if (!m_IsEnabled) return;
 
-	SetupInstanceDebugUtils(context);
-	SetupDeviceDebugUtils(context);
+	SetupInstanceDebugUtils(context.instance.GetHandle());
+	SetupDeviceDebugUtils(context.instance.GetHandle(), context.device.GetHandle());
+}
+
+void pompeii::RenderDebugger::Setup(const vulkan::VulkanContext& context)
+{
+	if (!m_IsEnabled) return;
+
+	SetupInstanceDebugUtils(context.instance);
+	SetupDeviceDebugUtils(context.instance, context.device);
 }
 
 
@@ -192,34 +200,34 @@ VkBool32 pompeii::RenderDebugger::DebugCallback(
 	return VK_FALSE;
 }
 
-void pompeii::RenderDebugger::SetupInstanceDebugUtils(const Context& context)
+void pompeii::RenderDebugger::SetupInstanceDebugUtils(VkInstance instance)
 {
 	VkDebugUtilsMessengerCreateInfoEXT createInfo{};
 	PopulateDebugMessengerCreateInfo(createInfo);
 
-	m_InstanceDebugUtils.instance = context.instance.GetHandle();
+	m_InstanceDebugUtils.instance = instance;
 	m_InstanceDebugUtils.createDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>
-															(vkGetInstanceProcAddr(context.instance.GetHandle(), "vkCreateDebugUtilsMessengerEXT"));
+															(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
 	m_InstanceDebugUtils.destroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>
-															(vkGetInstanceProcAddr(context.instance.GetHandle(), "vkDestroyDebugUtilsMessengerEXT"));
+															(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
 
 	if (m_InstanceDebugUtils.createDebugUtilsMessengerEXT != nullptr)
-		m_InstanceDebugUtils.createDebugUtilsMessengerEXT(context.instance.GetHandle(), &createInfo, nullptr, &m_InstanceDebugUtils.debugUtilsMessenger);
+		m_InstanceDebugUtils.createDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &m_InstanceDebugUtils.debugUtilsMessenger);
 	else
 		throw std::runtime_error("Failed to find vkCreateDebugUtilsMessengerEXT!");
 }
 
-void pompeii::RenderDebugger::SetupDeviceDebugUtils(const Context& context)
+void pompeii::RenderDebugger::SetupDeviceDebugUtils(VkInstance instance, VkDevice device)
 {
-	m_DeviceDebugUtils.device = context.device.GetHandle();
+	m_DeviceDebugUtils.device = device;
 
 	m_DeviceDebugUtils.setDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>
-														(vkGetDeviceProcAddr(context.device.GetHandle(), "vkSetDebugUtilsObjectNameEXT"));
+														(vkGetDeviceProcAddr(device, "vkSetDebugUtilsObjectNameEXT"));
 	m_DeviceDebugUtils.cmdBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>
-														(vkGetDeviceProcAddr(context.device.GetHandle(), "vkCmdBeginDebugUtilsLabelEXT"));
+														(vkGetDeviceProcAddr(device, "vkCmdBeginDebugUtilsLabelEXT"));
 	m_DeviceDebugUtils.cmdEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>
-														(vkGetDeviceProcAddr(context.device.GetHandle(), "vkCmdEndDebugUtilsLabelEXT"));
+														(vkGetDeviceProcAddr(device, "vkCmdEndDebugUtilsLabelEXT"));
 	m_DeviceDebugUtils.cmdInsertDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdInsertDebugUtilsLabelEXT>
-														(vkGetDeviceProcAddr(context.device.GetHandle(), "vkCmdInsertDebugUtilsLabelEXT"));
+														(vkGetDeviceProcAddr(device, "vkCmdInsertDebugUtilsLabelEXT"));
 }
 

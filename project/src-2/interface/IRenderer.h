@@ -7,9 +7,18 @@
 // -- Forward Declarations --
 namespace pompeii
 {
-    class IRenderPass;
+    struct RenderContext;
+
+	class IRenderPass;
     class IBuffer;
     class IImage;
+    class IPipeline;
+    class IShader;
+
+	struct BufferDesc;
+	struct ImageDesc;
+    struct PipelineDesc;
+    struct ShaderDesc;
 }
 
 namespace pompeii
@@ -45,11 +54,6 @@ namespace pompeii
         virtual void Execute() = 0;
         virtual void EndFrame() = 0;
 
-        //--------------------------------------------------
-		//    Data Handling
-		//--------------------------------------------------
-        virtual void UploadImage(IImage& image, void* data, size_t size) = 0;
-        virtual void UploadBuffer(IBuffer& image, void* data, size_t size, size_t offset) = 0;
     };
 }
 

@@ -69,8 +69,16 @@ namespace pompeii::vulkan
 		// Image Commands
 		void GenerateMips(IImage& src) override;
 
+		// Rendering
+		void SetViewport(float x, float y, float w, float h) override;
+		void SetScissors(int32_t x, int32_t y, uint32_t w, uint32_t h) override;
+		void BeginRendering(const RenderingInfo& info) override;
+		void EndRendering() override;
+
 		// Drawing
-		void DrawMesh(Mesh& pMesh) override;
+		void BindPipeline(IPipeline& pipeline) override;
+		void DrawMesh(Mesh& mesh) override;
+		void Draw(uint32_t vertexCount) override;
 
 	private:
 		void TransitionImageLayout(VulkanImage& image, VkImageLayout newLayout,

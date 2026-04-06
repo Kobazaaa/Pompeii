@@ -26,7 +26,7 @@ namespace pompeii::vulkan
 		//    Constructor & Destructor
 		//--------------------------------------------------
 		explicit VulkanImage(const ImageDesc& imageDesc, VulkanContext& context);
-		explicit VulkanImage(VulkanContext& context, VkImage image, VkImageView view, VkFormat format);
+		explicit VulkanImage(VulkanContext& context, VkImage image, VkImageView view, VkFormat format, VkExtent2D extent);
 		~VulkanImage() override;
 
 		VulkanImage(const VulkanImage& other) = delete;
@@ -47,19 +47,22 @@ namespace pompeii::vulkan
 		//    Operator Overloads
 		//--------------------------------------------------
 		operator VkImage() const;
+		operator VkImageView() const;
+		operator VmaAllocation() const;
 
 	private:
+		void CreateImageView();
+
 		// Context
 		VulkanContext* m_pContext;
 
 		// Image Info
 		ImageDesc m_ImageDesc;
-		VkFormat m_Format				{ VK_FORMAT_UNDEFINED };
-		VkExtent3D m_Extent				{ 0, 0, 0 };
 		VkImageLayout m_CurrentLayout	{ VK_IMAGE_LAYOUT_UNDEFINED };
 
 		// Vulkan Data
 		VkImage m_Image					{ VK_NULL_HANDLE };
+		VkImageView m_View				{ VK_NULL_HANDLE };
 		VmaAllocation m_Memory			{ nullptr };
 
 		// todo let's not

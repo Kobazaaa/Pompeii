@@ -37,13 +37,27 @@ VulkanImage::VulkanImage(const ImageDesc& imageDesc, VulkanContext& context)
 		&m_Memory,
 		nullptr
 	);
+
+	CreateImageView();
 }
-VulkanImage::VulkanImage(VulkanContext& context, VkImage image, VkImageView view, VkFormat format)
+VulkanImage::VulkanImage(VulkanContext& context, VkImage image, VkImageView view, VkFormat format, VkExtent2D extent)
 {
 	m_pContext = &context;
 	m_Image = image;
-	m_Format = format;
-	m_Extent = { 0, 0, 0 };
+	m_View = view;
+
+	m_ImageDesc = {};
+	m_ImageDesc.isDepthImage = false;
+
+	m_ImageDesc.width = extent.width;
+	m_ImageDesc.height = extent.height;
+	m_ImageDesc.depth = 1;
+
+	m_ImageDesc.memory = MemoryType::DeviceLocal;
+	m_ImageDesc.usage = ImageUsage::ColorAttachment;
+	m_ImageDesc.mipLevels = 1;
+
+	m_ImageDesc.format = TO_POMPEII_FORMAT(format);
 }
 
 VulkanImage::~VulkanImage()
@@ -66,3 +80,26 @@ MemoryType VulkanImage::GetMemoryType()		const { return m_ImageDesc.memory; }
 //    Operator Overloads
 //--------------------------------------------------
 VulkanImage::operator VkImage()				const { return m_Image; }
+VulkanImage::operator VkImageView()			const { return m_View; }
+VulkanImage::operator VmaAllocation()		const { return m_Memory; }
+
+
+//--------------------------------------------------
+//    Helper
+//--------------------------------------------------
+void VulkanImage::CreateImageView()
+{
+	VkImageViewCreateInfo viewInfo{};
+	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image = m_Image;
+	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.format = TO_VK_FORMAT(m_ImageDesc.format);
+	viewInfo.subresourceRange.aspectMask = m_ImageDesc.isDepthImage ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = 1;
+
+	if (vkCreateImageView(m_pContext->device, &viewInfo, nullptr, &m_View) != VK_SUCCESS)
+		throw std::runtime_error("Failed to create Image View!");
+}

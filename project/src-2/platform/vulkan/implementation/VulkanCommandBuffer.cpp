@@ -5,9 +5,13 @@
 #include "VulkanFrameContext.h"
 #include "VulkanContext.h"
 #include "VulkanCommandPool.h"
+#include "VulkanPipeline.h"
+#include "Material.h"
 
 // -- Standard Library --
 #include <stdexcept>
+
+#include "VulkanHelpers.h"
 
 using namespace pompeii;
 using namespace pompeii::vulkan;
@@ -140,6 +144,12 @@ VulkanCommandBuffer::operator VkCommandBuffer() const
 // Data Commands
 void VulkanCommandBuffer::UploadDataToBuffer(IBuffer& buffer, const void* data, size_t size, size_t offset)
 {
+	if (buffer.GetMemoryType() == MemoryType::HostVisible)
+	{
+		vmaCopyMemoryToAllocation(m_pContext->allocator, data, static_cast<VulkanBuffer&>(buffer), offset, size);
+		return;
+	}
+
 	BufferDesc bufferDesc
 	{
 		.size = size,
@@ -152,6 +162,12 @@ void VulkanCommandBuffer::UploadDataToBuffer(IBuffer& buffer, const void* data, 
 }
 void VulkanCommandBuffer::UploadDataToImage(IImage& image, const void* data, size_t size)
 {
+	if (image.GetMemoryType() == MemoryType::HostVisible)
+	{
+		vmaCopyMemoryToAllocation(m_pContext->allocator, data, static_cast<VulkanImage&>(image), 0, size);
+		return;
+	}
+
 	BufferDesc bufferDesc
 	{
 		.size = size,
@@ -259,10 +275,87 @@ void VulkanCommandBuffer::GenerateMips(IImage& src)
 	throw std::logic_error("Not implemented");
 }
 
+// Rendering
+void VulkanCommandBuffer::SetViewport(float x, float y, float w, float h)
+{
+	VkViewport viewport;
+	viewport.x = x;
+	viewport.y = y;
+	viewport.width = w;
+	viewport.height = h;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	vkCmdSetViewport(m_CmdBuffer, 0, 1, &viewport);
+}
+
+void VulkanCommandBuffer::SetScissors(int32_t x, int32_t y, uint32_t w, uint32_t h)
+{
+	VkRect2D scissor;
+	scissor.offset = { .x = x, .y = y };
+	scissor.extent = { .width = w, .height = h };
+	vkCmdSetScissor(m_CmdBuffer, 0, 1, &scissor);
+}
+
+void VulkanCommandBuffer::BeginRendering(const RenderingInfo& info)
+{
+	VkRenderingAttachmentInfo depthAttachment{};
+	if (info.depthAttachment)
+	{
+		VulkanImage& depthImage = static_cast<VulkanImage&>(info.depthAttachment->image);
+		depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		depthAttachment.imageView = depthImage;
+		depthAttachment.imageLayout = depthImage.m_CurrentLayout;
+		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.clearValue.depthStencil = { .depth = 1, .stencil = 0 };
+	}
+
+	const uint32_t colorAttachmentCount = info.colorAttachments.size();
+	std::vector<VkRenderingAttachmentInfo> colorAttachmentInfos{};
+	colorAttachmentInfos.reserve(colorAttachmentCount);
+	for (auto [image, loadOp, storeOp, clearValue] : info.colorAttachments)
+	{
+		VulkanImage& colorImage = static_cast<VulkanImage&>(image);
+
+		VkRenderingAttachmentInfo colorInfo{};
+		colorInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		colorInfo.imageView = colorImage;
+		colorInfo.imageLayout = colorImage.m_CurrentLayout;
+		colorInfo.loadOp = TO_VK_LOAD_OP(loadOp);
+		colorInfo.storeOp = TO_VK_STORE_OP(storeOp);
+		colorInfo.clearValue.color = VkClearColorValue{ clearValue.r, clearValue.g, clearValue.b, clearValue.a };
+		colorAttachmentInfos.emplace_back(colorInfo);
+	}
+
+	VkRenderingInfo renderingInfo{};
+	renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+	renderingInfo.renderArea = VkRect2D{ VkOffset2D{0, 0}, VkExtent2D{info.width, info.height} };
+	renderingInfo.layerCount = 1;
+	renderingInfo.colorAttachmentCount = colorAttachmentCount;
+	renderingInfo.pColorAttachments = colorAttachmentInfos.data();
+	renderingInfo.pDepthAttachment = info.depthAttachment ? &depthAttachment : nullptr;
+	renderingInfo.pStencilAttachment = nullptr;
+
+	vkCmdBeginRendering(m_CmdBuffer, &renderingInfo);
+}
+
+void VulkanCommandBuffer::EndRendering()
+{
+	vkCmdEndRendering(m_CmdBuffer);
+}
+
 // Drawing
-void VulkanCommandBuffer::DrawMesh(Mesh& pMesh)
+void VulkanCommandBuffer::BindPipeline(IPipeline& pipeline)
+{
+	vkCmdBindPipeline(m_CmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, static_cast<VulkanPipeline&>(pipeline));
+}
+void VulkanCommandBuffer::DrawMesh(Mesh& mesh)
 {
 	throw std::logic_error("Not implemented");
+}
+void VulkanCommandBuffer::Draw(uint32_t vertexCount)
+{
+	vkCmdDraw(m_CmdBuffer, vertexCount, 1, 0, 0);
 }
 
 

@@ -214,7 +214,8 @@ void VulkanSwapChain::CreateBackBuffers()
 			*m_pContext,
 			m_vImages[i],
 			m_vImageViews[i],
-			m_Format
+			m_Format,
+			m_Extent
 		);
 	}
 }

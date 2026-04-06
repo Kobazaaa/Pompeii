@@ -4,8 +4,8 @@
 // -- Forward Declarations --
 namespace pompeii
 {
-    class IRenderer;
     class ICommandBuffer;
+    struct RenderContext;
 }
 
 namespace pompeii
@@ -24,9 +24,9 @@ namespace pompeii
         //--------------------------------------------------
         //    Rendering Functionality
         //--------------------------------------------------
-        virtual void Setup(IRenderer* renderer) = 0;
+        virtual void Setup(const RenderContext& context) = 0;
         virtual void Resize(uint32_t width, uint32_t height) = 0;
-        virtual void Execute(ICommandBuffer* cmd) = 0;
+        virtual void Execute(const RenderContext& context, ICommandBuffer& cmd) = 0;
     };
 }
 

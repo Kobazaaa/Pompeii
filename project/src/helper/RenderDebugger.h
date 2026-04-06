@@ -3,6 +3,7 @@
 
 // -- Vulkan Includes --
 #include <vulkan/vulkan.h>
+#include "VulkanContext.h"
 
 // -- Standard Library --
 #include <string>
@@ -48,6 +49,7 @@ namespace pompeii
 		static void SetEnabled(bool enabled);
 		static void AddValidationLayer(const char* layer);
 		static void Setup(const Context& context);
+		static void Setup(const vulkan::VulkanContext& context);
 		static void Destroy();
 
 		static void SetDebugObjectName(uint64_t objectHandle, VkObjectType objectType, const std::string& name);
@@ -72,8 +74,8 @@ namespace pompeii
 															const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 															void* pUserData);
 
-		static void SetupInstanceDebugUtils(const Context& context);
-		static void SetupDeviceDebugUtils(const Context& context);
+		static void SetupInstanceDebugUtils(VkInstance instance);
+		static void SetupDeviceDebugUtils(VkInstance instance, VkDevice device);
 
 		inline static bool							m_IsEnabled				{ false };
 		inline static std::vector<const char*>		m_vValidationLayers		{ };
