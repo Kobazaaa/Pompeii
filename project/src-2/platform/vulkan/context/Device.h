@@ -7,6 +7,7 @@
 // -- Forward Declarations --
 namespace pompeii::vulkan
 {
+	class VulkanDebugMessenger;
 	struct VulkanContext;
 }
 
@@ -73,7 +74,7 @@ namespace pompeii::vulkan
 		//    Builder
 		//--------------------------------------------------
 		DeviceBuilder& SetFeatures(const VkPhysicalDeviceFeatures2& features);
-		void Build(VulkanContext& context) const;
+		void Build(VulkanContext& context, VulkanDebugMessenger* pDebugMessenger) const;
 
 	private:
 		VkPhysicalDeviceFeatures2 m_DesiredFeatures{};

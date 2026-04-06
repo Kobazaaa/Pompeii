@@ -87,6 +87,7 @@ void VulkanRenderer::EndFrame()
 void VulkanRenderer::Shutdown()
 {
 	m_Context.device.WaitIdle();
+	m_pDebugMessenger->Shutdown();
 }
 
 
@@ -100,9 +101,6 @@ void VulkanRenderer::InitializeHelpers()
 }
 void VulkanRenderer::InitializeVulkan()
 {
-	RenderDebugger::SetEnabled(true);
-	RenderDebugger::AddValidationLayer("VK_LAYER_KHRONOS_validation");
-
 	// -- Features --
 	// -- Vulkan API Core Features --
 	VkPhysicalDeviceFeatures vulkanCoreFeatures{};
@@ -143,9 +141,6 @@ void VulkanRenderer::InitializeVulkan()
 	CreateSurface();
 	ChoosePhysicalDevice(features2);
 	CreateDevice(features2);
-
-	RenderDebugger::Setup(m_Context);
-
 	CreateAllocator();
 	CreateCommandPool();
 	CreateFrameContext();
@@ -154,6 +149,9 @@ void VulkanRenderer::InitializeVulkan()
 
 void VulkanRenderer::CreateInstance()
 {
+	VulkanDebugMessenger tempDebugMessenger{ VK_NULL_HANDLE };
+	tempDebugMessenger.AddValidationLayer("VK_LAYER_KHRONOS_validation");
+
 	InstanceBuilder builder{};
 	builder
 		.SetApplicationName("Pompeii")
@@ -165,8 +163,12 @@ void VulkanRenderer::CreateInstance()
 	for (uint32_t index{}; index < glfwExtensionCount; ++index)
 		builder.AddInstanceExtension(glfwExtensions[index]);
 
-	builder.Build(m_Context);
+	builder.Build(m_Context, &tempDebugMessenger);
+
+	m_pDebugMessenger = std::make_unique<VulkanDebugMessenger>(m_Context.instance);
+	m_pDebugMessenger->Initialize();
 }
+
 void VulkanRenderer::CreateSurface()
 {
 	// todo wtaf is this
@@ -178,7 +180,7 @@ void VulkanRenderer::CreateDevice(VkPhysicalDeviceFeatures2 features)
 	DeviceBuilder builder{};
 	builder
 		.SetFeatures(features)
-		.Build(m_Context);
+		.Build(m_Context, m_pDebugMessenger.get());
 }
 void VulkanRenderer::ChoosePhysicalDevice(VkPhysicalDeviceFeatures2 features)
 {

@@ -10,6 +10,7 @@
 #include "IRenderer.h"
 #include "VulkanCommandPool.h"
 #include "VulkanContext.h"
+#include "VulkanDebugMessenger.h"
 #include "VulkanPipelineCache.h"
 #include "VulkanResourceManager.h"
 
@@ -67,6 +68,8 @@ namespace pompeii::vulkan
 
 	private:
 		VulkanContext m_Context{};
+		std::unique_ptr<VulkanDebugMessenger> m_pDebugMessenger { nullptr };
+
 		VulkanCommandPool m_CommandPool{};
 		std::vector<VulkanFrameContext> m_vFrames{};
 

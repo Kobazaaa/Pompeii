@@ -11,6 +11,7 @@
 // -- Forward Declarations --
 namespace pompeii::vulkan
 {
+	class VulkanDebugMessenger;
 	struct VulkanContext;
 }
 
@@ -62,7 +63,7 @@ namespace pompeii::vulkan
 		InstanceBuilder& SetEngineName(const std::string& name);
 		InstanceBuilder& SetAPIVersion(uint32_t apiVersion);
 		InstanceBuilder& AddInstanceExtension(const char* extName);
-		void Build(VulkanContext& context);
+		void Build(VulkanContext& context, VulkanDebugMessenger* pDebugMessenger);
 
 	private:
 		VkApplicationInfo			m_AppInfo{};

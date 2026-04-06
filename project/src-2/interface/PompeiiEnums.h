@@ -42,7 +42,8 @@ namespace pompeii
 
     enum class ImageFormat
     {
-        RGBA8,
+        sRGBA8,
+        sBGRA8,
         RGBA16F,
         RGBA32F,
         Depth24Stencil8,

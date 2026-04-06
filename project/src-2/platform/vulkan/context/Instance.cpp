@@ -5,8 +5,8 @@
 // -- Pompeii Includes --
 #include "Instance.h"
 #include "VulkanContext.h"
-#include "RenderDebugger.h"
 #include "ConsoleTextSettings.h"
+#include "VulkanDebugMessenger.h"
 
 using namespace pompeii::vulkan;
 
@@ -55,11 +55,11 @@ InstanceBuilder& InstanceBuilder::SetEngineName(const std::string& name)		{ m_Ap
 InstanceBuilder& InstanceBuilder::SetAPIVersion(uint32_t apiVersion)			{ m_AppInfo.apiVersion = apiVersion; return *this; }
 InstanceBuilder& InstanceBuilder::AddInstanceExtension(const char* extName)		{ m_vInstanceExtensions.push_back(extName); return *this; }
 
-void InstanceBuilder::Build(VulkanContext& context)
+void InstanceBuilder::Build(VulkanContext& context, VulkanDebugMessenger* pDebugMessenger)
 {
-	if (RenderDebugger::IsEnabled() && !RenderDebugger::CheckValidationLayerSupport())
+	if (pDebugMessenger && !pDebugMessenger->CheckValidationLayerSupport())
 		throw std::runtime_error("Validation Layers requested, but not available!");
-	if (RenderDebugger::IsEnabled())
+	if (pDebugMessenger)
 		m_vInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
 	// Setup CreateInfo
@@ -69,13 +69,13 @@ void InstanceBuilder::Build(VulkanContext& context)
 	m_CreateInfo.enabledExtensionCount = static_cast<uint32_t>(m_vInstanceExtensions.size());
 	m_CreateInfo.ppEnabledExtensionNames = m_vInstanceExtensions.data();
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-	if (RenderDebugger::IsEnabled())
+	if (pDebugMessenger)
 	{
-		m_CreateInfo.enabledLayerCount = RenderDebugger::GetNumberOfLayers();
-		m_CreateInfo.ppEnabledLayerNames = RenderDebugger::GetValidationLayers().data();
+		m_CreateInfo.enabledLayerCount = static_cast<uint32_t>(pDebugMessenger->GetValidationLayers().size());
+		m_CreateInfo.ppEnabledLayerNames = pDebugMessenger->GetValidationLayers().data();
 
-		RenderDebugger::PopulateDebugMessengerCreateInfo(debugCreateInfo);
-		m_CreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+		VulkanDebugMessenger::PopulateDebugMessengerCreateInfo(debugCreateInfo);
+		m_CreateInfo.pNext = &debugCreateInfo;
 	}
 	else
 	{
@@ -86,7 +86,7 @@ void InstanceBuilder::Build(VulkanContext& context)
 	if (vkCreateInstance(&m_CreateInfo, nullptr, &context.instance.m_Instance) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create instance!");
 
-	if (RenderDebugger::IsEnabled())
+	if (pDebugMessenger)
 	{
 		// List all available extensions
 		uint32_t extensionCount = 0;
@@ -99,6 +99,11 @@ void InstanceBuilder::Build(VulkanContext& context)
 		{
 			std::cout << '\t' << extension.extensionName << '\n';
 		}
+		std::cout << "\n" << RESET_TXT;
+
+		std::cout << INFO_TXT << "\nEnabled extensions:\n";
+		for (const auto& ext : m_vInstanceExtensions)
+			std::cout << '\t' << ext << '\n';
 		std::cout << "\n" << RESET_TXT;
 	}
 }

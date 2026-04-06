@@ -19,7 +19,8 @@ namespace pompeii
 	{
 		switch (format)
 		{
-		case ImageFormat::RGBA8:			return VK_FORMAT_R8G8B8A8_SRGB;
+		case ImageFormat::sRGBA8:			return VK_FORMAT_R8G8B8A8_SRGB;
+		case ImageFormat::sBGRA8:			return VK_FORMAT_B8G8R8A8_SRGB;
 		case ImageFormat::RGBA16F:			return VK_FORMAT_R16G16B16A16_SFLOAT;
 		case ImageFormat::RGBA32F:			return VK_FORMAT_R32G32B32A32_SFLOAT;
 		case ImageFormat::Depth24Stencil8:	return VK_FORMAT_D24_UNORM_S8_UINT;
@@ -32,8 +33,8 @@ namespace pompeii
 	{
 		switch (format)
 		{
-		case VK_FORMAT_R8G8B8A8_SRGB:			return ImageFormat::RGBA8;
-		case VK_FORMAT_B8G8R8A8_SRGB:			return ImageFormat::RGBA8;
+		case VK_FORMAT_R8G8B8A8_SRGB:			return ImageFormat::sRGBA8;
+		case VK_FORMAT_B8G8R8A8_SRGB:			return ImageFormat::sBGRA8;
 		case VK_FORMAT_R16G16B16A16_SFLOAT:		return ImageFormat::RGBA16F;
 		case VK_FORMAT_R32G32B32A32_SFLOAT:		return ImageFormat::RGBA32F;
 		case VK_FORMAT_D24_UNORM_S8_UINT:		return ImageFormat::Depth24Stencil8;

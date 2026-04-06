@@ -7,7 +7,6 @@
 // -- Pompeii Includes --
 #include "PhysicalDevice.h"
 #include "VulkanContext.h"
-#include "RenderDebugger.h"
 #include "ConsoleTextSettings.h"
 
 using namespace pompeii::vulkan;
@@ -381,16 +380,13 @@ void PhysicalDeviceSelector::PickPhysicalDevice(VulkanContext& context) const
 	else
 		throw std::runtime_error("Failed to find a suitable GPU!");
 
-	if (RenderDebugger::IsEnabled())
-	{
-		// Print selected GPU
-		VkPhysicalDeviceProperties deviceProperties = context.physicalDevice.GetProperties();
-		vkGetPhysicalDeviceProperties(context.physicalDevice, &deviceProperties);
-		std::cout << INFO_TXT << "Chosen GPU Data:" << '\n'
-			<< "\tName: " << deviceProperties.deviceName << '\n'
-			<< "\tDriver Version: " << deviceProperties.driverVersion << '\n'
-			<< "\tVendorID: " << deviceProperties.vendorID << "\n\n" << RESET_TXT;
-	}
+	// Print selected GPU
+	VkPhysicalDeviceProperties deviceProperties = context.physicalDevice.GetProperties();
+	vkGetPhysicalDeviceProperties(context.physicalDevice, &deviceProperties);
+	std::cout << INFO_TXT << "Chosen GPU Data:" << '\n'
+		<< "\tName: " << deviceProperties.deviceName << '\n'
+		<< "\tDriver Version: " << deviceProperties.driverVersion << '\n'
+		<< "\tVendorID: " << deviceProperties.vendorID << "\n\n" << RESET_TXT;
 }
 
 uint32_t PhysicalDeviceSelector::RateDeviceSuitability(PhysicalDevice& device, VkSurfaceKHR surface) const

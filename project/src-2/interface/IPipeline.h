@@ -30,7 +30,7 @@ namespace pompeii
 
 		bool depthRead = true;
 		bool depthWrite = true;
-		ImageFormat depthFormat;
+		ImageFormat depthFormat = ImageFormat::Depth32F;
 		DepthCompareOp depthCompareOp = DepthCompareOp::Less;
 
 		bool operator==(const PipelineDesc& other) const = default;

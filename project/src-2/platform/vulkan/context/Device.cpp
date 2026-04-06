@@ -5,7 +5,7 @@
 // -- Pompeii Includes --
 #include "Device.h"
 #include "VulkanContext.h"
-#include "RenderDebugger.h"
+#include "VulkanDebugMessenger.h"
 
 using namespace pompeii::vulkan;
 
@@ -53,7 +53,7 @@ DeviceBuilder& DeviceBuilder::SetFeatures(const VkPhysicalDeviceFeatures2& featu
 	m_DesiredFeatures = features;
 	return *this;
 }
-void DeviceBuilder::Build(VulkanContext& context) const
+void DeviceBuilder::Build(VulkanContext& context, VulkanDebugMessenger* pDebugMessenger) const
 {
 	QueueFamilyIndices indices = context.physicalDevice.GetQueueFamilies();
 
@@ -81,10 +81,10 @@ void DeviceBuilder::Build(VulkanContext& context) const
 	createInfo.enabledExtensionCount = context.physicalDevice.GetExtensionsCount();
 	createInfo.ppEnabledExtensionNames = context.physicalDevice.GetExtensions().data();
 
-	if (RenderDebugger::IsEnabled())
+	if (pDebugMessenger)
 	{
-		createInfo.enabledLayerCount = RenderDebugger::GetNumberOfLayers();
-		createInfo.ppEnabledLayerNames = RenderDebugger::GetValidationLayers().data();
+		createInfo.enabledLayerCount = static_cast<uint32_t>(pDebugMessenger->GetValidationLayers().size());
+		createInfo.ppEnabledLayerNames = pDebugMessenger->GetValidationLayers().data();
 	}
 	else
 	{
