@@ -43,6 +43,8 @@ namespace pompeii::vulkan
 		[[nodiscard]] ImageFormat GetFormat() const override;
 		[[nodiscard]] ImageUsage GetUsage() const override;
 		[[nodiscard]] MemoryType GetMemoryType() const override;
+
+		[[nodiscard]] VkImageLayout GetLayout() const;
 		void TransitionImageLayout(const VulkanCommandBuffer& cmd, VkImageLayout newLayout,
 			VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
 			VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage) const;

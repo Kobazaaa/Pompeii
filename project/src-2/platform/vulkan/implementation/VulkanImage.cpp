@@ -76,6 +76,8 @@ ImageFormat VulkanImage::GetFormat()		const { return m_ImageDesc.format; }
 ImageUsage VulkanImage::GetUsage()			const { return m_ImageDesc.usage; }
 MemoryType VulkanImage::GetMemoryType()		const { return m_ImageDesc.memory; }
 
+VkImageLayout VulkanImage::GetLayout()		const { return m_CurrentLayout; }
+
 
 //--------------------------------------------------
 //    Operator Overloads

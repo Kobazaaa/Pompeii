@@ -305,7 +305,7 @@ void VulkanCommandBuffer::BeginRendering(const RenderingInfo& info)
 		VulkanImage& depthImage = static_cast<VulkanImage&>(info.depthAttachment->image);
 		depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
 		depthAttachment.imageView = depthImage;
-		depthAttachment.imageLayout = depthImage.m_CurrentLayout;
+		depthAttachment.imageLayout = depthImage.GetLayout();
 		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		depthAttachment.clearValue.depthStencil = { .depth = 1, .stencil = 0 };
@@ -321,7 +321,7 @@ void VulkanCommandBuffer::BeginRendering(const RenderingInfo& info)
 		VkRenderingAttachmentInfo colorInfo{};
 		colorInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
 		colorInfo.imageView = colorImage;
-		colorInfo.imageLayout = colorImage.m_CurrentLayout;
+		colorInfo.imageLayout = colorImage.GetLayout();
 		colorInfo.loadOp = TO_VK_LOAD_OP(loadOp);
 		colorInfo.storeOp = TO_VK_STORE_OP(storeOp);
 		colorInfo.clearValue.color = VkClearColorValue{ clearValue.r, clearValue.g, clearValue.b, clearValue.a };
