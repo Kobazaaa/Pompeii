@@ -49,7 +49,6 @@ namespace pompeii
 		static void SetEnabled(bool enabled);
 		static void AddValidationLayer(const char* layer);
 		static void Setup(const Context& context);
-		static void Setup(const vulkan::VulkanContext& context);
 		static void Destroy();
 
 		static void SetDebugObjectName(uint64_t objectHandle, VkObjectType objectType, const std::string& name);

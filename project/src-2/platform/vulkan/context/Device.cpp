@@ -5,7 +5,7 @@
 // -- Pompeii Includes --
 #include "Device.h"
 #include "VulkanContext.h"
-#include "VulkanDebugMessenger.h"
+#include "VulkanDebugUtils.h"
 
 using namespace pompeii::vulkan;
 
@@ -53,7 +53,7 @@ DeviceBuilder& DeviceBuilder::SetFeatures(const VkPhysicalDeviceFeatures2& featu
 	m_DesiredFeatures = features;
 	return *this;
 }
-void DeviceBuilder::Build(VulkanContext& context, VulkanDebugMessenger* pDebugMessenger) const
+void DeviceBuilder::Build(VulkanContext& context, VulkanDebugUtils* pDebugMessenger) const
 {
 	QueueFamilyIndices indices = context.physicalDevice.GetQueueFamilies();
 

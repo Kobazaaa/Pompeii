@@ -43,6 +43,11 @@ namespace pompeii::vulkan
 		void Free(ICommandBuffer* pCmdBuffer) override;
 		void Reset() override;
 
+		//--------------------------------------------------
+		//    Operator Overloads
+		//--------------------------------------------------
+		operator VkCommandPool() const;
+
 	private:
 		VulkanContext* m_pContext	{ nullptr };
 		VkCommandPool m_CommandPool	{ VK_NULL_HANDLE };

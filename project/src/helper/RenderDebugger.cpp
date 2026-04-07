@@ -23,15 +23,6 @@ void pompeii::RenderDebugger::Setup(const Context& context)
 	SetupDeviceDebugUtils(context.instance.GetHandle(), context.device.GetHandle());
 }
 
-void pompeii::RenderDebugger::Setup(const vulkan::VulkanContext& context)
-{
-	if (!m_IsEnabled) return;
-
-	SetupInstanceDebugUtils(context.instance);
-	SetupDeviceDebugUtils(context.instance, context.device);
-}
-
-
 void pompeii::RenderDebugger::Destroy()
 {
 	if (!m_IsEnabled) return;

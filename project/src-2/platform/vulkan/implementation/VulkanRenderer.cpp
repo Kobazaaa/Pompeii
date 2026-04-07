@@ -87,7 +87,7 @@ void VulkanRenderer::EndFrame()
 void VulkanRenderer::Shutdown()
 {
 	m_Context.device.WaitIdle();
-	m_pDebugMessenger->Shutdown();
+	m_pDebugUtils->Shutdown();
 }
 
 
@@ -149,7 +149,7 @@ void VulkanRenderer::InitializeVulkan()
 
 void VulkanRenderer::CreateInstance()
 {
-	VulkanDebugMessenger tempDebugMessenger{ VK_NULL_HANDLE };
+	VulkanDebugUtils tempDebugMessenger{ VK_NULL_HANDLE, VK_NULL_HANDLE };
 	tempDebugMessenger.AddValidationLayer("VK_LAYER_KHRONOS_validation");
 
 	InstanceBuilder builder{};
@@ -165,8 +165,8 @@ void VulkanRenderer::CreateInstance()
 
 	builder.Build(m_Context, &tempDebugMessenger);
 
-	m_pDebugMessenger = std::make_unique<VulkanDebugMessenger>(m_Context.instance);
-	m_pDebugMessenger->Initialize();
+	m_pDebugUtils = std::make_unique<VulkanDebugUtils>(m_Context.instance, m_Context.device);
+	m_pDebugUtils->Initialize();
 }
 
 void VulkanRenderer::CreateSurface()
@@ -180,7 +180,7 @@ void VulkanRenderer::CreateDevice(VkPhysicalDeviceFeatures2 features)
 	DeviceBuilder builder{};
 	builder
 		.SetFeatures(features)
-		.Build(m_Context, m_pDebugMessenger.get());
+		.Build(m_Context, m_pDebugUtils.get());
 }
 void VulkanRenderer::ChoosePhysicalDevice(VkPhysicalDeviceFeatures2 features)
 {

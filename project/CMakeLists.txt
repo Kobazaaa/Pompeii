@@ -63,7 +63,7 @@ set(SOURCES
 
 	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanResourceManager.cpp"
 	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanPipelineCache.cpp"
-	"${SOURCE_DIR_2}/platform/vulkan/implementation/VulkanDebugMessenger.cpp"
+	"src-2/platform/vulkan/implementation/VulkanDebugUtils.cpp"
 
 	"${SOURCE_DIR_2}/platform/vulkan/context/Device.cpp"
 	"${SOURCE_DIR_2}/platform/vulkan/context/PhysicalDevice.cpp"

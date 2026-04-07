@@ -53,3 +53,9 @@ void VulkanCommandPool::Reset()
 {
 	vkResetCommandPool(m_pContext->device, m_CommandPool, 0);
 }
+
+
+//--------------------------------------------------
+//    Functionality
+//--------------------------------------------------
+VulkanCommandPool::operator VkCommandPool() const { return m_CommandPool; }

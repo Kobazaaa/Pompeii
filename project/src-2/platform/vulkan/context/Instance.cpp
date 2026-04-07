@@ -6,7 +6,7 @@
 #include "Instance.h"
 #include "VulkanContext.h"
 #include "ConsoleTextSettings.h"
-#include "VulkanDebugMessenger.h"
+#include "VulkanDebugUtils.h"
 
 using namespace pompeii::vulkan;
 
@@ -55,7 +55,7 @@ InstanceBuilder& InstanceBuilder::SetEngineName(const std::string& name)		{ m_Ap
 InstanceBuilder& InstanceBuilder::SetAPIVersion(uint32_t apiVersion)			{ m_AppInfo.apiVersion = apiVersion; return *this; }
 InstanceBuilder& InstanceBuilder::AddInstanceExtension(const char* extName)		{ m_vInstanceExtensions.push_back(extName); return *this; }
 
-void InstanceBuilder::Build(VulkanContext& context, VulkanDebugMessenger* pDebugMessenger)
+void InstanceBuilder::Build(VulkanContext& context, VulkanDebugUtils* pDebugMessenger)
 {
 	if (pDebugMessenger && !pDebugMessenger->CheckValidationLayerSupport())
 		throw std::runtime_error("Validation Layers requested, but not available!");
@@ -74,7 +74,7 @@ void InstanceBuilder::Build(VulkanContext& context, VulkanDebugMessenger* pDebug
 		m_CreateInfo.enabledLayerCount = static_cast<uint32_t>(pDebugMessenger->GetValidationLayers().size());
 		m_CreateInfo.ppEnabledLayerNames = pDebugMessenger->GetValidationLayers().data();
 
-		VulkanDebugMessenger::PopulateDebugMessengerCreateInfo(debugCreateInfo);
+		VulkanDebugUtils::PopulateDebugMessengerCreateInfo(debugCreateInfo);
 		m_CreateInfo.pNext = &debugCreateInfo;
 	}
 	else
