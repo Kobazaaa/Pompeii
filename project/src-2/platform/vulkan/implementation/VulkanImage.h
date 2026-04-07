@@ -11,6 +11,7 @@
 // -- Forward Declaration --
 namespace pompeii::vulkan
 {
+	class VulkanCommandBuffer;
 	struct VulkanContext;
 }
 
@@ -42,6 +43,9 @@ namespace pompeii::vulkan
 		[[nodiscard]] ImageFormat GetFormat() const override;
 		[[nodiscard]] ImageUsage GetUsage() const override;
 		[[nodiscard]] MemoryType GetMemoryType() const override;
+		void TransitionImageLayout(const VulkanCommandBuffer& cmd, VkImageLayout newLayout,
+			VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
+			VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage) const;
 
 		//--------------------------------------------------
 		//    Operator Overloads
@@ -58,15 +62,12 @@ namespace pompeii::vulkan
 
 		// Image Info
 		ImageDesc m_ImageDesc;
-		VkImageLayout m_CurrentLayout	{ VK_IMAGE_LAYOUT_UNDEFINED };
+		mutable VkImageLayout m_CurrentLayout { VK_IMAGE_LAYOUT_UNDEFINED };
 
 		// Vulkan Data
 		VkImage m_Image					{ VK_NULL_HANDLE };
 		VkImageView m_View				{ VK_NULL_HANDLE };
 		VmaAllocation m_Memory			{ nullptr };
-
-		// todo let's not
-		friend class VulkanCommandBuffer;
 	};
 }
 

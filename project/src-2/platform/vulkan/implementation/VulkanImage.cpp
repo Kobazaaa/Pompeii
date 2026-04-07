@@ -2,6 +2,7 @@
 #include "VulkanImage.h"
 #include "VulkanHelpers.h"
 #include "VulkanContext.h"
+#include "VulkanCommandBuffer.h"
 
 using namespace pompeii;
 using namespace pompeii::vulkan;
@@ -102,4 +103,56 @@ void VulkanImage::CreateImageView()
 
 	if (vkCreateImageView(m_pContext->device, &viewInfo, nullptr, &m_View) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Image View!");
+}
+
+void VulkanImage::TransitionImageLayout(const VulkanCommandBuffer& cmd, VkImageLayout newLayout,
+	VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
+	VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage) const
+{
+	auto format = GetFormat();
+	bool hasDepth = format == ImageFormat::Depth24Stencil8 || format == ImageFormat::Depth32F;
+	bool hasStencil = format == ImageFormat::Depth24Stencil8;
+
+	VkImageMemoryBarrier2 barrier{};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+	barrier.pNext = nullptr;
+
+	barrier.image = m_Image;
+	barrier.oldLayout = m_CurrentLayout;
+	barrier.newLayout = newLayout;
+
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.srcAccessMask = srcAccess;
+	barrier.srcStageMask = srcStage;
+
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstAccessMask = dstAccess;
+	barrier.dstStageMask = dstStage;
+
+	barrier.subresourceRange.aspectMask = 0;
+	if (hasDepth)
+	{
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		if (hasStencil) barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+	}
+	else barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+
+	VkDependencyInfo dependencyInfo{};
+	dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+	dependencyInfo.dependencyFlags = 0;
+	dependencyInfo.pNext = nullptr;
+	dependencyInfo.memoryBarrierCount = 0;
+	dependencyInfo.pMemoryBarriers = nullptr;
+	dependencyInfo.bufferMemoryBarrierCount = 0;
+	dependencyInfo.pBufferMemoryBarriers = nullptr;
+	dependencyInfo.imageMemoryBarrierCount = 1;
+	dependencyInfo.pImageMemoryBarriers = &barrier;
+
+	vkCmdPipelineBarrier2(cmd, &dependencyInfo);
+
+	m_CurrentLayout = newLayout;
 }

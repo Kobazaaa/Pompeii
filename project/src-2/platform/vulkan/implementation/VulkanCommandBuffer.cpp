@@ -177,7 +177,8 @@ void VulkanCommandBuffer::UploadDataToImage(IImage& image, const void* data, siz
 	VulkanBuffer stagingBuffer { bufferDesc, *m_pContext};
 	vmaCopyMemoryToAllocation(m_pContext->allocator, data, stagingBuffer, 0, size);
 
-	TransitionImageLayout(static_cast<VulkanImage&>(image),
+	VulkanImage& vulkanImage = static_cast<VulkanImage&>(image);
+	vulkanImage.TransitionImageLayout(*this,
 	                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 	                      0, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
 	                      VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -358,57 +359,3 @@ void VulkanCommandBuffer::Draw(uint32_t vertexCount)
 	vkCmdDraw(m_CmdBuffer, vertexCount, 1, 0, 0);
 }
 
-
-//--------------------------------------------------
-//    Helper
-//--------------------------------------------------
-void VulkanCommandBuffer::TransitionImageLayout(VulkanImage& image, VkImageLayout newLayout, VkAccessFlags2 srcAccess,
-	VkPipelineStageFlags2 srcStage, VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage) const
-{
-	auto format = image.GetFormat();
-	bool hasDepth = format == ImageFormat::Depth24Stencil8 || format == ImageFormat::Depth32F;
-	bool hasStencil = format == ImageFormat::Depth24Stencil8;
-
-	VkImageMemoryBarrier2 barrier{};
-	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-	barrier.pNext = nullptr;
-
-	barrier.image = image;
-	barrier.oldLayout = image.m_CurrentLayout;
-	barrier.newLayout = newLayout;
-
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.srcAccessMask = srcAccess;
-	barrier.srcStageMask = srcStage;
-
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstAccessMask = dstAccess;
-	barrier.dstStageMask = dstStage;
-
-	barrier.subresourceRange.aspectMask = 0;
-	if (hasDepth)
-	{
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-		if (hasStencil) barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-	}
-	else barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = 1;
-	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
-
-	VkDependencyInfo dependencyInfo{};
-	dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-	dependencyInfo.dependencyFlags = 0;
-	dependencyInfo.pNext = nullptr;
-	dependencyInfo.memoryBarrierCount = 0;
-	dependencyInfo.pMemoryBarriers = nullptr;
-	dependencyInfo.bufferMemoryBarrierCount = 0;
-	dependencyInfo.pBufferMemoryBarriers = nullptr;
-	dependencyInfo.imageMemoryBarrierCount = 1;
-	dependencyInfo.pImageMemoryBarriers = &barrier;
-
-	vkCmdPipelineBarrier2(m_CmdBuffer, &dependencyInfo);
-
-	image.m_CurrentLayout = newLayout;
-}

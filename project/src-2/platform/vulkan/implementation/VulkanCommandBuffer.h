@@ -81,9 +81,6 @@ namespace pompeii::vulkan
 		void Draw(uint32_t vertexCount) override;
 
 	private:
-		void TransitionImageLayout(VulkanImage& image, VkImageLayout newLayout,
-			VkAccessFlags2 srcAccess, VkPipelineStageFlags2 srcStage,
-			VkAccessFlags2 dstAccess, VkPipelineStageFlags2 dstStage) const;
 
 		VulkanContext* m_pContext			{ nullptr };
 		VulkanCommandPool* m_pCommandPool	{ nullptr };
