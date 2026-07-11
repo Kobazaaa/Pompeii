@@ -120,7 +120,7 @@ void pompeii::Mesh::AllocateResources(const Context& context)
 	CreateIndexBuffer(context);
 
 	// -- Build Image --
-	//CreateImages(context);
+	CreateImages(context);
 }
 void pompeii::Mesh::Destroy(const Context& context)
 {
